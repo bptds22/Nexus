@@ -1,4 +1,5 @@
-// Génère les fichiers prod du lot de données D5a (programmes de premier cycle des universités du Québec) :
+// Génère les fichiers prod des lots de données D5a (programmes de premier cycle) — « qc » : les 12 universités du
+// Québec ; « hc » : les 47 universités hors Québec (lot D1b), mêmes règles, mêmes essais :
 //   docs/cegep-lot-d/prod/d5a-programmes-qc-<rejeu-blanc|apply|rollback>-<date>.sql
 // depuis scripts/cegep-lot-d/d5a-programmes-qc/*.json (relevé du 2026-10-28, sources citées). LF.
 // Chaque programme reçoit un uuid STABLE (md5 de université|nom|cycle), le même au rejeu, à l'apply et au rollback.
@@ -9,14 +10,18 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 process.chdir(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".."));
-const [date, type = "rejeu-blanc"] = process.argv.slice(2);
+const [date, type = "rejeu-blanc", lot = "qc"] = process.argv.slice(2);
+if (!["qc", "hc"].includes(lot)) throw new Error("lot inconnu : " + lot);
+const HC = lot === "hc";
 if (!/^\d{8}$/.test(date ?? "")) throw new Error("date AAAAMMJJ attendue");
 if (!["rejeu-blanc", "apply", "rollback"].includes(type)) throw new Error("type inconnu : " + type);
 
-const DIR = "scripts/cegep-lot-d/d5a-programmes-qc";
-const ORDRE = ["laval", "udem", "uqam", "ets", "mcgill", "concordia", "usherbrooke", "bishops", "uqtr", "uqac", "uqar", "uqo"];
+const DIR = `scripts/cegep-lot-d/d5a-programmes-${lot}`;
+const ORDRE = HC
+  ? JSON.parse(fs.readFileSync("scripts/cegep-lot-d/d1b-universites.json", "utf8")).ecoles.map((_, i) => String(i).padStart(2, "0"))
+  : ["laval", "udem", "uqam", "ets", "mcgill", "concordia", "usherbrooke", "bishops", "uqtr", "uqac", "uqar", "uqo"];
 const md5 = (t) => crypto.createHash("md5").update(t, "utf8").digest("hex");
-const uuid = (g) => { const h = md5("nexus-d5a-qc|" + g); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
+const uuid = (g) => { const h = md5(`nexus-d5a-${lot}|` + g); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
 const q = (v) => (v == null ? "null" : "'" + String(v).replace(/'/g, "''") + "'");
 
 let brut = "";
@@ -244,6 +249,32 @@ rollback;
 \\echo '== ROLLBACK fait : rien n''est appliqué.'
 `}`;
 }
-const OUT = `docs/cegep-lot-d/prod/d5a-programmes-qc-${type}-${date}.sql`;
+if (HC) {
+  // Même SQL que le Québec, autre périmètre. Les remplacements ne visent que le gabarit : on vérifie qu'aucune ligne
+  // de données ne contient un des motifs remplacés.
+  const R = [
+    ["s.province = 'QC'", "s.province <> 'QC'"],
+    ["CEGEP_LOT_D5A_PROGRAMMES_QC", "CEGEP_LOT_D5A_PROGRAMMES_HC"],
+    ["D5a (Québec)", "D5a (hors Québec)"],
+    ["exactement une université QC", "exactement une université hors Québec"],
+    ["pour une université du Québec", "pour une université hors Québec"],
+    ["(programmes, Québec)", "(programmes, hors Québec)"],
+    ["des 12 universités du Québec", `des ${ORDRE.length} universités hors Québec (lot D1b)`],
+    ["programmes du Québec", "programmes hors Québec"],
+    ["pré-remplis du Québec", "pré-remplis hors Québec"],
+    ["'Université Laval'", "'Western University'"],
+    ["(Laval, sous ON)", "(Western, sous ON)"],
+    ["d5a-programmes-qc/", "d5a-programmes-hc/"],
+    // L'admin lit TOUTE la table (Québec compris) : on compare à ce qu'elle contient, pas au seul lot.
+    [`(select lu from _l where o = 6) <> '${N}' then raise exception 'NEXUS: l''admin ne lit pas les ${N} programmes'`,
+     "(select lu from _l where o = 6) <> (select count(*)::text from public.university_programs) then raise exception 'NEXUS: l''admin ne lit pas tous les programmes'"],
+  ];
+  const donnees = lignes.join("\n") + parUniv.join("\n");
+  for (const [a, b] of R) {
+    if (donnees.includes(a)) throw new Error("motif présent dans les données : " + a);
+    sql = sql.split(a).join(b);
+  }
+}
+const OUT = `docs/cegep-lot-d/prod/d5a-programmes-${lot}-${type}-${date}.sql`;
 fs.writeFileSync(OUT, sql);
 console.log(`données ${MD5_DONNEES}  programmes ${N}  généré ${md5(sql)}  ${OUT}`);

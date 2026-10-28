@@ -1,791 +1,770 @@
 {
- "universite": "University of the Fraser Valley",
- "date_releve": "2026-10-28",
- "sources_generales": [
-  "https://www.ufv.ca/programs/"
- ],
- "blocages": [],
- "attendu": {
-  "baccalaureat": 53,
-  "certificat": 66,
-  "comment": "Page officielle ufv.ca/programs (166 entrées, une seule page, « over 110 programs »). Unité = entrée du répertoire (grade+majeure ou titre de certificat, tel qu'affiché). Baccalauréats : 53 entrées de type bachelor's degree. Certificats : 66 entrées de type certificate/associate certificate (dont 14 de Continuing Education, 4 de niveau post-baccalauréat/gradué, 2 de mise à niveau). Les certificats de métiers (Carpentry, Welding, etc.) et les « associate certificates » sont des certificats crédités du répertoire et ont été retenus. Faculté non affichée : null."
- },
- "programmes": [
-  {
-   "nom": "Adult Education",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/adult-education-bachelor/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Agriculture Management — Bachelor of Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/agriculture-management-bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Art History — Bachelor of Arts or Bachelor of Fine Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/art-history/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Arts — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/bachelor-of-arts/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Child and Youth Care — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/child-and-youth-care-degree/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Creative Writing — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/creative-writing-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Creative Writing — Bachelor of Fine Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/creative-writing-bfa/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Education",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/teacher-education/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Fine Arts — Bachelor of Fine Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/bfa/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Graphic and Digital Design — Bachelor of Fine Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/graphic-and-digital-design-bfa-degree/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "History — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/history/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Integrated Studies",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/bachelor-integrated-studies/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Latin American Studies — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/latin-american-studies/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Nursing — Bachelor of Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/nursing-bachelor/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Peace and Conflict Studies — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/peace-and-conflict/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Philosophy — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/philosophy-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Political Science — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/political-science-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Science — Bachelor of Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/bachelor-of-science/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Social Work — Bachelor of Social Work",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-work-bachelor/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Trades Management — Bachelor of Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/trades-management-bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Human Resource Management major — Bachelor of Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/business/human-resource-management-bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Accounting major — Bachelor of Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/business/accounting-bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Agricultural Science, Horticulture major",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/agriculture/agricultural-science-horticulture-bachelor/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Aviation — Bachelor of Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/business/aviation-bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Biology major — Bachelor of Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/biology-bsc/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Chemistry major — Bachelor of Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/chemistry-bsc/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Communications major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/communications-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Computer Information Systems",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/computing/computer-information-systems-bcis/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Computing Science — Bachelor of Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/computing/computing-science-bsc/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Criminal Justice — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/criminal-justice-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Economics major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/economics-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "English major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/english-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Environmental Studies (Natural Sciences)",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/environmental-studies-natural-sciences-bes/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Environmental Studies",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/environmental-studies-bes/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Finance major — Bachelor of Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/business/finance-bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "French major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/french-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Geography major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/geography-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Global Development Studies — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/global-development-studies-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Indigenous Studies — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/indigenous-studies-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "International Business major — Bachelor of Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/business/international-business-bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Kinesiology",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/kinesiology/bachelor-kinesiology/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Marketing major — Bachelor of Business Administration",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/business/marketing-bba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Mathematics major — Bachelor of Science or Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/mathematics-bsc-or-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Media Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/creative-arts/media-arts-bma/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Physics major — Bachelor of Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/physics-bsc/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Psychology major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/psychology-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Regional and Community Planning",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/regional-and-community-planning-brcp/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Sociology major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/sociology-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Sociology/Anthropology major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/sociology-anthropology-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Theatre major — Bachelor of Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/creative-arts/theatre-ba/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Visual Arts — Bachelor of Fine Arts",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/creative-arts/visual-arts-bfa/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Accounting",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/accounting-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Applied Business Technology",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/applied-business-technology/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Architectural Drafting Technician",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/drafting/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Automotive Collision Repair and Refinish",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/auto-collision/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Automotive Service",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/automotive-service/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Business administration",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/administration/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Cabinetmaking (Joinery)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/cabinetmaking-joinery/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Carpentry",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/carpentry/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Certified Dental Assistant",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/certified-dental-assistant/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Culinary Arts",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/culinary-arts/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Diaspora Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/diaspora-studies/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Early Childhood Education",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/early-childhood-educator/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Early Modern Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/early-modern-studies/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Electrician",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/electrician/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Electronics technician",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/electronics/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Engineering Common Core",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/engineering/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Heavy Mechanical Trades Foundation",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/heavy-mechanical/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Integrated Learning Design",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/integrated-learning-design-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Language Proficiency",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/language-proficiency-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Marketing and Sales",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/marketing-sales/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Plumbing and Piping",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/plumbing/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Teaching English as a Second Language",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/tesl/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Welding",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/welding/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Workplace Education",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/adult-education-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Applied Geographic Information Systems",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/geographic-information-systems-assoc-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Applied Bioinformatics",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/science/applied-bioinformatics-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Coding Skills",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/computing/coding-skills-associate-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Computer Information Systems",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/computing/computer-information-systems-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Equity, Workplace, and Community Transformation",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/education/equity-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Essentials of journalism",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/essentials-of-journalism-associate-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Floral Design",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/trades/programs/floral-design/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Halq'eméylem, Intermediate Proficiency",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/halqemeylem-intermediate-proficiency-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Health Care Assistant",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/hca/health-care-assistant-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Horticulture Crop Production and Protection",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/agriculture/horticulture-crop-production-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Inclusive Education Assistant",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/school-of-education/programs/inclusive-education-assistant-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "India-Canada Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/india-canada-studies-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Indigenous Arts",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/creative-arts/indigenous-arts-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Indigenous Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/indigenous-studies-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Intercultural Essentials",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/intercultural-essentials-associate-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Linguistics and Language Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/mola/find-your-program/linguistics-language-studies-associate-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Livestock Production",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/agriculture/livestock-production-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Media Literacy",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/media-literacy-associate-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Power and Place: Stó:lō Téméxw Responsibility, Reflection and (Re)Storying",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/power-and-place-associate-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Professional Communications Essentials",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/prof-communications-essentials-assoc-cert/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Social Innovation",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/arts-humanities/social-innovation-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  },
-  {
-   "nom": "Stó:lō Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": "https://www.ufv.ca/programs/social-sciences/sto-lo-studies-certificate/",
-   "source": "https://www.ufv.ca/programs/"
-  }
- ],
- "exclus": [
-  {
-   "nom": "LPN access to Nursing — Bachelor of Science",
-   "raison": "voie d'accès (transfert IAA/LPN) du même BSc Nursing, fusionnée avec « Nursing — Bachelor of Science »"
-  },
-  {
-   "nom": "Child Life and Community Health (graduate certificate)",
-   "raison": "certificat de niveau postérieur au baccalauréat/diplôme, pas un certificat de premier cycle"
-  },
-  {
-   "nom": "Halq'eméylem (graduate certificate)",
-   "raison": "certificat de niveau postérieur au baccalauréat/diplôme, pas un certificat de premier cycle"
-  },
-  {
-   "nom": "Data Analysis (post-baccalaureate certificate)",
-   "raison": "certificat de niveau postérieur au baccalauréat/diplôme, pas un certificat de premier cycle"
-  },
-  {
-   "nom": "Library Technician (post-diploma certificate)",
-   "raison": "certificat de niveau postérieur au baccalauréat/diplôme, pas un certificat de premier cycle"
-  },
-  {
-   "nom": "English Language Studies (certificates)",
-   "raison": "certificats de mise à niveau en anglais langue seconde (upgrading), préparatoires — exclus"
-  },
-  {
-   "nom": "University Foundation (certificate)",
-   "raison": "certificat préparatoire de mise à niveau (upgrading) — exclu"
-  },
-  {
-   "nom": "Activity Assistant certificate (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Bookkeeping for Small Business (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Civic Governance and Innovation (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Dental Office Receptionist (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Human Resources Management (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Legal Administrative Assistant (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Management Skills (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Medical Laboratory Assistant (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Medical Office Assistant (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Nursing Unit Clerk (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Paralegal (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Public Relations (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Records Management (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Veterinary Administrative Assistant (Continuing Education)",
-   "raison": "certificat de formation continue (Continuing Education), caractère crédité non confirmé — à vérifier, exclu"
-  },
-  {
-   "nom": "Diplômes, associate degrees, mineures, maîtrises, post-baccalaureate diplomas et entrées sans titre (Adult Basic Education, Workplace TASK, Building Services Worker, Explore Trades Sampler, Indigenous Academic Success Cohort)",
-   "raison": "hors des deux types retenus — non comptés dans « attendu »"
-  }
- ]
+  "universite": "University of the Fraser Valley",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.ufv.ca/programs/"
+  ],
+  "blocages": [],
+  "attendu": {
+    "baccalaureat": 53,
+    "certificat": 66,
+    "comment": "Page officielle ufv.ca/programs (166 entrées, une seule page, « over 110 programs »). Unité = entrée du répertoire (grade+majeure ou titre de certificat, tel qu'affiché). Baccalauréats : 53 entrées de type bachelor's degree. Certificats : 66 entrées de type certificate/associate certificate (dont 14 de Continuing Education, 4 de niveau post-baccalauréat/gradué, 2 de mise à niveau). Les certificats de métiers (Carpentry, Welding, etc.) et les « associate certificates » sont des certificats crédités du répertoire et ont été retenus. Faculté non affichée : null. Correction 2026-10-28 (décisions BP) : 10 certificats de métier exclus (9 métiers Red Seal + Floral Design, tous listés sous « Trades & industry ») ; Architectural Drafting Technician et Electronics Technician conservés (listés aussi sous « Technology & applied science », non Red Seal). Formation continue : Civic Governance and Innovation (« Each course ... is awarded university credit ») et Paralegal (cours PRLG de 3 crédits au calendrier UFV) réintégrés ; les 12 autres exclus « crédit non confirmé ». Certificats retenus 38 = 66 − 10 métiers − 12 FC − 4 post-bac/gradués − 2 mise à niveau."
+  },
+  "programmes": [
+    {
+      "nom": "Adult Education",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/adult-education-bachelor/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Agriculture Management — Bachelor of Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/agriculture-management-bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Art History — Bachelor of Arts or Bachelor of Fine Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/art-history/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Arts — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/bachelor-of-arts/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Child and Youth Care — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/child-and-youth-care-degree/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Creative Writing — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/creative-writing-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Creative Writing — Bachelor of Fine Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/creative-writing-bfa/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Education",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/teacher-education/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Fine Arts — Bachelor of Fine Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/bfa/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Graphic and Digital Design — Bachelor of Fine Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/graphic-and-digital-design-bfa-degree/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "History — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/history/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Integrated Studies",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/bachelor-integrated-studies/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Latin American Studies — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/latin-american-studies/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Nursing — Bachelor of Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/nursing-bachelor/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Peace and Conflict Studies — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/peace-and-conflict/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Philosophy — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/philosophy-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Political Science — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/political-science-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Science — Bachelor of Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/bachelor-of-science/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Social Work — Bachelor of Social Work",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-work-bachelor/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Trades Management — Bachelor of Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/trades-management-bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Human Resource Management major — Bachelor of Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/business/human-resource-management-bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Accounting major — Bachelor of Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/business/accounting-bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Agricultural Science, Horticulture major",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/agriculture/agricultural-science-horticulture-bachelor/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Aviation — Bachelor of Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/business/aviation-bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Biology major — Bachelor of Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/biology-bsc/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Chemistry major — Bachelor of Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/chemistry-bsc/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Communications major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/communications-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Computer Information Systems",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/computing/computer-information-systems-bcis/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Computing Science — Bachelor of Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/computing/computing-science-bsc/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Criminal Justice — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/criminal-justice-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Economics major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/economics-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "English major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/english-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Environmental Studies (Natural Sciences)",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/environmental-studies-natural-sciences-bes/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Environmental Studies",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/environmental-studies-bes/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Finance major — Bachelor of Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/business/finance-bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "French major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/french-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Geography major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/geography-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Global Development Studies — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/global-development-studies-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Indigenous Studies — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/indigenous-studies-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "International Business major — Bachelor of Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/business/international-business-bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Kinesiology",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/kinesiology/bachelor-kinesiology/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Marketing major — Bachelor of Business Administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/business/marketing-bba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Mathematics major — Bachelor of Science or Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/mathematics-bsc-or-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Media Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/creative-arts/media-arts-bma/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Physics major — Bachelor of Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/physics-bsc/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Psychology major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/psychology-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Regional and Community Planning",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/regional-and-community-planning-brcp/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Sociology major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/sociology-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Sociology/Anthropology major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/sociology-anthropology-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Theatre major — Bachelor of Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/creative-arts/theatre-ba/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Visual Arts — Bachelor of Fine Arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/creative-arts/visual-arts-bfa/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Accounting",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/accounting-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Applied Business Technology",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/applied-business-technology/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Architectural Drafting Technician",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/drafting/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Business administration",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/administration/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Certified Dental Assistant",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/certified-dental-assistant/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Diaspora Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/diaspora-studies/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Early Childhood Education",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/early-childhood-educator/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Early Modern Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/early-modern-studies/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Electronics technician",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/electronics/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Engineering Common Core",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/engineering/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Integrated Learning Design",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/integrated-learning-design-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Language Proficiency",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/language-proficiency-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Marketing and Sales",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/marketing-sales/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Teaching English as a Second Language",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/tesl/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Workplace Education",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/adult-education-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Applied Geographic Information Systems",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/geographic-information-systems-assoc-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Applied Bioinformatics",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/science/applied-bioinformatics-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Coding Skills",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/computing/coding-skills-associate-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Computer Information Systems",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/computing/computer-information-systems-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Equity, Workplace, and Community Transformation",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/education/equity-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Essentials of journalism",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/essentials-of-journalism-associate-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Halq'eméylem, Intermediate Proficiency",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/halqemeylem-intermediate-proficiency-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Health Care Assistant",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/hca/health-care-assistant-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Horticulture Crop Production and Protection",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/agriculture/horticulture-crop-production-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Inclusive Education Assistant",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/school-of-education/programs/inclusive-education-assistant-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "India-Canada Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/india-canada-studies-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Indigenous Arts",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/creative-arts/indigenous-arts-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Indigenous Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/indigenous-studies-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Intercultural Essentials",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/intercultural-essentials-associate-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Linguistics and Language Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/mola/find-your-program/linguistics-language-studies-associate-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Livestock Production",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/agriculture/livestock-production-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Media Literacy",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/media-literacy-associate-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Power and Place: Stó:lō Téméxw Responsibility, Reflection and (Re)Storying",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/power-and-place-associate-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Professional Communications Essentials",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/prof-communications-essentials-assoc-cert/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Social Innovation",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/arts-humanities/social-innovation-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Stó:lō Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.ufv.ca/programs/social-sciences/sto-lo-studies-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Civic Governance and Innovation",
+      "cycle": "certificat",
+      "faculte": "Continuing Education",
+      "lien": "https://www.ufv.ca/continuing-education/programs/civic-governance-and-innovation/",
+      "source": "https://www.ufv.ca/programs/"
+    },
+    {
+      "nom": "Paralegal",
+      "cycle": "certificat",
+      "faculte": "Continuing Education",
+      "lien": "https://www.ufv.ca/continuing-education/programs/paralegal-certificate/",
+      "source": "https://www.ufv.ca/programs/"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "LPN access to Nursing — Bachelor of Science",
+      "raison": "voie d'accès (transfert IAA/LPN) du même BSc Nursing, fusionnée avec « Nursing — Bachelor of Science »"
+    },
+    {
+      "nom": "Child Life and Community Health (graduate certificate)",
+      "raison": "certificat de niveau postérieur au baccalauréat/diplôme, pas un certificat de premier cycle"
+    },
+    {
+      "nom": "Halq'eméylem (graduate certificate)",
+      "raison": "certificat de niveau postérieur au baccalauréat/diplôme, pas un certificat de premier cycle"
+    },
+    {
+      "nom": "Data Analysis (post-baccalaureate certificate)",
+      "raison": "certificat de niveau postérieur au baccalauréat/diplôme, pas un certificat de premier cycle"
+    },
+    {
+      "nom": "Library Technician (post-diploma certificate)",
+      "raison": "certificat de niveau postérieur au baccalauréat/diplôme, pas un certificat de premier cycle"
+    },
+    {
+      "nom": "English Language Studies (certificates)",
+      "raison": "certificats de mise à niveau en anglais langue seconde (upgrading), préparatoires — exclus"
+    },
+    {
+      "nom": "University Foundation (certificate)",
+      "raison": "certificat préparatoire de mise à niveau (upgrading) — exclu"
+    },
+    {
+      "nom": "Activity Assistant certificate (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Bookkeeping for Small Business (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Dental Office Receptionist (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Human Resources Management (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Legal Administrative Assistant (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Management Skills (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Medical Laboratory Assistant (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Medical Office Assistant (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Nursing Unit Clerk (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Public Relations (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Records Management (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Veterinary Administrative Assistant (Continuing Education)",
+      "raison": "crédit non confirmé — page officielle Continuing Education sans mention de crédit universitaire ni renvoi au calendrier académique (vérifié 2026-10-28)"
+    },
+    {
+      "nom": "Diplômes, associate degrees, mineures, maîtrises, post-baccalaureate diplomas et entrées sans titre (Adult Basic Education, Workplace TASK, Building Services Worker, Explore Trades Sampler, Indigenous Academic Success Cohort)",
+      "raison": "hors des deux types retenus — non comptés dans « attendu »"
+    },
+    {
+      "nom": "Automotive Collision Repair and Refinish",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Automotive Service",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Cabinetmaking (Joinery)",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Carpentry",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Culinary Arts",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Electrician",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Heavy Mechanical Trades Foundation",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Plumbing and Piping",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Welding",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    },
+    {
+      "nom": "Floral Design",
+      "raison": "certificat de métier (décision BP 2026-10-28) — listé sous « Trades & industry » (https://www.ufv.ca/trades/programs/trades-industry/)"
+    }
+  ],
+  "corrections": [
+    "2026-10-28 : 10 certificats de métier exclus (décision BP) ; 2 certificats de formation continue créditée réintégrés (Civic Governance and Innovation, Paralegal), 12 autres FC « crédit non confirmé »"
+  ]
 }
