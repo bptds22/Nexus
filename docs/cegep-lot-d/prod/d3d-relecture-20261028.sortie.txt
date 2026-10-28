@@ -1,0 +1,10 @@
+﻿-[ RECORD 1 ]-+------
+d3d_inscrit   | 1
+trace         | 1
+fonction      | t
+anon_exec     | f
+auth_exec     | t
+interrupteur  | false
+temoin        | 0
+conversations | 108
+

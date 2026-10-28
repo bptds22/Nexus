@@ -1,0 +1,63 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 15:25:00.660393+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version 
+------------------
+ 20261028050000
+(1 row)
+
+SELECT 1
+DO
+SELECT 1
+DO
+SET
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 8
+              appelant               | ecoles_recruteurs · lecture directe de l'université 
+-------------------------------------+-----------------------------------------------------
+ athlète en conversation avec lui    | fonction 1/true · lecture directe 0
+ autre athlète                       | fonction 0/false · lecture directe 0
+ coach en conversation avec lui      | fonction 1/true · lecture directe 0
+ autre coach                         | fonction 0/false · lecture directe 0
+ recruteur collégial                 | fonction 0/false · lecture directe 0
+ le recruteur universitaire lui-même | fonction 0/false · lecture directe 1
+ anon (site public)                  | fonction refusée · lecture directe 0
+ admin                               | fonction 1/true · lecture directe 1
+(8 rows)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d3d-apply-20261028.sql:198: NOTICE:  NEXUS: VERDICT D3d — nom de l'université 
+rendu aux seuls participants d'une conversation ; base toujours masquée
+At line:1 char:1089
++ ... grations;"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...oujours masquée:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261028060000   | 2026-10-28 15:25:00.845594+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot D3d cégep en prod (ecoles_recruteurs, interrupteur OFF).
