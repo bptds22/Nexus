@@ -41,6 +41,8 @@ export interface CegepRow {
   name: string;
   city: string;
   region: string;
+  /** Code de province (QC, ON…) — filtre Province de la recherche d'universités (lot E6). */
+  province: string | null;
   langue: string | null;      // FR | EN | BILINGUE | null
   reseau: string | null;      // PUBLIC | PRIVE | null
   lat: number | null;
@@ -135,12 +137,16 @@ export interface OptionsRecherche {
   /** Destinations 18+ (universités, clubs civils 18+). Vrai seulement quand l'interrupteur
    *  lancement_civil est ON — c'est l'appelant qui le lit (lib/config/lancementCivil.ts). */
   destinations18Plus?: boolean;
+  /** Lot E6 : recherche d'UNIVERSITÉS pour le cégépien, sous lancement_universitaire ON (l'appelant le vérifie ; la
+   *  base ne montre les universités qu'à lui, lot E1). Programmes : university_programs ; aucun catalogue DEC. */
+  universites?: boolean;
 }
 
 /** Types d'école lus comme destinations : le cégep, plus l'université quand les destinations
  *  18+ sont ouvertes. Aucune école UNIVERSITE n'existe au 2026-10-27 (création sur GO BP, lot D) :
  *  la valeur ne rend rien tant qu'il n'y en a pas. */
-const typesDestination = (o: OptionsRecherche) => (o.destinations18Plus ? ["CEGEP", "UNIVERSITE"] : ["CEGEP"]);
+const typesDestination = (o: OptionsRecherche) =>
+  (o.universites ? ["UNIVERSITE"] : o.destinations18Plus ? ["CEGEP", "UNIVERSITE"] : ["CEGEP"]);
 
 export async function loadSearchData(supabase: SupabaseClient, options: OptionsRecherche = {}): Promise<SearchData> {
   const types = typesDestination(options);
@@ -149,7 +155,7 @@ export async function loadSearchData(supabase: SupabaseClient, options: OptionsR
       // logo_url N'EST PAS lu : un champ chargé et jamais rendu est exactement
       // le piège qui a fait croire que la recherche affichait un logo. Voir
       // logoDeLEcole().
-      .select("id, name, city, region, langue, reseau, lat, lng, type")
+      .select("id, name, city, region, province, langue, reseau, lat, lng, type")
       .in("type", types),
     // Filtre de type CÔTÉ SERVEUR (schools!...!inner) : sans lui, ce select
     // balayait les 7943 équipes toutes catégories et PostgREST en rendait
@@ -167,10 +173,15 @@ export async function loadSearchData(supabase: SupabaseClient, options: OptionsR
       .in("schools.type", types),
     // Les 1263 programmes sont TOUS is_displayed=true et TOUS rattachés à un
     // cégep : le filtre ne borne rien et on dépasse les 1000. Pagination.
-    fetchAllRows<{ school_id: string; name: string; program_id: string | null }>(
-      (f, t) => supabase.from("school_programs").select("school_id, name, program_id").eq("is_displayed", true).order("id").range(f, t),
-      "cegepSearch/programs",
-    ),
+    options.universites
+      ? fetchAllRows<{ school_id: string; name: string }>(
+          (f, t) => supabase.from("university_programs").select("school_id, name").eq("is_displayed", true).order("id").range(f, t),
+          "cegepSearch/universityPrograms",
+        ).then((rows) => rows.map((r) => ({ ...r, program_id: null as string | null })))
+      : fetchAllRows<{ school_id: string; name: string; program_id: string | null }>(
+          (f, t) => supabase.from("school_programs").select("school_id, name, program_id").eq("is_displayed", true).order("id").range(f, t),
+          "cegepSearch/programs",
+        ),
     supabase.from("school_page_content").select("school_id, nickname, logo_path, sell_text, color_primary"),
     supabase.from("school_campus_cards").select("school_id"),
     // 183 lignes : le référentiel des programmes, pour les noms du rail.
@@ -275,6 +286,7 @@ export async function loadSearchData(supabase: SupabaseClient, options: OptionsR
         name: s(r.name),
         city: s(r.city),
         region: s(r.region),
+        province: (r.province as string | null) || null,
         langue: (r.langue as string | null) || null,
         reseau: (r.reseau as string | null) || null,
         lat: (r.lat as number | null) ?? null,
@@ -407,7 +419,7 @@ async function loadClubsCivils18Plus(supabase: SupabaseClient): Promise<{
   // Par paquets : 300+ identifiants dans un seul `in` dépasseraient la longueur d'URL.
   for (let i = 0; i < ids.length; i += 100) {
     const { data, error } = await supabase.from("schools")
-      .select("id, name, city, region, langue, reseau, lat, lng, type")
+      .select("id, name, city, region, province, langue, reseau, lat, lng, type")
       .in("id", ids.slice(i, i + 100));
     if (error) throw error;
     ecoles.push(...((data ?? []) as Record<string, unknown>[]));

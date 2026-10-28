@@ -17,6 +17,7 @@ import dynamic from "next/dynamic";
 import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { loadSearchData, trouverProgramme, equipesParSport, type SearchData, type CegepRow } from "@/lib/queries/cegepSearch/searchData";
+import { estParcoursUniversitaire } from "@/lib/athlete/parcoursUniversitaire";
 import { lireLancementCivil } from "@/lib/config/lancementCivil";
 import { norm, regionCentroid, scoreCegep } from "@/lib/queries/cegepSearch/scoring";
 import Link from "next/link";
@@ -47,6 +48,15 @@ async function openCegepPageMobile(schoolId: string) {
 }
 
 const MapPane = dynamic(() => import("./MapPane"), { ssr: false });
+
+/* Lot E6 (retour BP 2026-10-28, C1 ; Q6 : sous lancement_universitaire ON) : pour le CÉGÉPIEN, la recherche devient
+   « Trouve ton université » — les 59 universités (Québec + Canada), carte du Canada, filtres sport, programme d'études,
+   province, langue. Les autres athlètes gardent la recherche de cégeps, inchangée. */
+const PROVINCES_LIB: Record<string, string> = {
+  QC: "Québec", ON: "Ontario", NS: "Nouvelle-Écosse", NB: "Nouveau-Brunswick", PE: "Île-du-Prince-Édouard",
+  NL: "Terre-Neuve-et-Labrador", MB: "Manitoba", SK: "Saskatchewan", AB: "Alberta", BC: "Colombie-Britannique",
+};
+const VUE_CANADA = { lat: 52, lng: -92 };
 
 const LANGUES = [{ v: "FR", label: "Français" }, { v: "EN", label: "Anglais" }, { v: "BILINGUE", label: "Bilingue" }];
 const RESEAUX = [{ v: "PUBLIC", label: "Public" }, { v: "PRIVE", label: "Privé" }];
@@ -194,6 +204,9 @@ export default function CegepSearch() {
   const [pourMoi, setPourMoi] = React.useState(false);
   /** Interrupteur lancement_civil : ON → destinations 18+ (clubs civils, universités). */
   const [destinations18, setDestinations18] = React.useState(false);
+  /** Lot E6 : cégépien sous lancement_universitaire ON → recherche d'universités. */
+  const [univ, setUniv] = React.useState(false);
+  const [provinces, setProvinces] = React.useState<string[]>([]);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [hoveredId, setHoveredId] = React.useState<string | null>(null);
   const [focus, setFocus] = React.useState<MapFocus | null>(null);
@@ -217,10 +230,12 @@ export default function CegepSearch() {
     let annule = false;
     (async () => {
       try {
-        const on = await lireLancementCivil(supabase);
-        const d = await loadSearchData(supabase, { destinations18Plus: on });
+        const universitaire = await estParcoursUniversitaire(supabase);
+        const on = universitaire ? false : await lireLancementCivil(supabase);
+        const d = await loadSearchData(supabase, universitaire ? { universites: true } : { destinations18Plus: on });
         if (annule) return;
         setDestinations18(on);
+        setUniv(universitaire);
         setData(d);
         if (d.viewer) {
           const { data: rows } = await supabase.from("athlete_targets")
@@ -272,6 +287,9 @@ export default function CegepSearch() {
         if (nq && !norm(`${c.name} ${c.city} ${c.region} ${c.programmes.join(" ")}`).includes(nq)) return false;
         if (sports.length && !sports.some((s) => c.sports.includes(s))) return false;
         if (regions.length && !regions.includes(c.region)) return false;
+        if (provinces.length && (!c.province || !provinces.includes(c.province))) return false;
+        // Université : le programme d'études se cherche par son nom (pas de catalogue DEC).
+        if (univ && progQ.trim() && !c.programmes.some((p) => norm(p).includes(norm(progQ)))) return false;
         if (langues.length && (!c.langue || !langues.includes(c.langue))) return false;
         if (reseaux.length) {
           const t = typeDe(c);
@@ -305,7 +323,7 @@ export default function CegepSearch() {
         }),
       }))
       .sort((a, b) => (b.fit.score - a.fit.score) || a.c.name.localeCompare(b.c.name, "fr"));
-  }, [data, q, sports, regions, langues, reseaux, progs, pourMoi, origine]);
+  }, [data, q, sports, regions, provinces, langues, reseaux, progs, progQ, univ, pourMoi, origine]);
 
   const estFit = (f: { score: number; raisons: string[] }) => f.score > 0 && f.raisons.length > 0;
 
@@ -338,14 +356,15 @@ export default function CegepSearch() {
       const villes = data.cegeps.filter((c) => norm(c.city).includes(nq) && c.lat != null);
       if (villes.length) {
         viser("bounds", villes.map((c) => c.id));
-        setZoomNote(`« ${q.trim()} » — ${villes.length} collège${villes.length > 1 ? "s" : ""} cadré${villes.length > 1 ? "s" : ""}`);
+        const mot = univ ? "université" : "collège";
+        setZoomNote(`« ${q.trim()} » — ${villes.length} ${mot}${villes.length > 1 ? "s" : ""} cadré${univ ? "e" : ""}${villes.length > 1 ? "s" : ""}`);
         return;
       }
       const prog = trouverProgramme(data, nq, norm);
       setZoomNote(prog && !progs.includes(prog.id) ? `↵ Entrée pour filtrer sur « ${prog.nom} »` : null);
     }, 450);
     return () => window.clearTimeout(t);
-  }, [q, data, viser, progs]);
+  }, [q, data, viser, progs, univ]);
 
   const onEnterRecherche = () => {
     if (!data) return;
@@ -372,13 +391,16 @@ export default function CegepSearch() {
   }, [selectedId]);
 
   if (err) return <div className="cs" ref={rootRef}><div className="cs-load cs-err">{err}</div></div>;
-  if (!data) return <div className="cs" ref={rootRef}><div className="cs-load">Chargement des cégeps…</div></div>;
+  if (!data) return <div className="cs" ref={rootRef}><div className="cs-load">Chargement…</div></div>;
 
   const viewer = data.viewer;
   // « Pour moi » n'a de sens qu'avec un programme visé OU un poste déclaré
   // (même règle que RechercheMobile) — sinon la pilule est désactivée.
   const pourMoiDispo = !!viewer && (viewer.programmesVises.length > 0 || !!viewer.positionId);
-  const nbFiltres = sports.length + progs.length + regions.length + langues.length + reseaux.length;
+  const nbFiltres = sports.length + progs.length + regions.length + langues.length + reseaux.length
+    + provinces.length + (univ && progQ.trim() ? 1 : 0);
+  const provincesPresentes = [...new Set(data.cegeps.map((c) => c.province).filter((x): x is string => !!x))]
+    .sort((a, b) => (PROVINCES_LIB[a] ?? a).localeCompare(PROVINCES_LIB[b] ?? b, "fr"));
   const selection = resultats.find((r) => r.c.id === selectedId) ?? null;
   const catalogueFiltre = data.catalogueProgrammes
     .filter((p) => !progQ || norm(p.nom).includes(norm(progQ)))
@@ -386,14 +408,14 @@ export default function CegepSearch() {
   const nomsProgrammes = Object.fromEntries(data.catalogueProgrammes.map((p) => [p.id, p.nom]));
   const typesPresents = new Set(data.cegeps.map(typeDe));
   const typesProposes = destinations18 ? TYPES_18PLUS.filter((t) => typesPresents.has(t.v)) : RESEAUX;
-  const nomResultat = destinations18 ? "destination" : "collège";
+  const nomResultat = univ ? "université" : destinations18 ? "destination" : "collège";
 
   return (
     <div className="cs" ref={rootRef} style={{ ["--cs-h" as string]: hauteur }}>
       <style dangerouslySetInnerHTML={{ __html: CS_CSS }} />
 
       <div className="topbar">
-        <div className="brand"><span className="k">SOIS LE NEX</span><b>Trouve ton cégep</b></div>
+        <div className="brand"><span className="k">SOIS LE NEX</span><b>{univ ? "Trouve ton université" : "Trouve ton cégep"}</b></div>
 
         <div className="search">
           <svg className="sico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
@@ -402,7 +424,7 @@ export default function CegepSearch() {
           <input
             value={q} onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") onEnterRecherche(); }}
-            placeholder="Collège, ville, programme…"
+            placeholder={univ ? "Université, ville, programme…" : "Collège, ville, programme…"}
           />
           {q && <button className="clr" onClick={() => { setQ(""); setZoomNote(null); }} aria-label="Effacer la recherche">✕</button>}
         </div>
@@ -416,6 +438,20 @@ export default function CegepSearch() {
           )}
         </FiltreBtn>
 
+        {univ ? (
+          <FiltreBtn label="Programme d'études" compteur={progQ.trim() ? 1 : 0} onClear={() => setProgQ("")}>
+            {() => (
+              <>
+                <span className="dsearch">
+                  <input className="ds" value={progQ} onChange={(e) => setProgQ(e.target.value)}
+                    placeholder="Ex. génie, kinésiologie, nursing…" />
+                  {progQ && <button className="clr" onClick={() => setProgQ("")} aria-label="Effacer">✕</button>}
+                </span>
+                <span className="more">Baccalauréats, certificats et autres programmes publiés par chaque université</span>
+              </>
+            )}
+          </FiltreBtn>
+        ) : (
         <FiltreBtn label="Programme" compteur={progs.length} onClear={() => setProgs([])}>
           {() => (
             <>
@@ -428,10 +464,17 @@ export default function CegepSearch() {
             </>
           )}
         </FiltreBtn>
+        )}
 
+        {univ ? (
+          <FiltreBtn label="Province" compteur={provinces.length} onClear={() => setProvinces([])}>
+            {() => <ListeCases items={provincesPresentes} labels={PROVINCES_LIB} selection={provinces} onToggle={(v) => setProvinces((x) => toggle(x, v))} />}
+          </FiltreBtn>
+        ) : (
         <FiltreBtn label="Région" compteur={regions.length} onClear={() => setRegions([])}>
           {() => <ListeCases items={data.regions} selection={regions} onToggle={(v) => setRegions((x) => toggle(x, v))} />}
         </FiltreBtn>
+        )}
 
         <FiltreBtn label="Langue" compteur={langues.length} onClear={() => setLangues([])}>
           {() => (
@@ -440,14 +483,15 @@ export default function CegepSearch() {
           )}
         </FiltreBtn>
 
-        <FiltreBtn label="Type" compteur={reseaux.length} onClear={() => setReseaux([])}>
+        {!univ && <FiltreBtn label="Type" compteur={reseaux.length} onClear={() => setReseaux([])}>
           {() => (
             <ListeCases items={typesProposes.map((r) => r.v)} labels={Object.fromEntries(typesProposes.map((r) => [r.v, r.label]))}
               selection={reseaux} onToggle={(v) => setReseaux((x) => toggle(x, v))} />
           )}
-        </FiltreBtn>
+        </FiltreBtn>}
 
-        {viewer && (
+        {/* « Pour moi » repose sur le programme visé DEC du profil : sans objet pour l'université (Q6 de D5 : plus tard). */}
+        {viewer && !univ && (
           <span
             className={"fbtn fire" + (pourMoi ? " on" : "") + (pourMoiDispo ? "" : " off")}
             onClick={pourMoiDispo ? () => setPourMoi((p) => !p) : undefined}
@@ -457,7 +501,7 @@ export default function CegepSearch() {
           </span>
         )}
         {nbFiltres > 0 && (
-          <button className="clear" onClick={() => { setSports([]); setProgs([]); setRegions([]); setLangues([]); setReseaux([]); }}>
+          <button className="clear" onClick={() => { setSports([]); setProgs([]); setRegions([]); setLangues([]); setReseaux([]); setProvinces([]); setProgQ(""); }}>
             Tout effacer ({nbFiltres})
           </button>
         )}
@@ -505,12 +549,13 @@ export default function CegepSearch() {
               </div>
               );
             })}
-            {!resultats.length && <div className="vide">Aucun{destinations18 ? "e destination" : " collège"} ne correspond. Retire un filtre.</div>}
+            {!resultats.length && <div className="vide">{univ ? "Aucune université" : `Aucun${destinations18 ? "e destination" : " collège"}`} ne correspond. Retire un filtre.</div>}
           </div>
         </div>
 
         <div className="maparea">
-          <MapPane points={points} selectedId={selectedId} hoveredId={hoveredId} focus={focus} onSelect={ouvrir} />
+          <MapPane points={points} selectedId={selectedId} hoveredId={hoveredId} focus={focus} onSelect={ouvrir}
+            {...(univ ? { center: VUE_CANADA, zoom: 3 } : {})} />
 
           {zoomNote && <div className="zoomnote">{zoomNote}</div>}
 
@@ -628,7 +673,7 @@ function Apercu({
         </div>
       )}
 
-      {cible && <div className="pcible">{c.genre === "CLUB_CIVIL" ? "Ce club est dans tes cibles." : "Ce collège est dans tes cibles."}</div>}
+      {cible && <div className="pcible">{c.genre === "CLUB_CIVIL" ? "Ce club est dans tes cibles." : c.genre === "UNIVERSITE" ? "Cette université est dans tes cibles." : "Ce collège est dans tes cibles."}</div>}
 
       <div className="pcta">
         {/* Page collège = route NATIVE (bundle Capacitor) → navigation INTERNE
@@ -640,7 +685,7 @@ function Apercu({
         {c.genre === "CLUB_CIVIL" ? null : c.riche ? (
             <a
               className="btn page"
-              href={`/college/${c.id}`}
+              href={`/${c.genre === "UNIVERSITE" ? "universite" : "college"}/${c.id}`}
               target="_blank"
               rel="noopener noreferrer"
               onClick={IS_CAPACITOR ? (e) => { e.preventDefault(); void openCegepPageMobile(c.id); } : undefined}
@@ -656,8 +701,8 @@ function Apercu({
         {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Rendue pour
             un athlète connecté seulement : sans `viewer` le bouton est inerte,
             et annoncer une conséquence à un geste impossible embrouille. */}
-        {viewer && <span className="note">{divulgationCible(cible, c.genre === "CLUB_CIVIL")}</span>}
-        {!viewer && <span className="note">Connecte-toi avec ton compte athlète pour cibler un collège.</span>}
+        {viewer && <span className="note">{divulgationCible(cible, c.genre === "CLUB_CIVIL", c.genre === "UNIVERSITE")}</span>}
+        {!viewer && <span className="note">Connecte-toi avec ton compte athlète pour cibler {c.genre === "UNIVERSITE" ? "une université" : "un collège"}.</span>}
       </div>
     </div>
   );

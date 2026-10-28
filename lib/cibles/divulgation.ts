@@ -40,6 +40,9 @@ export const CIBLE_DIVULGATION_APRES =
  */
 export const CIBLE_DIVULGATION_LISTE =
   "Les recruteurs de chaque cégep de ta liste voient que tu les as ciblés.";
+/** Lot E6 : la liste du cégépien (universités). */
+export const CIBLE_DIVULGATION_LISTE_UNIVERSITE =
+  "Les recruteurs de chaque université de ta liste voient que tu les as ciblés.";
 
 /* Club civil 18+ (lot 7 civil, décision BP 2026-10-27 : le cœur réutilise athlete_targets).
    Un club n'a pas de recruteur : AUCUN compte ne lit la cible d'un club (athletes_targeting_my_cegep
