@@ -1,0 +1,5 @@
+﻿    version     | op |                                                           cycles                                                           | programmes | libelles | interrupteur 
+----------------+----+----------------------------------------------------------------------------------------------------------------------------+------------+----------+--------------
+ 20261028150000 |  1 | CHECK ((cycle = ANY (ARRAY['baccalaureat'::text, 'certificat'::text, 'maitrise'::text, 'doctorat'::text, 'autre'::text]))) |       5897 |        0 | false
+(1 row)
+
