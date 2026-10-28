@@ -1,0 +1,35 @@
+﻿Null display is "·".
+BEGIN
+SET
+ d1a_inscrit | derniere_version | policies_restrictives | fonction | trace_admin | universites | ecoles | equipes 
+-------------+------------------+-----------------------+----------+-------------+-------------+--------+---------
+           1 | 20261028010000   |                     2 |        1 |           1 |           0 |   1408 |   10349
+(1 row)
+
+SELECT 1
+INSERT 0 1
+INSERT 0 1
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 7
+             role             | univ / équipe univ / écoles hors univ / équipes hors univ 
+------------------------------+-----------------------------------------------------------
+ anon (site public, visiteur) | 0 / refusé / 1408 / refusé
+ athlète                      | 0 / 0 / 1408 / 10349
+ parent                       | 0 / 0 / 1408 / 10349
+ coach                        | 0 / 0 / 1408 / 10349
+ recruteur collégial          | 0 / 0 / 1408 / 10349
+ partenaire                   | 0 / 0 / 1408 / 10349
+ admin                        | 1 / 1 / 1408 / 10349
+(7 rows)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d1a-relecture-20261028.sql:76: NOTICE:  NEXUS: relecture D1a conforme
+At line:1 char:734
++ ... \psql.exe"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...re D1a conforme:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ROLLBACK
+== ROLLBACK fait : université témoin défaite, rien n'est écrit.
