@@ -14,6 +14,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
+import { ecolesRecruteurs } from "@/lib/queries/messaging/ecolesRecruteurs";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { fetchServiceIdentity, SERVICE_IDENTITY_FALLBACK, SERVICE_IDENTITY_ROLE_LABEL } from "@/lib/messaging/serviceIdentity";
 
@@ -178,6 +179,14 @@ export function useCoachConversations() {
         ? (await fetchServiceIdentity(supabase)) ?? SERVICE_IDENTITY_FALLBACK
         : SERVICE_IDENTITY_FALLBACK;
 
+      // Lot D3d : école d'un recruteur universitaire (université masquée en base) → par la RPC.
+      const recruteursSansEcole = data.map((c: Record<string, unknown>) => {
+        const r = (Array.isArray(c.recruiter) ? c.recruiter[0] : c.recruiter) as Record<string, unknown> | null;
+        const s = (Array.isArray(r?.schools) ? (r?.schools as unknown[])[0] : r?.schools) as { name?: string } | null;
+        return r?.school_id && !s?.name ? (r.id as string) : "";
+      });
+      const ecolesRpc = await ecolesRecruteurs(supabase, recruteursSansEcole);
+
       const threads = data.map((c: Record<string, unknown>): CoachThreadData => {
         const recRaw = c.recruiter;
         const rec = (Array.isArray(recRaw) ? recRaw[0] : recRaw) as Record<string, unknown> | null;
@@ -216,7 +225,7 @@ export function useCoachConversations() {
           recruiterName: isNexus ? serviceIdentity.name : `${rf} ${rl}`.trim() || "Recruteur",
           recruiterInitials: isNexus ? serviceIdentity.initials : `${rf[0] || ""}${rl[0] || ""}`.toUpperCase(),
           recruiterPhotoUrl: isNexus ? serviceIdentity.photoUrl : (rec?.photo_url as string) || (rec?.avatar_url as string) || null,
-          recruiterCegep: isNexus ? SERVICE_IDENTITY_ROLE_LABEL : recSchool?.name || "",
+          recruiterCegep: isNexus ? SERVICE_IDENTITY_ROLE_LABEL : recSchool?.name || ecolesRpc.get((rec?.id as string) || "") || "",
           athleteId: (ath?.id as string) || "",
           athleteName: `${af} ${al}`.trim() || "Athlète",
           athleteInitials: `${af[0] || ""}${al[0] || ""}`.toUpperCase(),

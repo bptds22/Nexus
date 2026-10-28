@@ -8,6 +8,7 @@ import { STATUS_CONFIG, mapDbStatus, type Message, type ThreadStatus, type Conve
 import EntityLink from "@/components/shared/EntityLink";
 import StarRating from "@/components/ui/StarRating";
 import { createClient } from "@/lib/supabase/client";
+import { ecolesRecruteurs } from "@/lib/queries/messaging/ecolesRecruteurs";
 import { type DistinctionEntry } from "@/lib/config/badges";
 import { pastillesBadges, badgesDepuisRaw, textePastille, type PastilleBadge } from "@/lib/queries/shared/athleteBadges";
 import { CoachDemandesThreadMobile } from "@/components/shared/CoachDemandesThreadMobile";
@@ -188,6 +189,8 @@ function ThreadDetailPage() {
         if (recruiterUser?.school_id) {
           const { data: school } = await supabase.from("schools").select("name").eq("id", recruiterUser.school_id).single();
           recruiterSchoolName = school?.name || "";
+          // Lot D3d : université masquée en base → le nom par la RPC (seulement pour qui lui parle).
+          if (!recruiterSchoolName) recruiterSchoolName = (await ecolesRecruteurs(supabase, [conv.recruiter_id])).get(conv.recruiter_id) || "";
         }
 
         // Fetch messages
