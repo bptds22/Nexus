@@ -1,0 +1,26 @@
+Badges NLS + GP — prod/rollback.sql joué sur la pile locale avec son COMMIT final remplacé par ROLLBACK (2026-10-27). 2 poses retirées existent (parcours-local.mjs) : mode DÉSACTIVATION attendu.
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_database | current_user |            nexus_attendu             
+-------------------------------+------------------+--------------+--------------------------------------
+ 2026-10-27 20:04:13.854315+00 | postgres         | postgres     | 2e44e46d-f507-485f-b0bb-77c32965d390
+(1 row)
+
+DO
+SELECT 10
+SELECT 1
+psql:docs/badges-nls-gp/retrait.sql:58: NOTICE:  NEXUS: retrait des 10 badges — mode DESACTIVATION, 2 pose(s) trouvée(s)
+DO
+DO
+          operation          |     mode      | poses 
+-----------------------------+---------------+-------
+ BADGES_NLS_GP_NEXUS_RETIRES | DESACTIVATION | 2
+(1 row)
+
+ROLLBACK
+== COMMIT fait : badges NLS + GP retirés du catalogue Nexus (voir le mode ci-dessus).

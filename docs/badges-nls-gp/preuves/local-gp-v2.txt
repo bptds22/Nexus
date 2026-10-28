@@ -1,0 +1,64 @@
+== Local NexusBadges — GP v2 (2026-10-27)
+== 1. Dépôt des v2
+Cible : http://127.0.0.1:56321 — partner-badges/2e44e46d-f507-485f-b0bb-77c32965d390/ — mode ENVOYER
+  gp-prospect-v2.png : déposé — servi 200 image/png 58661 o md5 fd687418a296dde2579d121a8d71db2a = dépôt
+  gp-top50-v2.png : déposé — servi 200 image/png 70189 o md5 ff95d3f9503a32fcff548d4cde4a31b8 = dépôt
+  gp-top25-v2.png : déposé — servi 200 image/png 65027 o md5 8932a283e7900235f9df5d91d2b53d34 = dépôt
+  gp-top10-v2.png : déposé — servi 200 image/png 95302 o md5 db1f1113ab2d7bc95f471a4bdaf14fe2 = dépôt
+  gp-mvp-v2.png : déposé — servi 200 image/png 51386 o md5 4b3a2391502219eb68e79a6fb339ff0e = dépôt
+OK : les fichiers présents sont identiques au dépôt.
+== 2. Garde : retirer les v1 AVANT la mise à jour (doit refuser)
+    throw new Error(`ARRÊT : encore cité(s) par le catalogue — ${cites.map((c) => `${c.libelle} → ${c.icone_path}`).join(" ; ")}`);
+Error: ARRÊT : encore cité(s) par le catalogue — GP · Prospect → 2e44e46d-f507-485f-b0bb-77c32965d390/gp-prospect.png ; GP · Top 50 → 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top50.png ; GP · Top 25 → 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top25.png ; GP · Top 10 → 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top10.png ; GP · MVP → 2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp.png
+== 3. Rejeu à blanc
+ 2026-10-27 21:25:26.45991+00 | postgres         | postgres     | 2e44e46d-f507-485f-b0bb-77c32965d390
+ GP · Prospect | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-prospect.png
+ GP · Top 50   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top50.png
+ GP · Top 25   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top25.png
+ GP · Top 10   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top10.png
+ GP · MVP      | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp.png
+psql:docs/badges-nls-gp/gp-v2/operation.sql:75: NOTICE:  NEXUS: 5 badges GP pointent sur les fichiers v2
+ GP · Prospect | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-prospect-v2.png
+ GP · Top 50   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top50-v2.png
+ GP · Top 25   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top25-v2.png
+ GP · Top 10   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top10-v2.png
+ GP · MVP      | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp-v2.png
+ bp_gp_en_v2 | bp_nls_inchanges | bp_total 
+ 5           | 5                | 11
+psql:docs/badges-nls-gp/gp-v2/retour.sql:49: NOTICE:  NEXUS: 5 badges GP revenus aux fichiers v1
+ REJEU GP v2 OK : mise à jour, sonde et retour conformes | 2026-10-27 21:25:26.513573+00
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.
+== 4. Apply local
+psql:docs/badges-nls-gp/gp-v2/operation.sql:75: NOTICE:  NEXUS: 5 badges GP pointent sur les fichiers v2
+ GP · Prospect | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-prospect-v2.png
+ GP · Top 50   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top50-v2.png
+ GP · Top 25   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top25-v2.png
+ GP · Top 10   | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-top10-v2.png
+ GP · MVP      | 2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp-v2.png
+ BADGES_GP_ICONES_V2 | 2026-10-27 21:25:39.754355+00 | [{"id": "8fc925b3-74b1-4b46-8d01-d71e5e154bc9", "apres": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-prospect-v2.png", "avant": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-prospect.png", "libelle": "GP · Prospect"}, {"id": "4ad97bde-52ad-4cee-ae07-e667aa86cc3d", "apres": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-top50-v2.png", "avant": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-top50.png", "libelle": "GP · Top 50"}, {"id": "d4c0ffc3-2930-4fde-a543-276683a73949", "apres": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-top25-v2.png", "avant": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-top25.png", "libelle": "GP · Top 25"}, {"id": "327d4f92-76a1-4e2f-8a4f-f858ec494ecb", "apres": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-top10-v2.png", "avant": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-top10.png", "libelle": "GP · Top 10"}, {"id": "951f9230-01ea-4a6c-9ad7-0446fa3d7e82", "apres": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp-v2.png", "avant": "2e44e46d-f507-485f-b0bb-77c32965d390/gp-mvp.png", "libelle": "GP · MVP"}]
+COMMIT
+== COMMIT fait : les 5 badges GP pointent sur les fichiers v2.
+== 5. Retrait des v1 (après la mise à jour)
+Cible : http://127.0.0.1:56321 — partner-badges/2e44e46d-f507-485f-b0bb-77c32965d390/ — mode RETIRER
+  aucun des 5 fichiers n'est cité par partner_badges
+  gp-prospect.png : retiré
+  gp-top50.png : retiré
+  gp-top25.png : retiré
+  gp-top10.png : retiré
+  gp-mvp.png : retiré
+Fait.
+== 6. Rollback, COMMIT remplacé par ROLLBACK : doit refuser (v1 absents)
+psql:docs/badges-nls-gp/gp-v2/retour.sql:49: ERROR:  NEXUS: ancien fichier 2e44e46d-f507-485f-b0bb-77c32965d390/gp-prospect.png absent — le redéposer avant le retour
+== 7. État final local
+NLS · Prospect → nls-prospect.png
+NLS · Top 50 → nls-top50.png
+NLS · Top 25 → nls-top25.png
+NLS · Top 10 → nls-top10.png
+NLS · MVP → nls-mvp.png
+GP · Prospect → gp-prospect-v2.png
+GP · Top 50 → gp-top50-v2.png
+GP · Top 25 → gp-top25-v2.png
+GP · Top 10 → gp-top10-v2.png
+GP · MVP → gp-mvp-v2.png
+fichiers NLS/GP restants : gp-mvp-v2.png gp-prospect-v2.png gp-top10-v2.png gp-top25-v2.png gp-top50-v2.png nls-mvp.png nls-prospect.png nls-top10.png nls-top25.png nls-top50.png

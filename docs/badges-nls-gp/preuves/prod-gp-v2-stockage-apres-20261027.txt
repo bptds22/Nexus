@@ -1,0 +1,26 @@
+﻿                             name                             | taille |   type    
+--------------------------------------------------------------+--------+-----------
+ f3751302-cdce-44a6-ac0d-bf4802968637/badge-1791991230920.png | 11066  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/badge-1792084829007.png | 54566  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/gp-mvp-v2.png           | 51386  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/gp-prospect-v2.png      | 58661  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/gp-top10-v2.png         | 95302  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/gp-top25-v2.png         | 65027  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/gp-top50-v2.png         | 70189  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/nls-mvp.png             | 98892  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/nls-prospect.png        | 107964 | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/nls-top10.png           | 98450  | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/nls-top25.png           | 108613 | image/png
+ f3751302-cdce-44a6-ac0d-bf4802968637/nls-top50.png           | 110187 | image/png
+(12 rows)
+
+gp-prospect-v2.png -> 200
+gp-prospect.png -> 400
+gp-top50-v2.png -> 200
+gp-top50.png -> 400
+gp-top25-v2.png -> 200
+gp-top25.png -> 400
+gp-top10-v2.png -> 200
+gp-top10.png -> 400
+gp-mvp-v2.png -> 200
+gp-mvp.png -> 400

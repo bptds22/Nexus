@@ -1,0 +1,12 @@
+﻿Cible : https://nrloizyemulbhujrqhgx.supabase.co — partner-badges/f3751302-cdce-44a6-ac0d-bf4802968637/ — mode constat
+  nls-prospect.png : ABSENT (107964 o, md5 685acb97e43660621402ad95ae8401a3)
+  nls-top50.png : ABSENT (110187 o, md5 285c33256953f2467b421757758b5bab)
+  nls-top25.png : ABSENT (108613 o, md5 3ddd6f7f9f06955d145aa1053b70dd27)
+  nls-top10.png : ABSENT (98450 o, md5 9d4d038ff59591f09edd5c585ee51c39)
+  nls-mvp.png : ABSENT (98892 o, md5 d7897e6f00fb87998b08bf7553d88d8e)
+  gp-prospect.png : ABSENT (66746 o, md5 b5bbbd7afd3a64d3348d10cb4b7404f7)
+  gp-top50.png : ABSENT (75244 o, md5 562ee7a9e978cc40c343171d94f24c4f)
+  gp-top25.png : ABSENT (68408 o, md5 a43d42269f050a3ec0b99358bf6eb7ab)
+  gp-top10.png : ABSENT (75764 o, md5 f47db1f158ac8e74ee5e73a6ffee22fb)
+  gp-mvp.png : ABSENT (59191 o, md5 d8c8bee29aff3fe77fdee433ec8de021)
+OK : les fichiers présents sont identiques au dépôt.

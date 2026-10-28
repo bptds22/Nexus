@@ -1,0 +1,55 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_database | current_user |            nexus_attendu             
+-------------------------------+------------------+--------------+--------------------------------------
+ 2026-10-27 21:26:47.495718+00 | postgres         | postgres     | f3751302-cdce-44a6-ac0d-bf4802968637
+(1 row)
+
+DO
+SELECT 5
+DO
+SELECT 1
+    libelle    |                      icone_path                      
+---------------+------------------------------------------------------
+ GP · Prospect | f3751302-cdce-44a6-ac0d-bf4802968637/gp-prospect.png
+ GP · Top 50   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top50.png
+ GP · Top 25   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top25.png
+ GP · Top 10   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top10.png
+ GP · MVP      | f3751302-cdce-44a6-ac0d-bf4802968637/gp-mvp.png
+(5 rows)
+
+DO
+psql:docs/badges-nls-gp/gp-v2/operation.sql:75: NOTICE:  NEXUS: 5 badges GP pointent sur les fichiers v2
+DO
+    libelle    |                       icone_path                        
+---------------+---------------------------------------------------------
+ GP · Prospect | f3751302-cdce-44a6-ac0d-bf4802968637/gp-prospect-v2.png
+ GP · Top 50   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top50-v2.png
+ GP · Top 25   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top25-v2.png
+ GP · Top 10   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top10-v2.png
+ GP · MVP      | f3751302-cdce-44a6-ac0d-bf4802968637/gp-mvp-v2.png
+(5 rows)
+
+SET
+RESET
+ bp_gp_en_v2 | bp_nls_inchanges | bp_total 
+-------------+------------------+----------
+ 5           | 5                | 11
+(1 row)
+
+DO
+psql:docs/badges-nls-gp/gp-v2/retour.sql:49: NOTICE:  NEXUS: 5 badges GP revenus aux fichiers v1
+DO
+DO
+                         verdict                         |              fin              
+---------------------------------------------------------+-------------------------------
+ REJEU GP v2 OK : mise à jour, sonde et retour conformes | 2026-10-27 21:26:47.599782+00
+(1 row)
+
+ROLLBACK
+== ROLLBACK fait : rien n'est resté.
