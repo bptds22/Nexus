@@ -1,0 +1,38 @@
+Pager usage is off.
+BEGIN
+    version     |       name        
+----------------+-------------------
+ 20261028000000 | cegep_lot_d0_base
+(1 row)
+
+           key           | value |  type   
+-------------------------+-------+---------
+ lancement_universitaire | false | BOOLEAN
+(1 row)
+
+ actif 
+-------
+ f
+(1 row)
+
+ univ | ecoles | hors_qc 
+------+--------+---------
+    0 |   1408 |       0
+(1 row)
+
+          operation          | count 
+-----------------------------+-------
+ MIGRATION_CEGEP_LOT_D0_BASE |     1
+(1 row)
+
+ fiches |               md5                
+--------+----------------------------------
+    218 | 2d60ea4202c694eb4640701f736e3d4a
+(1 row)
+
+ count 
+-------
+     3
+(1 row)
+
+ROLLBACK
