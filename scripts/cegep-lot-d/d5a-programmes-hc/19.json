@@ -1,0 +1,313 @@
+{
+ "universite": "Acadia University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www2.acadiau.ca/academics.html",
+  "https://registrar.acadiau.ca/files/sites/registrar/pdfs/Academic_Calendars/Academic%20Calendar%202026-2027.pdf"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 32,
+  "certificat": 7,
+  "comment": "Baccalaureat: 32 entries in the 'Undergraduate' tab of the official 'Choose a Program' directory (unit = subject/program entry as listed, e.g. 'Psychology' BA/BSc = 1 row). Certificat: 7 certificates in the degree/certificate abbreviation legend of the official 2026-2027 Academic Calendar (directory lists no certificates)."
+ },
+ "programmes": [
+  {
+   "nom": "Applied Bioscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/bioscience.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/biology.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Professional Studies",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/business-administration.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/chemistry.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Classical Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/classics.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Community Development",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Professional Studies",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/community-development.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/computer-science.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Creative Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/creative-arts.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/economics.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Professional Studies",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/education.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/engineering-applied-science.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/english.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Environmental & Sustainability Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/environmental-sustainability-studies.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Environmental Geoscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/environmental-geoscience.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/environmental-science.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/french.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Geology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/geology.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/history.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Professional Studies",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/kinesiology.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Law and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/law-and-society.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Mathematics & Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/mathematics-and-statistics.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Mathematics Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/mathematics-education.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Professional Studies",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/music.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Professional Studies",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/nursing.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Nutrition & Dietetics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/nutrition-dietetics.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/philosophy.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/physics.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Politics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/politics.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/psychology.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/sociology.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Theology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Theology",
+   "lien": "https://acadiadiv.ca/bth/",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Women's & Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www2.acadiau.ca/academics/undergraduate/womens-gender.html",
+   "source": "https://www2.acadiau.ca/academics.html"
+  },
+  {
+   "nom": "Certificate in Applied Science",
+   "cycle": "certificat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": null,
+   "source": "https://registrar.acadiau.ca/files/sites/registrar/pdfs/Academic_Calendars/Academic%20Calendar%202026-2027.pdf"
+  },
+  {
+   "nom": "Certificate in Actuarial Science",
+   "cycle": "certificat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": null,
+   "source": "https://registrar.acadiau.ca/files/sites/registrar/pdfs/Academic_Calendars/Academic%20Calendar%202026-2027.pdf"
+  },
+  {
+   "nom": "Certificate in Computer Science",
+   "cycle": "certificat",
+   "faculte": "Faculty of Pure and Applied Science",
+   "lien": null,
+   "source": "https://registrar.acadiau.ca/files/sites/registrar/pdfs/Academic_Calendars/Academic%20Calendar%202026-2027.pdf"
+  },
+  {
+   "nom": "Certificate in Democratic Leadership",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": null,
+   "source": "https://registrar.acadiau.ca/files/sites/registrar/pdfs/Academic_Calendars/Academic%20Calendar%202026-2027.pdf"
+  },
+  {
+   "nom": "Certificate in Mathematics Teaching (Grades 5 to 9)",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://registrar.acadiau.ca/files/sites/registrar/pdfs/Academic_Calendars/Academic%20Calendar%202026-2027.pdf"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Certificate in French Proficiency",
+   "raison": "Calendar 2026-2027: 'will not be offered in 2026-2027' (counted in attendu)"
+  },
+  {
+   "nom": "Certificate in Music Therapy",
+   "raison": "Calendar 2026-2027: enrolment paused (counted in attendu)"
+  },
+  {
+   "nom": "Bachelor of Music Therapy (BMT)",
+   "raison": "Enrolment paused per 2026-2027 calendar; not a separate directory entry (under 'Music'), info only"
+  },
+  {
+   "nom": "Mathematics Education (Integrated BSc + BEd)",
+   "raison": "Kept: integrated program leading to two bachelor's degrees (not a master's); flag à vérifier for overlap with Education/Mathematics"
+  },
+  {
+   "nom": "Graduate programs (19 entries in the Graduate tab)",
+   "raison": "Graduate, out of scope (not counted in attendu)"
+  },
+  {
+   "nom": "Honours Conversion Certificate",
+   "raison": "Honours-equivalence conversion for ordinary degree holders, not a program in the legend (not counted)"
+  },
+  {
+   "nom": "Axcess Certificate in Interdisciplinary Studies",
+   "raison": "Inclusive non-standard-admission pathway certificate, not in the calendar program legend; à vérifier (not counted)"
+  },
+  {
+   "nom": "Program of Proficiency in Spanish",
+   "raison": "Minor plus external exam, not a credit certificate in the legend (not counted)"
+  },
+  {
+   "nom": "Minors",
+   "raison": "Excluded by rule (not counted)"
+  }
+ ]
+}

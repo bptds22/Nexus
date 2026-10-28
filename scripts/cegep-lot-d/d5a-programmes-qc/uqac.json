@@ -1,0 +1,712 @@
+{
+  "universite": "Université du Québec à Chicoutimi",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.uqac.ca/programmes/"
+  ],
+  "attendu": {
+    "baccalaureat": 52,
+    "certificat": 53,
+    "comment": "Répertoire officiel uqac.ca/programmes (286 programmes annoncés, liste complète dans le HTML) : 50 fiches de 1er cycle de type « BACCALAUREAT » + 2 fiches de type « MAJEURE » intitulées « Baccalauréat avec majeure en … » (programmes de 90 crédits avec code propre 6110 et 6803, retenus comme baccalauréats) = 52 ; 53 fiches de type « CERTIFICAT ». Les variantes portant le même nom (DEC-BAC, lieu Sept-Îles, Premières Nations, Arts techniques/Jeu vidéo, Général/Desjardins) sont regroupées en une ligne, d'où 41 baccalauréats et 51 certificats ; chaque variante est listée dans « exclus ». Aucune mention d'admission suspendue sur les 105 fiches consultées."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat avec majeure en mathématiques appliquées",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/6803-baccalaureat-avec-majeure-en-mathematiques-appliquees",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat avec majeure en études littéraires françaises",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en études littéraires",
+      "lien": "https://www.uqac.ca/programme/6110-baccalaureat-avec-majeure-en-etudes-litteraires-francaises",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en administration",
+      "cycle": "baccalaureat",
+      "faculte": "Module des sciences de l'administration",
+      "lien": "https://www.uqac.ca/programme/7764-baccalaureat-en-administration",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en biologie",
+      "cycle": "baccalaureat",
+      "faculte": "Module des sciences fondamentales",
+      "lien": "https://www.uqac.ca/programme/7705-baccalaureat-en-biologie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en chimie des produits naturels",
+      "cycle": "baccalaureat",
+      "faculte": "Module des sciences fondamentales",
+      "lien": "https://www.uqac.ca/programme/7426-baccalaureat-en-chimie-des-produits-naturels",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en communication interculturelle et médiatique",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en sciences du langage et communication",
+      "lien": "https://www.uqac.ca/programme/6515-baccalaureat-en-communication-interculturelle-et-mediatique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en création 3D pour le cinéma",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en animation 3D et design numérique",
+      "lien": "https://www.uqac.ca/programme/6666-baccalaureat-en-creation-3d-pour-le-cinema",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en création 3D pour le jeu vidéo",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en animation 3D et design numérique",
+      "lien": "https://www.uqac.ca/programme/6667-baccalaureat-en-creation-3d-pour-le-jeu-video-jeu-video",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en développement de jeux vidéo",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/6596-baccalaureat-en-developpement-de-jeux-video",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'anglais langue seconde",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en sciences du langage et communication",
+      "lien": "https://www.uqac.ca/programme/7104-bacc-en-ens-de-langlais-langue-seconde",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'éducation physique et à la santé",
+      "cycle": "baccalaureat",
+      "faculte": "Programmes d'études en éducation physique et intervention pédagogique en sports",
+      "lien": "https://www.uqac.ca/programme/7208-bac-ens-education-physique-et-a-la-sante",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement des arts",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en arts",
+      "lien": "https://www.uqac.ca/programme/7209-baccalaureat-en-enseignement-des-arts",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire et sociale",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en adaptation scolaire et sociale",
+      "lien": "https://www.uqac.ca/programme/7080-bac-ens-adaptation-scolaire-et-sociale",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement professionnel",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'enseignement secondaire et professionnel",
+      "lien": "https://www.uqac.ca/programme/6633-baccalaureat-en-enseignement-professionnel",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire - profil français",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'enseignement secondaire et professionnel",
+      "lien": "https://www.uqac.ca/programme/7651-bacc-en-ens-secondaire---profil-francais",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire - profil mathématique",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'enseignement secondaire et professionnel",
+      "lien": "https://www.uqac.ca/programme/7654-bacc-en-ens-secondaire---profil-mathematique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire - profil science et technologie",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'enseignement secondaire et professionnel",
+      "lien": "https://www.uqac.ca/programme/7653-bacc-ens-secondaire-profil-science-et-technologie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire - profil univers social",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'enseignement secondaire et professionnel",
+      "lien": "https://www.uqac.ca/programme/7665-bacc-en-enseignement-secondaire---profil-univers-social",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en génie civil",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'ingénierie",
+      "lien": "https://www.uqac.ca/programme/7480-baccalaureat-en-genie-civil",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en génie géologique",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en sciences de la Terre",
+      "lien": "https://www.uqac.ca/programme/7942-bacc-en-genie-geologique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en génie informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'ingénierie",
+      "lien": "https://www.uqac.ca/programme/7943-bacc-en-genie-informatique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en génie logiciel",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'ingénierie",
+      "lien": "https://www.uqac.ca/programme/7065-baccalaureat-en-genie-logiciel",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'ingénierie",
+      "lien": "https://www.uqac.ca/programme/7947-baccalaureat-en-genie-mecanique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'ingénierie",
+      "lien": "https://www.uqac.ca/programme/7944-baccalaureat-en-genie-electrique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en géographie",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en sciences des sociétés et des territoires",
+      "lien": "https://www.uqac.ca/programme/6611-baccalaureat-en-geographie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en géologie",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en sciences de la Terre",
+      "lien": "https://www.uqac.ca/programme/7728-baccalaureat-en-geologie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en histoire",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en sciences des sociétés et des territoires",
+      "lien": "https://www.uqac.ca/programme/7758-baccalaureat-en-histoire",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/7833-baccalaureat-en-informatique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en informatique de la science des données et de l'intelligence d'affaires",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/6710-bacc-info-sciences-donneesintelligence-daffaires",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en intervention plein air",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en intervention plein air",
+      "lien": "https://www.uqac.ca/programme/7309-baccalaureat-en-intervention-plein-air",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en kinésiologie",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en kinésiologie",
+      "lien": "https://www.uqac.ca/programme/7437-baccalaureat-en-kinesiologie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en physiothérapie",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en physiothérapie",
+      "lien": "https://www.uqac.ca/programme/6598-baccalaureat-en-physiotherapie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en psychologie",
+      "cycle": "baccalaureat",
+      "faculte": "Module de psychologie",
+      "lien": "https://www.uqac.ca/programme/7092-baccalaureat-en-psychologie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en science politique",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en sciences des sociétés et des territoires",
+      "lien": "https://www.uqac.ca/programme/7620-baccalaureat-en-science-politique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables",
+      "cycle": "baccalaureat",
+      "faculte": "Module des sciences comptables",
+      "lien": "https://www.uqac.ca/programme/7766-baccalaureat-en-sciences-comptables",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en sciences du langage",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en sciences du langage et communication",
+      "lien": "https://www.uqac.ca/programme/6712-baccalaureat-en-sciences-du-langage",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières",
+      "cycle": "baccalaureat",
+      "faculte": "Module des sciences infirmières",
+      "lien": "https://www.uqac.ca/programme/7450-baccalaureat-en-sciences-infirmieres",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en travail social",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en travail social",
+      "lien": "https://www.uqac.ca/programme/7798-baccalaureat-en-travail-social",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire",
+      "cycle": "baccalaureat",
+      "faculte": "Module d'éducation au préscolaire et d'enseignement au primaire",
+      "lien": "https://www.uqac.ca/programme/7991-bacc-en-education-prescolaire-et-en-enseignement-primaire",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat en études littéraires françaises",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en études littéraires",
+      "lien": "https://www.uqac.ca/programme/7792-baccalaureat-en-etudes-litteraires-francaises",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Baccalauréat interdisciplinaire en arts",
+      "cycle": "baccalaureat",
+      "faculte": "Unité d'enseignement en arts",
+      "lien": "https://www.uqac.ca/programme/7886-bacc-interdiscipl-en-arts",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat d'intervention en contexte éducatif auprès de la personne autiste ou ayant une déficience intellectuelle",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en adaptation scolaire et sociale",
+      "lien": "https://www.uqac.ca/programme/4764-certificat-interv-contexte-educatif-personne-autiste-ou-di",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat d'optimisation en pratique infirmière",
+      "cycle": "certificat",
+      "faculte": "Module des sciences infirmières",
+      "lien": "https://www.uqac.ca/programme/4082-certificat-doptimisation-en-pratique-infirmiere",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat de perfectionnement en formation artistique",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en arts",
+      "lien": "https://www.uqac.ca/programme/4437-certif--perfectionnement-en-formation-artistique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat de perfectionnement en transmission d'une langue autochtone",
+      "cycle": "certificat",
+      "faculte": "Centre des Premières Nations Nikanite",
+      "lien": "https://www.uqac.ca/programme/4661-cert-de-perf-en-transmission-dune-langue-autochtone",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en accompagnement à l'enseignement secondaire",
+      "cycle": "certificat",
+      "faculte": "Module d'enseignement secondaire et professionnel",
+      "lien": "https://www.uqac.ca/programme/4750-cert-en-accompagnement-a-lenseignement-secondaire",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en administration",
+      "cycle": "certificat",
+      "faculte": "Module des sciences de l'administration",
+      "lien": "https://www.uqac.ca/programme/4122-certificat-en-administration",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en agriculture nordique",
+      "cycle": "certificat",
+      "faculte": "Module des sciences fondamentales",
+      "lien": "https://www.uqac.ca/programme/4278-certificat-en-agriculture-nordique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en anglais langue seconde",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences du langage et communication",
+      "lien": "https://www.uqac.ca/programme/4149-certificat-en-anglais",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en animation 3D et en design numérique",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en animation 3D et design numérique",
+      "lien": "https://www.uqac.ca/programme/4067-certificat-en-animation-3d-et-en-design-numerique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en archéologie",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences des sociétés et des territoires",
+      "lien": "https://www.uqac.ca/programme/4213-certificat-en-archeologie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en arts numériques",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en arts",
+      "lien": "https://www.uqac.ca/programme/4068-certificat-en-arts-numeriques",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en arts techniques pour le jeu vidéo",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en animation 3D et design numérique",
+      "lien": "https://www.uqac.ca/programme/4676-certificat-en-arts-techniques-pour-le-jeu-video",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en arts visuels",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en arts",
+      "lien": "https://www.uqac.ca/programme/4769-certificat-en-arts-visuels",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en cinéma et en vidéo",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en arts",
+      "lien": "https://www.uqac.ca/programme/4371-certificat-en-cinema-et-video-1er-cycle",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en coaching",
+      "cycle": "certificat",
+      "faculte": "Module des sciences de l'administration",
+      "lien": "https://www.uqac.ca/programme/4679-certificat-en-coaching",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en communication",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences du langage et communication",
+      "lien": "https://www.uqac.ca/programme/4214-certificat-en-communication",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en coopération internationale",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences des sociétés et des territoires",
+      "lien": "https://www.uqac.ca/programme/4910-certificat-en-cooperation-internationale",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en création littéraire",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en études littéraires",
+      "lien": "https://www.uqac.ca/programme/4803-certificat-en-creation-litteraire",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en cybersécurité défensive",
+      "cycle": "certificat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/4667-certificat-en-cybersecurite-defensive",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en design des systèmes de jeux vidéo",
+      "cycle": "certificat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/4692-certificat-en-design-des-systemes-de-jeux-video",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en développement de jeux vidéo",
+      "cycle": "certificat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/4697-certificat-en-developpement-de-jeux-video",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en espagnol",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences du langage et communication",
+      "lien": "https://www.uqac.ca/programme/4127-certificat-en-espagnol",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en formation d'aides-enseignants en milieu autochtone",
+      "cycle": "certificat",
+      "faculte": "Centre des Premières Nations Nikanite",
+      "lien": "https://www.uqac.ca/programme/4659-certificat-en-formation-daides-enseignants-en-milieu-autoch",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en formation de suppléants en milieu scolaire autochtone",
+      "cycle": "certificat",
+      "faculte": "Centre des Premières Nations Nikanite",
+      "lien": "https://www.uqac.ca/programme/4670-cert-en-formation-de-suppleants-en-milieu-scolaire-autoch",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en français langue seconde ou étrangère : culture, études et travail",
+      "cycle": "certificat",
+      "faculte": "Centre de valorisation du français",
+      "lien": "https://www.uqac.ca/programme/4447-cert-francais-langue-seconde-ou-etrangere",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines",
+      "cycle": "certificat",
+      "faculte": "Module des sciences de l'administration",
+      "lien": "https://www.uqac.ca/programme/4209-certificat-en-gestion-des-ressources-humaines",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en gestion du transport aérien",
+      "cycle": "certificat",
+      "faculte": "Module des sciences de l'administration",
+      "lien": "https://www.uqac.ca/programme/4808-certificat-en-gestion-du-transport-aerien",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en géographie",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences des sociétés et des territoires",
+      "lien": "https://www.uqac.ca/programme/4915-certificat-en-geographie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en histoire",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences des sociétés et des territoires",
+      "lien": "https://www.uqac.ca/programme/4116-certificat-en-histoire",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en informatique",
+      "cycle": "certificat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/4202-certificat-en-informatique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en intervention communautaire",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en travail social",
+      "lien": "https://www.uqac.ca/programme/4394-cert-en-intervention-communautaire",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en intervention et en prévention des dépendances chez les jeunes des Premières Nations",
+      "cycle": "certificat",
+      "faculte": "Centre des Premières Nations Nikanite",
+      "lien": "https://www.uqac.ca/programme/4025-certificat-en-interv-et-prevention-dependances-chez-les-jeu",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en intervention jeunesse",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en travail social",
+      "lien": "https://www.uqac.ca/programme/4766-certificat-en-intervention-jeunesse",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en kinésiologie",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en kinésiologie",
+      "lien": "https://www.uqac.ca/programme/4737-certificat-en-kinesiologie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en marketing",
+      "cycle": "certificat",
+      "faculte": "Module des sciences de l'administration",
+      "lien": "https://www.uqac.ca/programme/4206-certificat-en-marketing",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en mathématique",
+      "cycle": "certificat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/4918-certificat-en-mathematique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en planification financière",
+      "cycle": "certificat",
+      "faculte": "Module des sciences de l'administration",
+      "lien": "https://www.uqac.ca/programme/4731-cert-en-planification-financiere",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en psychologie",
+      "cycle": "certificat",
+      "faculte": "Module de psychologie",
+      "lien": "https://www.uqac.ca/programme/4350-certificat-en-psychologie",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en psychologie du travail et des organisations",
+      "cycle": "certificat",
+      "faculte": "Module de psychologie",
+      "lien": "https://www.uqac.ca/programme/4565-certificat-en-psychologie-du-travail-et-des-organisations",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en rédaction-communications",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences du langage et communication",
+      "lien": "https://www.uqac.ca/programme/4016-certificat-en-redaction-communications",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en santé et sécurité au travail",
+      "cycle": "certificat",
+      "faculte": "Module des sciences de l'administration",
+      "lien": "https://www.uqac.ca/programme/4253-certificat-en-sante-et-securite-au-travail",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en science des données et intelligence d'affaires",
+      "cycle": "certificat",
+      "faculte": "Module d'informatique et de mathématique",
+      "lien": "https://www.uqac.ca/programme/4810-certificat-en-science-des-donneesintelligence-daffaires",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en science politique",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en sciences des sociétés et des territoires",
+      "lien": "https://www.uqac.ca/programme/4912-certificat-en-science-politique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en sciences comptables",
+      "cycle": "certificat",
+      "faculte": "Module des sciences comptables",
+      "lien": "https://www.uqac.ca/programme/4138-certificat-en-sciences-comptables",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en sciences de l'activité physique",
+      "cycle": "certificat",
+      "faculte": "Programmes d'études en éducation physique et intervention pédagogique en sports",
+      "lien": "https://www.uqac.ca/programme/4107-certificat-en-sciences-de-lactivite-physique",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en sciences de l'environnement",
+      "cycle": "certificat",
+      "faculte": "Module des sciences fondamentales",
+      "lien": "https://www.uqac.ca/programme/4139-certificat-en-environnement",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en scénarisation",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en études littéraires",
+      "lien": "https://www.uqac.ca/programme/5327-certificat-en-scenarisation",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en technolinguistique autochtone",
+      "cycle": "certificat",
+      "faculte": "Centre des Premières Nations Nikanite",
+      "lien": "https://www.uqac.ca/programme/4144-cert-en-technolinguistique-autochtone",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en théâtre",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en arts",
+      "lien": "https://www.uqac.ca/programme/4173-certificat-en-theatre",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en toxicomanies et autres dépendances",
+      "cycle": "certificat",
+      "faculte": "Unité d'enseignement en travail social",
+      "lien": "https://www.uqac.ca/programme/4439-certificat-en-toxicomanies-et-autres-dependances",
+      "source": "https://www.uqac.ca/programmes/"
+    },
+    {
+      "nom": "Certificat en études pluridisciplinaires",
+      "cycle": "certificat",
+      "faculte": "Centre des Premières Nations Nikanite",
+      "lien": "https://www.uqac.ca/programme/4385-cert-en-etudes-pluridisciplinaires",
+      "source": "https://www.uqac.ca/programmes/"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Baccalauréat en création 3D pour le cinéma (DEC-BAC)",
+      "raison": "Variante du même programme dans le répertoire (« DEC-BAC », code 6727) ; regroupée sous la ligne « Baccalauréat en création 3D pour le cinéma » (code 6666)"
+    },
+    {
+      "nom": "Baccalauréat en création 3D pour le jeu vidéo (Arts techniques)",
+      "raison": "Variante du même programme dans le répertoire (« Arts techniques », code 7376) ; regroupée sous la ligne « Baccalauréat en création 3D pour le jeu vidéo » (code 6667)"
+    },
+    {
+      "nom": "Baccalauréat en création 3D pour le jeu vidéo (DEC-BAC)",
+      "raison": "Variante du même programme dans le répertoire (« DEC-BAC », code 6728) ; regroupée sous la ligne « Baccalauréat en création 3D pour le jeu vidéo » (code 6667)"
+    },
+    {
+      "nom": "Baccalauréat en développement de jeux vidéo (DEC-BAC)",
+      "raison": "Variante du même programme dans le répertoire (« DEC-BAC », code 6597) ; regroupée sous la ligne « Baccalauréat en développement de jeux vidéo » (code 6596)"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire (Centre des Premières Nations Nikanite)",
+      "raison": "Variante du même programme dans le répertoire (« Centre des Premières Nations Nikanite », code 7992) ; regroupée sous la ligne « Baccalauréat en éducation préscolaire et en enseignement primaire » (code 7991)"
+    },
+    {
+      "nom": "Baccalauréat en informatique (DEC-BAC)",
+      "raison": "Variante du même programme dans le répertoire (« DEC-BAC », code 7394) ; regroupée sous la ligne « Baccalauréat en informatique » (code 7833)"
+    },
+    {
+      "nom": "Baccalauréat en informatique de la science des données et de l'intelligence d'affaires (DEC-BAC)",
+      "raison": "Variante du même programme dans le répertoire (« DEC-BAC », code 6711) ; regroupée sous la ligne « Baccalauréat en informatique de la science des données et de l'intelligence d'affaires » (code 6710)"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables (DEC-BAC)",
+      "raison": "Variante du même programme dans le répertoire (« DEC-BAC », code 7392) ; regroupée sous la ligne « Baccalauréat en sciences comptables » (code 7766)"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (Formation intégrée- Sept-Îles)",
+      "raison": "Variante du même programme dans le répertoire (« Formation intégrée- Sept-Îles », code 6641) ; regroupée sous la ligne « Baccalauréat en sciences infirmières » (code 7450)"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (Formation intégrée)",
+      "raison": "Variante du même programme dans le répertoire (« Formation intégrée », code 7452) ; regroupée sous la ligne « Baccalauréat en sciences infirmières » (code 7450)"
+    },
+    {
+      "nom": "Baccalauréat en travail social (DEC-BAC)",
+      "raison": "Variante du même programme dans le répertoire (« DEC-BAC », code 6725) ; regroupée sous la ligne « Baccalauréat en travail social » (code 7798)"
+    },
+    {
+      "nom": "Certificat d'optimisation en pratique infirmière (Sept-Îles)",
+      "raison": "Variante du même programme dans le répertoire (« Sept-Îles », code 4683) ; regroupée sous la ligne « Certificat d'optimisation en pratique infirmière » (code 4082)"
+    },
+    {
+      "nom": "Certificat en planification financière (Mouvement Desjardins)",
+      "raison": "Variante du même programme dans le répertoire (« Mouvement Desjardins », code 4751) ; regroupée sous la ligne « Certificat en planification financière » (code 4731)"
+    }
+  ]
+}

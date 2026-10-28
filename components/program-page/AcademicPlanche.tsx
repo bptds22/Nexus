@@ -11,16 +11,21 @@ import * as React from "react";
 import GhostLayer from "./GhostLayer";
 import { PlaybookDecor } from "@/components/shared/dna";
 import { matchPrograms, norm } from "./matchPrograms";
+import { lEtablissement, type ProgramPageContent } from "./content";
 
 export default function AcademicPlanche({
   programs,
   viewerProgrammeVise,
   schoolName,
+  etablissement,
 }: {
   programs: string[];
   viewerProgrammeVise?: string;
   schoolName: string;
+  /** Lot D5b : « l'université » au lieu de « le collège ». Défaut collège. */
+  etablissement?: ProgramPageContent["etablissement"];
 }) {
+  const leLieu = lEtablissement(etablissement);
   const [q, setQ] = React.useState("");
   // Recherche accent-insensible : « policieres » matche « policières », « genie » → « génie ».
   const nq = norm(q);
@@ -70,11 +75,11 @@ export default function AcademicPlanche({
               ) : (
                 <div className="match-empty">
                   <p>
-                    Aucun programme comme <b>« {vise} »</b> n&apos;est offert au {schoolName} pour
-                    l&apos;instant. Contacte le collège pour explorer des programmes similaires qui
+                    Aucun programme comme <b>« {vise} »</b> n&apos;est offert {etablissement === "universite" ? "à" : "au"} {schoolName} pour
+                    l&apos;instant. Contacte {leLieu} pour explorer des programmes similaires qui
                     pourraient t&apos;intéresser.
                   </p>
-                  <button type="button" className="me-cta">Contacter le collège →</button>
+                  <button type="button" className="me-cta">Contacter {leLieu} →</button>
                 </div>
               )}
 
@@ -96,7 +101,7 @@ export default function AcademicPlanche({
             ))}
             {shown.length === 0 && (
               <span className="prog empty" style={{ color: "#8A909C", background: "transparent" }}>
-                Aucun programme trouvé — contacte le collège !
+                Aucun programme trouvé — contacte {leLieu} !
               </span>
             )}
           </div>

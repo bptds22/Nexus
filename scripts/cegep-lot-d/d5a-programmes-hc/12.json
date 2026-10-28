@@ -1,0 +1,2467 @@
+{
+ "universite": "University of Toronto",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.utoronto.ca/academics/programs-directory",
+  "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 376,
+  "certificat": 17,
+  "comment": "Répertoire central U of T (« 378 programs found », 3 campus) : 376 entrées à titre de baccalauréat + 1 Artist Diploma + 1 Doctor of Medicine. Unité = nom d'entrée du répertoire (y compris les « streams » listés comme entrées) ; les entrées du même nom sur plusieurs campus sont fusionnées (faculte = divisions concernées, déduites du domaine du lien) ; entrées « Minor » seules exclues. Certificats : le répertoire n'en affiche aucun ; 17 certificats de génie relevés sur la page officielle Engineering Minors & Certificates (les certificats d'autres divisions restent à vérifier). « Engineering Leadership Certficate » (coquille sur la page) corrigé en « Certificate »."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Rotman-Commerce",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Actuarial-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "African Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/African-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "American Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/American-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Animal Physiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Cell-and-Systems-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Anthropology (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Anthropology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Anthropology (Science)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Anthropology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Anthropology: Evolutionary",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Anthropology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Anthropology: General (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Anthropology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Anthropology: Society, Culture and Language",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Anthropology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Anthropology: Socio-Cultural",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/anthropology-socio-cultural",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Applied Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Applied Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Statistics,-Applied",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Archaeology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Archaeology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Architectural Studies",
+   "cycle": "baccalaureat",
+   "faculte": "John H. Daniels Faculty of Architecture, Landscape, and Design",
+   "lien": "https://daniels.calendar.utoronto.ca/section/Architectural-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Art and Art History",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Art",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Art History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Art-History",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Art History and Visual Culture",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://utsc.calendar.utoronto.ca/section/Art-History-and-Visual-Culture",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Arts and Media Management",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/arts-and-media-management",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Arts Management",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/arts-management",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Astronomical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Astronomy",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Astronomy",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Astronomy",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Astronomy and Astrophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Astronomy-and-Astrophysics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Astronomy and Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Astronomy-and-Astrophysics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Biochemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biodiversity and Conservation Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Ecology-and-Evolutionary-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Bioethics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Philosophy",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Bioinformatics and Computational Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Cell-and-Systems-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biological Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Chemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biological Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Physics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biology for Health Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biomedical Toxicology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Pharmacology-and-Toxicology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biophysics",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Physics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Biotechnology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Book and Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/St.-Michael's-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Buddhist Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Religion",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Canadian Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/University-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Caribbean Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Centre-for-Caribbean-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Cell and Molecular Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Cell-and-Systems-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Celtic Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/St.-Michael's-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Chemical-Engineering-and-Applied-Chemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Chemical Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Chemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Chemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Christianity and Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/St.-Michael's-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Cinema Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Cinema-Studies-Institute",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "City Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/city-studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Civil-Engineering",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Classical Civilization",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Classics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Classics (Greek and Latin)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Classics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Cognitive Science (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/University-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Cognitive Science (Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/University-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Commerce",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Commerce",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Commerce (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Commerce",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Communication, Culture, Information and Technology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Communication,-Culture,-Information-and-Technology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Comparative Physiology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Composition (Music)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Music",
+   "lien": "https://music.calendar.utoronto.ca/section/Bachelor-of-Music",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Electrical-and-Computer-Engineering",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Computer-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Computer Science: Comprehensive Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/computer-science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Computer Science: Entrepreneurship Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/computer-science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Computer Science: Information Systems Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/computer-science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Computer Science: Software Engineering Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/computer-science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Conservation and Biodiversity",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/conservation-biodiversity",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Contemporary Asian Studies, Dr. David Chu Program in",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Contemporary-Asian-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/creative-writing",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Criminology and Sociolegal Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Criminology-and-Sociolegal-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Criminology, Law and Society",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Criminology,-Law-and-Society",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Critical Studies in Equity and Solidarity",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/New-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Data-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Diaspora and Transnational Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Diaspora-and-Transnational-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Digital Enterprise Management",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Communication,-Culture,-Information-and-Technology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Drama",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Drama,-Theatre-and-Performance-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Dramaturgy and Drama Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Theatre,-Drama-and-Performance-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Earth and Environmental Systems",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Earth-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Earth Science",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Earth-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "East Asian Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/East-Asian-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Ecology and Evolution",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Ecology and Evolutionary Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Ecology-and-Evolutionary-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Economics (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Economics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Economics (Commerce)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Economics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Economics and Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Economics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Economics and Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Economics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Economics for Management Studies (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/economics-management-studies-hba",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Economics for Management Studies (Business)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/economics-management-studies-bba",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Electrical-and-Computer-Engineering",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Engineering Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Engineering-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/English",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environment and Health",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/School-of-the-Environment",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environment and Toxicology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/School-of-the-Environment",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Ecology-and-Evolutionary-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Chemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Ethics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/School-of-the-Environment",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/School-of-the-Environment",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Geoscience",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/environmental-geoscience",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Geosciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Earth-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Management",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Environmental-Management",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Physics",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/environmental-physics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/School-of-the-Environment",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/School-of-the-Environment",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Ethics, Society and Law",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Trinity-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "European Affairs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/European-Affairs",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Exceptionality in Human Learning",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Exceptionality-in-Human-Learning",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Commerce",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Finance and Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Rotman-Commerce",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Financial Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Economics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Forensic Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Forensic-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Forensic Biology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Forensic-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Forensic Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Forensic-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Forensic Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Forensic-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Forensic Science",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Forensic-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Forest Conservation",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Forest-Conservation-and-Forest-Biomaterials-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Forest Conservation Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Forest-Conservation-and-Forest-Biomaterials-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/french",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "French Language and French Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/French",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "French Language and Literature",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/French",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "French Language Learning",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/French",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "French Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/French",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Genome Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Geography (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Geography",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Geography (Science)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Geography",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Geography: Human",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/geography-human-geography",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Geography: Physical and Human",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/geography-physical-human",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Geology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Earth-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Geophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Earth-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Geoscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Earth-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "GeoSpatial Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/GeoSpatial-Data-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "German Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/German",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Global Asia Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/global-asia-studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Global Environmental Change",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/global-environmental-change",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Greek",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Classics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Health Policy",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/health-policy",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/History",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "History and Philosophy of Science and Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/History-and-Philosophy-of-Science-and-Technology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "History and Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/History",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "History of Religions",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/History-of-Religions",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "History, Culture and Theory (Music)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Music",
+   "lien": "https://music.calendar.utoronto.ca/section/Bachelor-of-Music",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Human Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Human-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Human Biology: Fundamental Genetics and its Applications",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Human-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Human Biology: Global Health",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Human-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Human Biology: Health and Disease",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Human-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Human Biology: Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Human-Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Human Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Geography-and-Planning",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Human Resource Management",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Management",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Immunology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Immunology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Indigenous-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Industrial Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Industrial-Engineering",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Industrial Relations and Human Resources",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Industrial-Relations-and-Human-Resources",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Information",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Information",
+   "lien": "https://ischool.utoronto.ca/bachelor-of-information/",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Information Security",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Computer-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Integrative Biology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/integrative-biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Interdisciplinary Music Studies: Classical or Jazz",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Music",
+   "lien": "https://music.calendar.utoronto.ca/section/Bachelor-of-Music",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "International Affairs",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/International-Affairs",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "International Development Studies (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/international-development-studies-co-op",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "International Development Studies (Science)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/international-development-studies-co-op",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "International Relations",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Trinity-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Islamic Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Religion",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Italian",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Italian",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Jewish Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Centre-for-Jewish-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Journalism",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/journalism-joint-centennial",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Kinesiology and Physical Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology & Physical Education",
+   "lien": "https://kpe.utoronto.ca/academics-researchfuture-students/bachelor-kinesiology-bkin",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Language Teaching and Learning: French",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/french",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Language Teaching and Learning: French and Italian",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/french",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Language Teaching and Learning: Italian",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Italian",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Latin",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Classics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Latin American Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Latin-American-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Linguistic Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Linguistics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Linguistics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Literature and Critical Theory",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Victoria-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management (Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Management",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management (Business)",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://utm.calendar.utoronto.ca/section/Management",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management (Commerce)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Rotman-Commerce",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management and Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/management-accounting",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management and Finance",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/management-finance",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management and Finance + Statistics: Quantitative Finance Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://utsc.calendar.utoronto.ca/section/Double-Degree-Programs",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management and Human Resources",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/management-human-resources",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management and Information Technology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/management-information-technology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management and International Business",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/management-international-business-co-op",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Management and Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/management-marketing",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Commerce",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Materials Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Materials-Science-and-Engineering",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Materials Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Materials-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematical Applications in Economics and Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Mathematical-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics and its Applications: Physical Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics and its Applications: Probability/Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics and its Applications: Teaching",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics and Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics and Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics: Comprehensive Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics: Statistics Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mathematics: Teaching Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/mathematics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Mechanical-Engineering",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Media and Communication Studies: Journalism Studies Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/media-communication-studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Media and Communication Studies: Media Studies Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/media-communication-studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mediaeval Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/St.-Michael's-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Medical Radiation Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Temerty Faculty of Medicine",
+   "lien": "https://radonc.utoronto.ca/bachelor-science-medical-radiation-sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Medicinal and Biological Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/medicinal-biological-chemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mental Health Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/mental-health-studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Mineral Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://engineering.calendar.utoronto.ca/section/Mineral-Engineering",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Molecular Biology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Molecular Biology and Biotechnology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/molecular-biology-biotechnology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Molecular Biology, Immunology and Disease",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/molecular-biology-immunology-disease",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Molecular Genetics and Microbiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Molecular-Genetics-and-Microbiology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Music",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Music Education: Classical or Jazz",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Music",
+   "lien": "https://music.calendar.utoronto.ca/section/Bachelor-of-Music",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Music Industry and Technology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/music-industry-technology-joint-centennial",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Music with Ensemble Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Music",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Near and Middle Eastern Civilizations",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Near-and-Middle-Eastern-Civilizations",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://utm.calendar.utoronto.ca/section/Psychology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Lawrence Bloomberg Faculty of Nursing",
+   "lien": "https://bloomberg.nursing.utoronto.ca/learn-with-us/bachelor-of-science-in-nursing/",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Nutritional Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Nutritional-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Performance: Classical or Jazz",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Music",
+   "lien": "https://music.calendar.utoronto.ca/section/Bachelor-of-Music-in-Performance",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Paleontology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Paramedicine",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/paramedicine-joint-centennial",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Pathobiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Laboratory-Medicine-and-Pathobiology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Peace, Conflict and Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Peace,-Conflict-and-Justice",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Pharmaceutical Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Chemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Pharmacology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Pharmacology-and-Toxicology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Pharmacology and Biomedical Toxicology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Pharmacology-and-Toxicology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Philosophy",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Physical and Environmental Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Geography-and-Planning",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Physical and Mathematical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/physical-mathematical-sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Physical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/physical-sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Physician Assistant",
+   "cycle": "baccalaureat",
+   "faculte": "Temerty Faculty of Medicine",
+   "lien": "https://paconsortium.ca/overview-prospective-students",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Physics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Physics and Astrophysics",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/physics-astrophysics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Physics and Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Physics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Physiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Physiology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Planetary Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Planetary-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Plant Biology",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/plant-biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Political-Science",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Population Health",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/population-health",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Portuguese",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Portuguese",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Professional Writing and Communication",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Communication,-Culture,-Information-and-Technology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Psycholinguistics",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/psycholinguistics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Psychology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Psychology Research",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Psychology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Public Health",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/University-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Public Law",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/public-law",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Public Policy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Public-Policy",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Quantitative Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Biology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Religion",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Religion",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Renaissance Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Victoria-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Sexual Diversity Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Sexual-Diversity-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Slavic and East European Languages and Cultures",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Slavic-and-East-European-Languages-and-Cultures",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Mississauga / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Sociology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Spanish",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Spanish",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Statistical Science: Methods and Practice",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Statistical-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Statistical Science: Theory and Methods",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Statistical-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science / University of Toronto Scarborough",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Statistical-Sciences",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Statistics: Quantitative Finance Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/statistics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Statistics: Statistical Machine Learning and Data Science Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/statistics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Statistics: Statistical Sciences Stream",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/statistics",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Strategic Management",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/strategic-management",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Studio Art",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/studio-art",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Synthetic and Catalytic Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Chemistry",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Technology, Coding and Society",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Communication,-Culture,-Information-and-Technology",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Theatre and Drama Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Theatre,-Drama-and-Performance-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Theatre and Performance",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/theatre-performance-studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Urban Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Innis-College",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Visual Culture and Communication",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Visual-Culture-and-Communication",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Visual Studies (Design)",
+   "cycle": "baccalaureat",
+   "faculte": "John H. Daniels Faculty of Architecture, Landscape, and Design",
+   "lien": "https://daniels.calendar.utoronto.ca/section/Visual-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Women and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Women-and-Gender-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Scarborough",
+   "lien": "https://www.utsc.utoronto.ca/admissions/programs/womens-gender-studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Women, Gender and Sexuality Studies",
+   "cycle": "baccalaureat",
+   "faculte": "University of Toronto Mississauga",
+   "lien": "https://utm.calendar.utoronto.ca/section/Women,-Gender-and-Sexuality-Studies",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Work and Organizations: Humanities Contexts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Industrial-Relations-and-Human-Resources",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Work and Organizations: Sciences Contexts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Industrial-Relations-and-Human-Resources",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Work and Organizations: Social Sciences Contexts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts & Science",
+   "lien": "https://artsci.calendar.utoronto.ca/section/Industrial-Relations-and-Human-Resources",
+   "source": "https://www.utoronto.ca/academics/programs-directory"
+  },
+  {
+   "nom": "Artificial Intelligence Engineering Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/artificial-intelligence-engineering-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Communication Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/communication-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Cybersecurity Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/cybersecurity-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Electric Vehicle Design Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/electric-vehicle-design-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Engineering Business Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/engineering-business-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Engineering Leadership Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/engineering-leadership-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Entrepreneurship, Innovation and Small Business Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/entrepreneurship-innovation-and-small-business-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Forensic Engineering Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/forensic-engineering-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Global Engineering Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/global-engineering-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Justice, Equity, Diversity and Inclusion in Engineering Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/justice-equity-diversity-and-inclusion-in-engineering-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Mineral Resources Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/mineral-resources-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Music Technology Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/music-technology-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Neuromodulation Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/neuromodulation-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Nuclear Engineering Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/nuclear-engineering-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Public Health & Engineering Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/public-health-engineering-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Public Policy & Engineering Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/public-policy-engineering-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  },
+  {
+   "nom": "Renewable Resources Engineering Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Applied Science & Engineering",
+   "lien": "https://undergrad.engineering.utoronto.ca/academics-registration/engineering-minors-certificates/renewable-resources-engineering-certificate/",
+   "source": "https://undergrad.engineering.utoronto.ca/academics-registration/minors-certificates/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "African Studies (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Aging and Society (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Anthropology (Arts) (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Applied Climatology (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Applied Data Science (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Applied Statistics (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Artist Diploma (Music) (St. George)",
+   "raison": "titre non baccalauréat : Artist Diploma (diplôme)"
+  },
+  {
+   "nom": "Asian Canadian Studies (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Astronomy and Astrophysics (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Biomedical Communications (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Biomedical Ethics (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Business German (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Business, Science and Entrepreneurship (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Chinese Language and Culture (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Christianity and Education (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Classical Studies (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Creative Writing (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Creative Writing (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Creativity and Society (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Critical Migration Studies (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Culture, Creativity and Cities (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Digital Humanities (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Education and Society (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Education Studies (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "English and Chinese Translation (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "English Language Linguistics (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Environment and Behaviour (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Environment and Energy (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Environmental Anthropology (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Environmental Economics (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Environmental Law and Policy (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Ethics, Law and Society (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Film Studies (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Food Studies (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "French Language (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "French Studies (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Functional French (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Game Studies (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Geographic Information Science (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "German Studies in English (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Global Leadership (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Global Leadership (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Health Humanities (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Italian Culture and Communication Studies (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Italian Language and Culture (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Latin American and Caribbean Studies (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Material Culture and Semiotics (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Media Studies (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Medical Anthropology (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Medicine (St. George)",
+   "raison": "titre non baccalauréat : Doctor of Medicine (premier grade professionnel, second-entry)"
+  },
+  {
+   "nom": "Music History and Culture (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Natural Sciences and Environmental Management (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Philosophy of Science (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Science, Technology and Society (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Slavic and East European Literature in Translation (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "South Asian Humanities (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "South Asian Studies (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Sustainability (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Track One: Undeclared Engineering (St. George)",
+   "raison": "première année non déclarée en génie (Track One), pas un programme menant à un grade distinct"
+  },
+  {
+   "nom": "Urban Public Policy and Governance (Scarborough)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Visual Culture (Mississauga)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Visual Studies (Arts) (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Writing and Rhetoric (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Yiddish, Al and Malka Green Program in (St. George)",
+   "raison": "mineure seulement (Program Type « Minor ») sur ce campus"
+  },
+  {
+   "nom": "Accounting (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Accounting » (St. George)"
+  },
+  {
+   "nom": "Anthropology: Evolutionary (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Anthropology: Evolutionary » (St. George)"
+  },
+  {
+   "nom": "Art History (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Art History » (St. George)"
+  },
+  {
+   "nom": "Biochemistry (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Biochemistry » (St. George)"
+  },
+  {
+   "nom": "Biological Chemistry (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Biological Chemistry » (St. George)"
+  },
+  {
+   "nom": "Biology (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Biology » (St. George)"
+  },
+  {
+   "nom": "Biology (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Biology » (St. George)"
+  },
+  {
+   "nom": "Canadian Studies (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Canadian Studies » (St. George)"
+  },
+  {
+   "nom": "Chemistry (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Chemistry » (St. George)"
+  },
+  {
+   "nom": "Chemistry (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Chemistry » (St. George)"
+  },
+  {
+   "nom": "Cinema Studies (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Cinema Studies » (St. George)"
+  },
+  {
+   "nom": "Classical Civilization (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Classical Civilization » (St. George)"
+  },
+  {
+   "nom": "Computer Science (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Computer Science » (St. George)"
+  },
+  {
+   "nom": "Computer Science (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Computer Science » (St. George)"
+  },
+  {
+   "nom": "Diaspora and Transnational Studies (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Diaspora and Transnational Studies » (St. George)"
+  },
+  {
+   "nom": "Economics (Arts) (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Economics (Arts) » (St. George)"
+  },
+  {
+   "nom": "English (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « English » (St. George)"
+  },
+  {
+   "nom": "English (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « English » (St. George)"
+  },
+  {
+   "nom": "Environmental Chemistry (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Environmental Chemistry » (St. George)"
+  },
+  {
+   "nom": "Environmental Geosciences (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Environmental Geosciences » (St. George)"
+  },
+  {
+   "nom": "Environmental Science (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Environmental Science » (St. George)"
+  },
+  {
+   "nom": "Environmental Science (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Environmental Science » (St. George)"
+  },
+  {
+   "nom": "Environmental Studies (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Environmental Studies » (St. George)"
+  },
+  {
+   "nom": "Financial Economics (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Financial Economics » (St. George)"
+  },
+  {
+   "nom": "History (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « History » (St. George)"
+  },
+  {
+   "nom": "History (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « History » (St. George)"
+  },
+  {
+   "nom": "Human Biology (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Human Biology » (St. George)"
+  },
+  {
+   "nom": "Italian (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Italian » (St. George)"
+  },
+  {
+   "nom": "Linguistics (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Linguistics » (St. George)"
+  },
+  {
+   "nom": "Management (Business) (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Management (Business) » (Mississauga)"
+  },
+  {
+   "nom": "Mathematics (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Mathematics » (St. George)"
+  },
+  {
+   "nom": "Music (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Music » (St. George)"
+  },
+  {
+   "nom": "Neuroscience (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Neuroscience » (Mississauga)"
+  },
+  {
+   "nom": "Philosophy (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Philosophy » (St. George)"
+  },
+  {
+   "nom": "Philosophy (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Philosophy » (St. George)"
+  },
+  {
+   "nom": "Physics (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Physics » (St. George)"
+  },
+  {
+   "nom": "Political Science (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Political Science » (St. George)"
+  },
+  {
+   "nom": "Political Science (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Political Science » (St. George)"
+  },
+  {
+   "nom": "Psychology (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Psychology » (St. George)"
+  },
+  {
+   "nom": "Psychology (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Psychology » (St. George)"
+  },
+  {
+   "nom": "Public Policy (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Public Policy » (St. George)"
+  },
+  {
+   "nom": "Sociology (Mississauga)",
+   "raison": "variante de campus fusionnée dans la ligne « Sociology » (St. George)"
+  },
+  {
+   "nom": "Sociology (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Sociology » (St. George)"
+  },
+  {
+   "nom": "Statistics (Scarborough)",
+   "raison": "variante de campus fusionnée dans la ligne « Statistics » (St. George)"
+  },
+  {
+   "nom": "Certificats Arts & Science / UTM / UTSC (p. ex. Certificate in Bioarchaeology, UTSC)",
+   "raison": "à vérifier : le répertoire central n'affiche aucune entrée « Certificate » ; l'inventaire des certificats des calendriers divisionnaires (hors génie) n'a pas été relevé"
+  },
+  {
+   "nom": "Programmes professionnels hors répertoire de premier cycle (JD, PharmD, DDS, etc.)",
+   "raison": "premiers grades professionnels, absents du répertoire et exclus"
+  }
+ ]
+}

@@ -4,37 +4,20 @@
    ChampNote — LE champ de saisie d'une note (1.4.5, option C du R6).
 
    Les coachs et recruteurs prenaient leurs notes ailleurs (OneNote) parce que
-   le champ était petit, sans brouillon, sans voix. Un seul composant, partout
+   le champ était petit, sans brouillon. Un seul composant, partout
    où l'on écrit une note (fil d'un joueur dans Mon processus, dans une liste,
    sur sa fiche ; note de liste), web et appli :
      · champ PLUS GRAND, qui grandit avec le texte ;
      · BROUILLON sauvegardé tout seul dans l'appareil (lib/notes/brouillon) ;
-     · bouton DICTER bien visible : voix du navigateur quand elle existe ;
-       sinon on met le curseur dans le champ et on dit comment utiliser le micro
-       du clavier (la dictée native iOS / Android marche partout) ;
+     · AUCUN bouton de saisie vocale (BP 2026-10-28, lot E0 : retiré partout) ;
      · GABARITS courts, optionnels (lib/notes/gabarits).
    Le composant ne poste rien : le parent garde « Poster » et sa logique.
    Après un envoi réussi, le parent met le texte à "" — le brouillon s'efface.
 ═══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ecrireBrouillon, lireBrouillon } from "@/lib/notes/brouillon";
-import { GABARITS_NOTE, insererGabarit, ajouterDictee } from "@/lib/notes/gabarits";
-
-interface ReconnaissanceVocale {
-  lang: string; continuous: boolean; interimResults: boolean;
-  onresult: ((e: { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: ((e: { error?: string }) => void) | null;
-  start(): void; stop(): void;
-}
-type FabriqueReconnaissance = new () => ReconnaissanceVocale;
-
-function fabriqueDictee(): FabriqueReconnaissance | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: FabriqueReconnaissance; webkitSpeechRecognition?: FabriqueReconnaissance };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
+import { GABARITS_NOTE, insererGabarit } from "@/lib/notes/gabarits";
 
 export default function ChampNote({
   value,
@@ -49,7 +32,6 @@ export default function ChampNote({
   id,
   className = "",
   sansGabarits = false,
-  sansDictee = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -66,18 +48,11 @@ export default function ChampNote({
   className?: string;
   /** Game On (BP 2026-10-18) : garder ça simple, sans bouton Gabarits. */
   sansGabarits?: boolean;
-  /** Dépistage (BP 2026-10-18) : pas de bouton « Dicter » — le micro du clavier suffit. */
-  sansDictee?: boolean;
 }) {
   const zone = useRef<HTMLTextAreaElement>(null);
   const [gabaritsOuverts, setGabaritsOuverts] = useState(false);
-  const [enEcoute, setEnEcoute] = useState(false);
-  const [aide, setAide] = useState<string | null>(null);
   const [etatBrouillon, setEtatBrouillon] = useState<"" | "retabli" | "enregistre">("");
-  const reco = useRef<ReconnaissanceVocale | null>(null);
   const premiereFois = useRef(true);
-  const valeur = useRef(value);
-  valeur.current = value;
 
   /* Brouillon : rétabli à l'ouverture (si le champ est vide), puis sauvegardé à chaque frappe (500 ms). */
   useEffect(() => {
@@ -103,47 +78,6 @@ export default function ChampNote({
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
   }, [value]);
-
-  useEffect(() => () => { reco.current?.stop(); }, []);
-
-  const arreterDictee = useCallback(() => { reco.current?.stop(); setEnEcoute(false); }, []);
-
-  const dicter = () => {
-    if (enEcoute) { arreterDictee(); return; }
-    const Fabrique = fabriqueDictee();
-    if (!Fabrique) {
-      /* Pas de voix du navigateur (cas fréquent dans l'appli iOS) : le micro du clavier dicte partout. */
-      zone.current?.focus();
-      setAide("Touche le micro de ton clavier pour dicter ta note.");
-      return;
-    }
-    try {
-      const r = new Fabrique();
-      r.lang = "fr-CA";
-      r.continuous = true;
-      r.interimResults = false;
-      r.onresult = (e) => {
-        let phrase = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          if (e.results[i].isFinal) phrase += e.results[i][0].transcript;
-        }
-        if (phrase) onChange(ajouterDictee(valeur.current, phrase));
-      };
-      r.onend = () => setEnEcoute(false);
-      r.onerror = (e) => {
-        setEnEcoute(false);
-        setAide(e.error === "not-allowed" ? "Autorise le micro pour dicter, ou utilise le micro du clavier." : "La dictée s'est arrêtée. Réessaie, ou utilise le micro du clavier.");
-      };
-      reco.current = r;
-      setAide(null);
-      r.start();
-      setEnEcoute(true);
-    } catch {
-      setEnEcoute(false);
-      zone.current?.focus();
-      setAide("Touche le micro de ton clavier pour dicter ta note.");
-    }
-  };
 
   const ajouterGabarit = (g: string) => {
     onChange(insererGabarit(value, g));
@@ -174,23 +108,6 @@ export default function ChampNote({
         }}
       />
       <div className="flex flex-wrap items-center gap-2 mt-2">
-        {!sansDictee && (
-        <button
-          type="button"
-          onClick={dicter}
-          disabled={disabled}
-          aria-pressed={enEcoute}
-          data-testid="champ-note-dicter"
-          className={`inline-flex items-center gap-1.5 font-bold uppercase tracking-wider transition-colors ${bouton} ${
-            enEcoute ? "bg-[#E63946] text-white animate-pulse" : "bg-[#E63946]/12 text-[#E63946] border border-[#E63946]/40 hover:bg-[#E63946]/20"
-          }`}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0014 0" /><line x1="12" y1="18" x2="12" y2="22" />
-          </svg>
-          {enEcoute ? "Arrêter" : "Dicter"}
-        </button>
-        )}
         {!sansGabarits && (
         <button
           type="button"
@@ -206,7 +123,6 @@ export default function ChampNote({
           {etatBrouillon === "retabli" ? "Brouillon rétabli" : etatBrouillon === "enregistre" ? "Brouillon enregistré" : ""}
         </span>
       </div>
-      {aide && <p className="text-[12px] text-[#9CA3AF] mt-1.5" role="status">{aide}</p>}
       {gabaritsOuverts && (
         <div className="flex flex-wrap gap-1.5 mt-2" role="group" aria-label="Gabarits de note">
           {GABARITS_NOTE.map((g) => (

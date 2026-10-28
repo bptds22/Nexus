@@ -1,0 +1,1768 @@
+{
+  "universite": "Université McGill",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.mcgill.ca/undergraduate-admissions/programs",
+    "https://coursecatalogue.mcgill.ca/en/undergraduate/",
+    "https://coursecatalogue.mcgill.ca/sitemap.xml",
+    "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+  ],
+  "attendu": {
+    "baccalaureat": 157,
+    "certificat": 22,
+    "comment": "Baccalauréats : le répertoire d’admission (mcgill.ca/undergraduate-admissions/programs, protégé par un défi WAF, lu au navigateur) liste des « programs » disciplinaires typés Major / Honours / Minor / Concentration / Domain..., sans total global ni nom de grade. Parcouru en entier via ses 11 facettes « Area of interest » (totaux affichés 40, 19, 33, 67, 69, 83, 34, 53, 75, 29, 17) et ses 2 facettes campus (Downtown 232, Macdonald 39) : 268 fiches uniques. Unité retenue = la fiche du répertoire (le répertoire liste les majeures) : une ligne par fiche dont le type contient Major, Major Concentration, Honours, Joint Honours, Joint Majors, Liberal Program, Faculty/Interfaculty/Professional Program (ou sans type : Nursing, Med-P), soit 162 fiches, moins 5 (programme fermé, Med-P, Dent-P, L.Mus., doublon Kinesiology) = 157. Les options Major/Honours/Minor d’une même fiche ne sont pas dédoublées ; les 106 fiches seulement Minor, Minor Concentration, Supplementary Minor, Concentration (B.Com.), Domain (B.Sc. Environment) ou Specialization (Macdonald) sont exclues. Noms = titres du répertoire (le grade n’y est pas affiché). Certificats : le répertoire d’admission n’en liste aucun ; décompte sur l’eCalendar officiel (coursecatalogue.mcgill.ca, sitemap + titres de pages) : 10 certificats de 1er cycle en facultés (une fiche homonyme retirée) + 12 « Undergraduate Credit Programs » (Cert.) crédités de la School of Continuing Studies = 22."
+  },
+  "programmes": [
+    {
+      "nom": "Accounting",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/accounting",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "African Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/african-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Agricultural Economics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/agricultural-economics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Anatomy & Cell Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/anatomy-cell-biology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Anthropology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/anthropology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Applied Mathematics (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/applied-mathematics-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Applied Mathematics (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/applied-mathematics-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Architecture",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/architecture",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Art History",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/art-history",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Atmospheric Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/atmospheric-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Atmospheric Science and Physics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/atmospheric-science-and-physics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "B.A. (Education); Education in Global Contexts",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/education-global-contexts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Biochemistry",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/biochemistry",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Bioengineering",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/bioengineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/biology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Biology and Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/biology-and-mathematics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Bioresource Engineering (Faculty of Agricultural and Environmental Sciences)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/bioresource-engineering-faculty-agricultural-and-environmental-sciences",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Canadian Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/canadian-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Chemical Engineering (Faculty of Engineering)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/chemical-engineering-faculty-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Chemistry (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/chemistry-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Chemistry (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/chemistry-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Civil Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/civil-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Classical Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/classical-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Cognitive Science (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/cognitive-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Computer Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/computer-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Computer Science (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/computer-science-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Computer Science (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/computer-science-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Computer Science (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/computer-science-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Computer Science and Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/computer-science-and-biology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Dietetics",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/dietetics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Earth and Planetary Sciences",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/earth-and-planetary-sciences",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Earth System Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/earth-system-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "East Asian Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/east-asian-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Economics (Desautels Faculty of Management)",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/economics-desautels-faculty-management",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Economics (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/economics-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Economics and Accounting",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/economics-and-accounting",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Economics and Finance",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/economics-and-finance",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Electrical Engineering (Faculty of Engineering)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/electrical-engineering-faculty-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "English: Cultural Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/english-cultural-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "English: Drama and Theatre",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/english-drama-and-theatre",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "English: Literature",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/english-literature",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Environment (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/environment-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Environment (Faculty of Agricultural and Environmental Sciences)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/environment-faculty-agricultural-and-environmental-sciences",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Environment (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/environment-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Environment (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/environment-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Environmental Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/environmental-biology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Faculty Program in Music",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/faculty-program-music",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Faculty Program in Music: Jazz",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/faculty-program-music-jazz",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Faculty Program in Population and Global Health",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/faculty-program-population-and-global-health",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Finance",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/finance",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Food Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/food-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Food Science & Nutritional Science",
+      "cycle": "baccalaureat",
+      "faculte": "School of Human Nutrition (Faculty of Agricultural and Environmental Sciences)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/food-science-nutritional-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Gender, Sexuality, Feminist and Social Justice Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/gender-sexuality-feminist-and-social-justice-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "General Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/general-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Geography - Physical Geography (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/geography-physical-geography-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Geography (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/geography-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Geography (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/geography-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Geography (Urban Studies)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/geography-urban-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Geology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/geology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "German Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/german-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Global Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/global-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Hispanic Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/hispanic-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "History",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/history",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Immunology (Interdepartmental)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/immunology-interdepartmental",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Information Technology Management",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/itm",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "International Development Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/international-development-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "International Management",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/international-management",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Investment Management",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/investment-management",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Italian Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/italian-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Jewish Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/jewish-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Kindergarten and Elementary Education",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/kindergarten-and-elementary-education",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Kindergarten and Elementary Education (First Nations and Inuit Studies)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/kindergarten-and-elementary-education-first-nations-and-inuit-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Kindergarten and Elementary Education (Jewish Studies)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/kindergarten-and-elementary-education-jewish-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Kindergarten and Elementary Education (Pédagogie de l’immersion française)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/kindergarten-and-elementary-education-pedagogie-de-limmersion-francaise",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Kinesiology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/kinesiology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Labour-Management Relations and Human Resources",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/labour-management-relations-and-human-resources",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Langue et littérature françaises: Études et pratiques littéraires",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/langue-et-litterature-francaises-etudes-et-pratiques-litteraires",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Langue et littérature françaises: Langue française",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/langue-et-litterature-francaises-langue-francaise",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Langue et littérature françaises: Traduction",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/langue-et-litterature-francaises-traduction",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Latin American and Caribbean Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/latin-american-and-caribbean-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Law (BCL/JD)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Law",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/law-bcljd",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Liberal Arts",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/liberal-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Life Sciences (Biological & Agricultural)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/life-sciences-biological-agricultural",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Linguistics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/linguistics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Managing for Sustainability",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/managing-sustainability",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Marketing",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/marketing",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Materials Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/materials-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mathematics (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mathematics-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mathematics (Desautels Faculty of Management)",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mathematics-desautels-faculty-management",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mathematics (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mathematics-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mathematics (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mathematics-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mathematics and Computer Science (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mathematics-and-computer-science-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mathematics and Computer Science (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mathematics-and-computer-science-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mathematics and Physics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mathematics-and-physics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mechanical Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mechanical-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Microbiology and Immunology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/microbiology-and-immunology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Mining Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/mining-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music (Bachelor of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Composition",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-composition",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Education",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-education",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music History",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-history",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Performance: Early Music (Instruments)",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-performance-early-music-instruments",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Performance: Early Music (Voice)",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-performance-early-music-voice",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Performance: Jazz",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-performance-jazz",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Performance: Orchestral Instruments",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-performance-orchestral-instruments",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Performance: Organ, Guitar",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-performance-organ-guitar",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Performance: Piano",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-performance-piano",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Performance: Voice",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-performance-voice",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Music Theory",
+      "cycle": "baccalaureat",
+      "faculte": "Schulich School of Music",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/music-theory",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Neuroscience",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/neuroscience",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Nursing",
+      "cycle": "baccalaureat",
+      "faculte": "Ingram School of Nursing",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/nursing",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Nursing (Integrated)",
+      "cycle": "baccalaureat",
+      "faculte": "Ingram School of Nursing",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/nursing-integrated",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Nursing (Integrated), online",
+      "cycle": "baccalaureat",
+      "faculte": "Ingram School of Nursing",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/nursing-integrated-online",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Nutrition",
+      "cycle": "baccalaureat",
+      "faculte": "School of Human Nutrition (Faculty of Agricultural and Environmental Sciences)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/nutrition",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Occupational Therapy",
+      "cycle": "baccalaureat",
+      "faculte": "School of Physical and Occupational Therapy",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/occupational-therapy",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Organizational Behaviour",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/organizational-behaviour",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Pharmacology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/pharmacology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Philosophy",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/philosophy",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physical and Health Education",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physical-and-health-education",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physical Therapy",
+      "cycle": "baccalaureat",
+      "faculte": "School of Physical and Occupational Therapy",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physical-therapy",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physics (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physics-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physics (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physics-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physics and Chemistry",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physics-and-chemistry",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physics and Computer Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physics-and-computer-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physics and Geophysics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physics-and-geophysics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physiology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physiology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physiology and Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physiology-and-mathematics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Physiology and Physics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/physiology-and-physics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Planetary Sciences",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/planetary-sciences",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Political Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/political-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Probability and Statistics (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/probability-and-statistics-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Psychology (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/psychology-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Psychology (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/psychology-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Psychology (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/psychology-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Quantitative Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/quantitative-biology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Religious Studies (Bachelor of Theology)",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/religious-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Religious Studies: World Religions",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/religious-studies-world-religions",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Russian",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/russian",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Secondary Education: Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/secondary-education-mathematics",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Secondary Education: Science and Technology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/secondary-education-science-and-technology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Secondary Education: Social Sciences",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/secondary-education-social-sciences",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Social Work",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/social-work",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Sociology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/sociology",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Software Engineering (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/software-engineering-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Software Engineering (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/software-engineering-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Software Engineering (Faculty of Engineering)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Engineering",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/software-engineering-faculty-engineering",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Software Engineering (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/software-engineering-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Statistics (Desautels Faculty of Management)",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/statistics-desautels-faculty-management",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Statistics (Faculty of Arts)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/statistics-faculty-arts",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Statistics (Faculty of Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/statistics-faculty-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Statistics and Computer Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/statistics-and-computer-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Strategic Management",
+      "cycle": "baccalaureat",
+      "faculte": "Desautels Faculty of Management",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/strategic-management",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Sustainability, Science & Society (Bachelor of Arts and Science)",
+      "cycle": "baccalaureat",
+      "faculte": "Bachelor of Arts and Science (programme interfacultaire Arts/Science)",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/sustainability-science-society-bachelor-arts-and-science",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Sustainable Agricultural Systems",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/sustainable-agricultural-systems",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Teaching English as a Second Language (TESL)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/teaching-english-second-language-tesl",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Teaching English as a Second Language (TESL) - Greek Language and Culture",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/teaching-english-second-language-tesl-greek-language-and-culture",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "World Islamic and Middle East Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://www.mcgill.ca/undergraduate-admissions/program/world-islamic-and-middle-east-studies",
+      "source": "https://www.mcgill.ca/undergraduate-admissions/programs"
+    },
+    {
+      "nom": "Ecological Agriculture (Certificate)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/agri-env-sci/programs/natural-resource-sciences/ecological-agriculture-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/agri-env-sci/programs/natural-resource-sciences/ecological-agriculture-certificate/"
+    },
+    {
+      "nom": "Food Science (Certificate)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Agricultural and Environmental Sciences",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/agri-env-sci/programs/food-science-agricultural-chemistry/food-science-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/agri-env-sci/programs/food-science-agricultural-chemistry/food-science-certificate/"
+    },
+    {
+      "nom": "Foundational Social Services Skills and Knowledge (Cert.)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/arts/programs/social-work/foundational-social-services-skills-knowledge-cert/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/arts/programs/social-work/foundational-social-services-skills-knowledge-cert/"
+    },
+    {
+      "nom": "Para Social Work and Community Practices (Cert.)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/arts/programs/social-work/para-social-work-community-practices-cert/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/arts/programs/social-work/para-social-work-community-practices-cert/"
+    },
+    {
+      "nom": "Inclusive Education (Cert.)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Education",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/educational-counselling-psychology/inclusive-education-cert/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/educational-counselling-psychology/inclusive-education-cert/"
+    },
+    {
+      "nom": "Education for First Nations and Inuit (Cert.)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Education",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/education-first-nations-inuit-cert/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/education-first-nations-inuit-cert/"
+    },
+    {
+      "nom": "First Nations and Inuit Educational Leadership (Cert.)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Education",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/first-nations-inuit-educational-leadership-cert/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/first-nations-inuit-educational-leadership-cert/"
+    },
+    {
+      "nom": "First Nations and Inuit Student Personnel Services (Cert.)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Education",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/first-nations-inuit-student-personnel-services-cert/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/first-nations-inuit-student-personnel-services-cert/"
+    },
+    {
+      "nom": "Indigenous Language and Literacy Education (Cert.)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Education",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/indigenous-language-literacy-education-cert/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/indigenous-language-literacy-education-cert/"
+    },
+    {
+      "nom": "Middle School Education in Indigenous Communities (Cert.)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Education",
+      "lien": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/middle-school-education-indigenous-communities-cert/",
+      "source": "https://coursecatalogue.mcgill.ca/en/undergraduate/education/programs-first-nations-inuit/middle-school-education-indigenous-communities-cert/"
+    },
+    {
+      "nom": "Accounting and Finance (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/accounting-finance-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Applied Cybersecurity (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/applied-cybersecurity-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Applied Marketing (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/applied-marketing-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Computers and Information Technology (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/computers-information-technology-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Health and Social Services Management (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/health-social-services-management-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Human Resources Management (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/human-resources-management-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Indigenous Business Management (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/indigenous-business-management-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Management (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/management-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Public Administration and Governance (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/public-administration-governance-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Public Relations and Communication Management (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/public-relations-communication-management-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "STEM Foundations (Science, Technology, Engineering & Math) (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/stem-foundations-science-technology-engineering-math-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    },
+    {
+      "nom": "Supply Chain Management and Logistics (Cert.)",
+      "cycle": "certificat",
+      "faculte": "School of Continuing Studies",
+      "lien": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/supply-chain-management-logistics-certificate/",
+      "source": "https://coursecatalogue.mcgill.ca/en/continuing/areas-study/undergraduate-credit-programs/"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Aerospace Engineering",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Agribusiness",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Agricultural Production",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Animal Biology",
+      "raison": "fiche de type Minor, Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Animal Health and Disease",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Animal Production",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Applied Artificial Intelligence (Faculty of Engineering)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Applied Ecology",
+      "raison": "fiche de type Minor, Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Arabic Language",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Arts minor for Engineering Students",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Atmospheric Environment and Air Quality",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Behavioural Science",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Biodiversity and Conservation (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Biodiversity and Conservation (Faculty of Science)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Biomedical Engineering",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Biotechnology",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Business Analytics",
+      "raison": "fiche de type Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Chemical Engineering (Faculty of Science)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Chemistry (Faculty of Engineering)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Cognitive Science (Faculty of Science)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Communication Studies",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Computer Science (Faculty of Engineering)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Construction Engineering and Management",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Dentistry (Dent-P)",
+      "raison": "année préparatoire au D.M.D. (Dent-P ; doctorat professionnel de premier grade) — exclu"
+    },
+    {
+      "nom": "Earth Sciences and Economics",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "East Asian Studies: Cultural Studies",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "East Asian Studies: Language (Supplementary)",
+      "raison": "fiche de type Supplementary Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "East Asian Studies: Language and Literature",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Ecological Agriculture",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Ecological Determinants of Health (Cellular) (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Ecological Determinants of Health (Cellular) (Faculty of Science)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Ecological Determinants of Health (Population) (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Ecological Determinants of Health (Population) (Faculty of Science)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Ecological Determinants of Health in Society",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Economics (Faculty of Engineering)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Economics and the Earth’s Environment",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Education for Arts Students",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Education for Science Students",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Educational Psychology",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Electrical Engineering (Faculty of Science)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Entrepreneurship",
+      "raison": "fiche de type Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Entrepreneurship for Science Students",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Environment (Faculty of Engineering)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Environment and Development",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Environmental Economics",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Environmental Engineering (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Environmental Engineering (Faculty of Engineering)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Environmetrics (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Environmetrics (Faculty of Science)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "European Literature and Culture",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Field Crops and Horticulture",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Field Studies",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Food Production and Environment (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Food Production and Environment (Faculty of Science)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Geochemistry",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Geographic Information Systems (GIS) and Remote Sensing (Faculty of Arts)",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Geographic Information Systems (GIS) and Remote Sensing (Faculty of Science)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "German Language",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Global Food Security",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Health Geography",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "History and Philosophy of Science",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Human Nutrition (Faculty of Science)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Human Nutrition (Minor program)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Indigenous Studies",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Industrial & Labour Relations (discontinued as of September 2023)",
+      "raison": "programme fermé (« discontinued as of September 2023 » dans le titre de la fiche)"
+    },
+    {
+      "nom": "Information Technology Management Concentration",
+      "raison": "fiche de type Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "International Agriculture",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "International Business",
+      "raison": "fiche de type Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Kinesiology (Minor for Science students)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Kinesiology (Minor for Science students)",
+      "raison": "à vérifier : fiche en double (slug « -0 ») titrée « Minor for Science students » mais typée Major, Honours ; probable doublon de « Kinesiology »"
+    },
+    {
+      "nom": "Land Surface Processes and Environmental Change (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Land Surface Processes and Environmental Change (Faculty of Science)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Langue & littérature françaises: Études et pratiques littéraires (Spécialisation enrichie)",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Licentiate in Music (L. Mus.)",
+      "raison": "Licentiate in Music (L.Mus.) : pas un baccalauréat — exclu"
+    },
+    {
+      "nom": "Life Sciences (Multidisciplinary)",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Livestock",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Management (For Non-Management Students)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Mathematics (Faculty of Engineering)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Medicine (Med-P)",
+      "raison": "année préparatoire au M.D.,C.M. (doctorat professionnel de premier grade) — exclu"
+    },
+    {
+      "nom": "Medieval Studies",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Microbiology & Molecular Biotechnology",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Music Conducting",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Music Entrepreneurship",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Nanotechnology",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Natural History",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Operations Management",
+      "raison": "fiche de type Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Physics (Faculty of Engineering)",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Plant Biology",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Plant Production",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Professional Agrology",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Quebec Studies",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Religion and Globalization",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Renewable Resource Management (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Retail Management",
+      "raison": "fiche de type Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Russian Culture",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Science for Arts Students",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Social Entrepreneurship",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Social Studies of Medicine",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "South Asian Studies",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Statistics Supplementary Minor Concentration (Faculty of Arts)",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Strategic Management – Global Strategy",
+      "raison": "fiche de type Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Strategic Management – Social Business and Enterprise",
+      "raison": "fiche de type Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Technological Entrepreneurship",
+      "raison": "fiche de type Minor seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Turkish Language",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Urdu Language",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Water Environments and Ecosystems (Biological Stream) (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Water Environments and Ecosystems (Biological Stream) (Faculty of Science)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Water Environments and Ecosystems (Physical Stream) (Faculty of Agricultural and Environmental Sciences)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Water Environments and Ecosystems (Physical Stream) (Faculty of Science)",
+      "raison": "fiche de type Domain seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Wildlife Biology",
+      "raison": "fiche de type Specialization seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "World Cinemas",
+      "raison": "fiche de type Minor Concentration seulement (mineure / concentration / domaine / spécialisation) — exclu"
+    },
+    {
+      "nom": "Inclusive Education (Cert.) — 2e fiche eCalendar (/education/programs-first-nations-inuit/inclusive-education-cert/)",
+      "raison": "doublon de nom avec la fiche Educational and Counselling Psychology retenue ; à vérifier s’il s’agit d’une seule offre"
+    },
+    {
+      "nom": "Elementary Education: Indigenous Education (B.Ed. for Certified Teachers)",
+      "raison": "à vérifier : baccalauréat présent dans l’eCalendar (Faculty of Education) mais absent du répertoire d’admission (unité retenue) ; réservé aux enseignants déjà certifiés"
+    },
+    {
+      "nom": "Bilingual Professional Communication (Cert. Proficiency)",
+      "raison": "à vérifier : « Certificate of Proficiency » en langues (School of Continuing Studies), hors liste « Undergraduate Credit Programs »"
+    },
+    {
+      "nom": "English for Professional Communication (Cert. Proficiency)",
+      "raison": "à vérifier : « Certificate of Proficiency » en langues (School of Continuing Studies), hors liste « Undergraduate Credit Programs »"
+    },
+    {
+      "nom": "French for Professional Communication (Cert. Proficiency)",
+      "raison": "à vérifier : « Certificate of Proficiency » en langues (School of Continuing Studies), hors liste « Undergraduate Credit Programs »"
+    },
+    {
+      "nom": "General Practice Residency Program (Dentistry) (Cert.)",
+      "raison": "résidence dentaire après le D.M.D. — pas un certificat de 1er cycle"
+    },
+    {
+      "nom": "Oral and Maxillofacial Surgery (4-year program) (Cert.)",
+      "raison": "formation dentaire postdoctorale — exclu"
+    },
+    {
+      "nom": "Oral and Maxillofacial Surgery (Integrated O.M.F.S. & M.D.,C.M.) (Cert.)",
+      "raison": "formation dentaire postdoctorale — exclu"
+    },
+    {
+      "nom": "Oral Surgery Internship (Cert.)",
+      "raison": "formation dentaire postdoctorale — exclu"
+    },
+    {
+      "nom": "Dentistry (Four-Year Program) (D.M.D.)",
+      "raison": "doctorat professionnel de premier grade — exclu"
+    },
+    {
+      "nom": "Doctor of Medicine and Master of Surgery (M.D.,C.M.)",
+      "raison": "doctorat professionnel de premier grade — exclu"
+    },
+    {
+      "nom": "Commercial Cannabis (Dip.) ; Environment (Dip.) ; diplômes de la Schulich School of Music",
+      "raison": "diplômes — exclus"
+    },
+    {
+      "nom": "Graduate Certificates (Gr. Cert.), Gr. Dip. et M.Sc.A. de la School of Continuing Studies",
+      "raison": "cycles supérieurs — exclus"
+    }
+  ]
+}

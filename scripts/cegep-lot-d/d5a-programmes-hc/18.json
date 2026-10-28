@@ -1,0 +1,1331 @@
+{
+ "universite": "York University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://futurestudents.yorku.ca/programs/"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 139,
+  "certificat": 62,
+  "comment": "Répertoire Future Students (futurestudents.yorku.ca/programs, lu en deux segments). Unité = une entrée du répertoire ; mêmes noms (deux facultés, BHRM/BCom) et voies d'admission (Nursing, BSW post-degree) fusionnés. Glendon inclus (faculte « Glendon College »). Certificats : entrées « Undergraduate Certificate » et entrées de programme portant aussi un certificat (History, Children, Childhood & Youth, Public Administration, Design, Computer Science for Software Development). attendu baccalaureat/certificat = entrées comptées par type, les entrées groupées dans exclus (« ; ») comptent pour leur nombre réel."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/commerce/accounting",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/actuarial-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "African Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/african-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Ancient World Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/ancient-world-studies/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/anthropology",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Applied Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/applied-mathematics",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Education (BEd.)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://futurestudents.yorku.ca/program/education",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Education (French)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://futurestudents.yorku.ca/program/bachelor-of-education-french",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/biochemistry",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/biology/science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Biology / Biologie",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/biology/glendon",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Biomedical Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/biomedical-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Biotechnology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/biotechnology",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Business & Society",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/business-society",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Schulich School of Business",
+   "lien": "https://futurestudents.yorku.ca/program/business-administration",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Business Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/business-economics/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Business Economics / Économie et commerce",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/business-economics/glendon",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Business Research",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/commerce/business-research",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Business Technology Management",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/commerce/business-technology-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/chemistry",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Children, Childhood & Youth",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/children-childhood-youth",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Cities, Regions, Planning",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Environmental & Urban Change",
+   "lien": "https://futurestudents.yorku.ca/program/cities-regions-planning",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/civil-engineering",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Cognitive Science",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/cognitive-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Commerce",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/commerce",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Communication & Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/communication-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Communication, Social Media & Public Relations",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/communication-social-media-and-public-relations",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Communications / Communications",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/communications",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/computer-engineering",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/computer-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Computer Science for Software Development",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/computer-science-for-software-development",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Creative Technologies",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/creative-technologies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/creative-writing",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Criminology",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/criminology",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Cybersecurity",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/cybersecurity",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Dance",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/dance",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/data-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Design",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/design",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Digital Media",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering / School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/digital-media/lassonde",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Digital Technologies",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/digital-technologies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Disaster & Emergency Management",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/disaster-emergency-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Earth & Atmospheric Science",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/earth-atmospheric-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/economics/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Economics / Science économique",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/economics/glendon",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Educational Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://futurestudents.yorku.ca/program/educational-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/electrical-engineering",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/engineering",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Engineering & International Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/engineering-intl-development-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/english",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "English & Professional Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/english-professional-writing",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Entrepreneurship & Innovation",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/entrepreneurship-and-innovation",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Environmental Arts and Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Environmental & Urban Change",
+   "lien": "https://futurestudents.yorku.ca/program/environmental-arts-justice",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Environmental & Urban Change",
+   "lien": "https://futurestudents.yorku.ca/program/environmental-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Ethics and Political Philosophy / Éthique et philosophie politique",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/philosophy/glendon",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Film Production",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/film-production",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Film Studies and Creative Media Industries",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/film-studies-and-creative-media-industries",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/commerce/finance",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Financial & Business Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/financial-business-economics",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Financial Technologies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/financial-technologies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "French Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/french-studies/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "French Studies / Études françaises",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/french-studies/glendon",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Gender, Sexuality & Women's Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/gender-sexuality-womens-studies/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Global Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Environmental & Urban Change",
+   "lien": "https://futurestudents.yorku.ca/program/global-geography",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Global Health",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/global-health",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Global Work & Labour Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/global-work-labour-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Health & Society",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/health-society",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Health Policy, Management & Digital Health",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/health-policy-management-digital-health",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Health Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/health-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/history/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Human Resource Management",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/human-resources-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Human Rights & Equity Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/human-rights-equity-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Humanities",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/humanities",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/indigenous-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Individualized Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/individualized-studies/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Information Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/information-technology",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Integrative Arts",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/integrative-arts",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Interdisciplinary Social Science",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/social-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "International Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/international-development-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "International Studies & Business Administration / Études internationales et administration des affaires",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/international-studies-business-administration",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "International Studies / Études internationales",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/international-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Kinesiology & Health Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/kinesiology-health-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Law & Society",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/law-society",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/linguistics",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Linguistics, Language and Society / Linguistique et sciences du langage",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/linguistics-language-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Management",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/commerce/management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/commerce/marketing",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/mathematics/science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Mathematics and its Applications / Mathématique et ses applications",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/mathematics/glendon",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Mathematics for Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/mathematics-education",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/mechanical-engineering",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Mechatronics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/mechatronics-engineering",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Media Arts",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/media-arts",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/music",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health / Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/neuroscience",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/hh/nursing",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/philosophy/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Philosophy of Law",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/philosophy-of-law",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Physics & Astronomy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/physics-astronomy",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/political-science/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Political Science / Science politique",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/political-science/glendon",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Professional Translation / Traduction professionnelle",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/translation-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Professional Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/professional-writing",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/psychology/health",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Psychology / Psychologie",
+   "cycle": "baccalaureat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/psychology/glendon",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Public Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/public-administration",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Science (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/science-bsc-keele",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Science, Technology and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/science-technology-and-society",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Screenwriting & Creative Producing",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/screenwriting-and-creative-producing",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/social-work",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/sociology/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Software Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/software-engineering",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Space Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/space-engineering",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Speech & Language Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/speech-language-sciences",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Sport Management",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/sport-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/statistics",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Supply Chain Management",
+   "cycle": "baccalaureat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/commerce/supply-chain-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Sustainable Environmental Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Environmental & Urban Change",
+   "lien": "https://futurestudents.yorku.ca/program/sustainable-environmental-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Theatre (Acting & Performance)",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/theatre-acting-performance",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Theatre (Performance Creation)",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/theatre-performance-creation",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Theatre (Production & Design)",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/theatre-production-design",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Theatre Studies",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/theatre",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Visual Arts - Art History",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/art-history",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Visual Arts - Studio",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/visual-arts",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Accounting",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/accounting",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Actuarial Science",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/actuarial-science",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Advocacy & Public Engagement",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/advocacy-and-public-engagement",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Anti-Racist Research & Practice",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/anti-racist-research-practice",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Black Canadian Studies",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/black-canadian-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Canadian Business for Internationally Educated Professionals",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/canadian-business-for-internationally-educated-professionals",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in Chinese Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in French",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in German Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in Italian Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in Japanese Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in Modern Greek Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in Modern Hebrew Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in Modern Korean Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in Portuguese Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Proficiency in Spanish Language",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/language/head",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Children's Literature",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/childrens-literature",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Children, Childhood & Youth",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/children-childhood-youth",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Climate Solutions and Sustainable Energy",
+   "cycle": "certificat",
+   "faculte": "Faculty of Environmental & Urban Change",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/climate-solutions-and-sustainable-energy",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Computer Science for Software Development",
+   "cycle": "certificat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/computer-science-for-software-development",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Counselling and Mental Health",
+   "cycle": "certificat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/counselling-and-mental-health",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Cross-Disciplinary Certificate in Public History",
+   "cycle": "certificat",
+   "faculte": "School of the Arts, Media, Performance & Design / Liberal Arts & Professional Studies / Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/public-history",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Culture, Medicine & Health",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/culture-medicine-and-health",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Design",
+   "cycle": "certificat",
+   "faculte": "School of the Arts, Media, Performance & Design",
+   "lien": "https://futurestudents.yorku.ca/program/design",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Digital Health",
+   "cycle": "certificat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/digital-health",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Discipline of Teaching English as an International Language (D-TEIL)",
+   "cycle": "certificat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/dteil",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Emergency Management",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/emergency-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Financial Planning",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/financial-planning",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Fitness Assessment & Exercise Counselling",
+   "cycle": "certificat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/fitness-exercise-counselling",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Gender & Women's Studies",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/womens-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Geomatics: Geographic Information Systems and Remote Sensing",
+   "cycle": "certificat",
+   "faculte": "Faculty of Environmental & Urban Change",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/geographic-information-systems",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Health Services Financial Management",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies / Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/health-services-financial-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Hebrew & Jewish Studies: Advanced",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/hebrew-jewish-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "History",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/history/laps",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Human Resource Management",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/human-resources-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Human Resource Management for Internationally Educated Professionals",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/human-resources-management-for-internationally-educated-professionals",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/indigenous-studies-certificate",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Information Technology Auditing & Assurance",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/information-technology-auditing-assurance",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Information Technology for Internationally Educated Professionals",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/information-technology-for-internationally-educated-professionals",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Investment Management",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/investment-management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Jewish Studies",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/jewish-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Law & Social Thought / Droit et pensée sociale",
+   "cycle": "certificat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/law-social-thought",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Law & Society",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/law-society",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Logistics",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/logistics",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Management",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/management",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/marketing",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Meteorology",
+   "cycle": "certificat",
+   "faculte": "Lassonde School of Engineering",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/meteorology",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Practical Ethics",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/practical-ethics",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Proficiency in Spanish for Business and Professional Communication",
+   "cycle": "certificat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/proficiency-in-spanish",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Public Administration",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/public-administration",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Public Administration & Law",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/public-administration-and-law",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Public Policy Analysis",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/public-policy-analysis",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Refugee & Migration Studies",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/refugee-and-migration-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Refugee & Migration Studies / Études sur la migration et sur les réfugiés",
+   "cycle": "certificat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/refugee-migration-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Rehabilitation Services",
+   "cycle": "certificat",
+   "faculte": "Faculty of Health",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/rehabilitation-services",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Sexuality Studies",
+   "cycle": "certificat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/sexuality-studies",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Spanish-English Translation / Traducción ingles-espanõl",
+   "cycle": "certificat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/spanish-english",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Teaching English to Speakers of Other Languages",
+   "cycle": "certificat",
+   "faculte": "Liberal Arts & Professional Studies",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/tesol",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  },
+  {
+   "nom": "Technical & Professional Communication",
+   "cycle": "certificat",
+   "faculte": "Glendon College",
+   "lien": "https://futurestudents.yorku.ca/program/certificates/technical-professional-writing",
+   "source": "https://futurestudents.yorku.ca/programs/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Digital Media (School of the Arts, Media, Performance & Design)",
+   "raison": "même nom offert par deux facultés (Lassonde et AMPD), fusionné"
+  },
+  {
+   "nom": "Human Resource Management (BCom)",
+   "raison": "même nom (BHRM et BCom), fusionné dans « Human Resource Management »"
+  },
+  {
+   "nom": "Nursing: 4-Year Direct Entry Nursing ; Nursing: Post-RN for Internationally Educated Nurses ; Nursing: Second Entry",
+   "raison": "voies d'admission du même BScN, fusionnées dans « Nursing »"
+  },
+  {
+   "nom": "Social Work - BSW (Post-degree)",
+   "raison": "voie après grade du même BSW, fusionnée dans « Social Work »"
+  },
+  {
+   "nom": "Commerce Qualification Year ; Criminology Qualification Year ; Economics Qualification Year ; Law & Society Qualification Year",
+   "raison": "années de qualification (accès), pas des programmes distincts"
+  },
+  {
+   "nom": "First Year Engineering Core Program ; First Year Exploration / Première année exploratoire ; Science (BSc, First Year Only) ; Undeclared Major (EUC) ; Undeclared Major (LAPS)",
+   "raison": "première année non déclarée / tronc commun, pas des programmes menant à un grade distinct"
+  },
+  {
+   "nom": "Law - Juris Doctor",
+   "raison": "premier grade professionnel (JD, Osgoode Hall Law School)"
+  },
+  {
+   "nom": "Human Resource Management (certificat listé avec le BHRM)",
+   "raison": "doublon du certificat « Human Resource Management »"
+  },
+  {
+   "nom": "Indigenous Studies (certificat listé avec le BA)",
+   "raison": "doublon du certificat « Indigenous Studies »"
+  },
+  {
+   "nom": "Language Proficiency",
+   "raison": "entrée-parapluie regroupant les « Certificate of Proficiency in ... » listés séparément"
+  }
+ ]
+}

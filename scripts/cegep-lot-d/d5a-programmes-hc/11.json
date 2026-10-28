@@ -1,0 +1,954 @@
+{
+ "universite": "Toronto Metropolitan University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.torontomu.ca/calendar/2026-2027/programs/",
+  "https://www.torontomu.ca/admissions/undergraduate/apply/program-status/",
+  "https://www.torontomu.ca/content/ryerson/convocation/dates/",
+  "https://continuing.torontomu.ca/certificates/"
+ ],
+ "blocages": [
+  "https://continuing.torontomu.ca/certificates/ : pas bloqué, mais la liste des certificats est chargée en JavaScript (« loading certificates ») et la recherche publique ne rend aucun résultat côté serveur ; remplacé par la liste officielle des « CE Certificate » de la cérémonie de collation des grades d'octobre 2026 (torontomu.ca/convocation/dates) — liste probablement INCOMPLÈTE (seuls les certificats ayant des diplômés à cette cérémonie)"
+ ],
+ "attendu": {
+  "baccalaureat": 72,
+  "certificat": 61,
+  "comment": "Baccalauréats : calendrier officiel 2026-2027, page Programs (72 entrées, 6 facultés) = unité de liste, croisée avec la page Program status pour les admissions fermées. Certificats : 61 entrées « CE Certificate » de la collation d'octobre 2026 (Chang School), faute de catalogue lisible ; statut crédit/non-crédit non vérifié certificat par certificat (la plupart des certificats Chang portent des crédits TMU). Liens des certificats laissés null sauf 3 pages profil vérifiées."
+ },
+ "programmes": [
+  {
+   "nom": "Arts and Contemporary Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/arts_contemporary.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Criminology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/criminology.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Criminology and History Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/criminology_history.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Criminology and Politics and Governance Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/criminology_politics_governance.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Criminology and Sociology Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/criminology_sociology.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Economics and Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/economics.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/english.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "English and History Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/english_history.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "English and Philosophy Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/english_philosophy.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Environmental and Urban Sustainability",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/eus.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Geographic Analysis",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/geographic.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/history.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "History and Philosophy Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/history_philosophy.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "History and Politics and Governance Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/history_politics_governance.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "History and Sociology Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/history_sociology.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Language and Intercultural Relations",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/language.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/philosophy.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Politics and Governance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/politics.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Politics and Governance and Sociology Double Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/politics_gov_sociology.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/psychology.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Public Administration and Governance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/public_admin.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/arts/sociology.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Creative Industries",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/creative_industries.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Fashion",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/fashion.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Graphic Communications Management",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/gcm.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Image Arts",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/image_arts.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Interior Design",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/interior.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Journalism",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/journalism.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Media Production",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/media.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "New Media",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/new_media.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Performance: Acting/Dance/Design and Production",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/performance.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Professional Communication",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/procomm.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Professional Music",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/professional_music.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Sport Media",
+   "cycle": "baccalaureat",
+   "faculte": "The Creative School",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/fcad/sport_media.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Child and Youth Care",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/child_youth.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Disability Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/disability_studies.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Early Childhood Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/early_child.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Midwifery",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/midwifery.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Nursing - Advanced Entry Program",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/nursing_advancedentry.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Nursing - Collaborative Program",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/nursing_collaborative.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Nursing - Post-Diploma Degree Completion",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/nursing_post-diploma.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Nutrition and Food",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/nutrition.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Occupational Health and Safety",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/occupational.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Public Health",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/publichealth.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/socialwork.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Urban and Regional Planning",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Community Services",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/community/planning.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Aerospace Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/aerospace.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Architectural Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/architectural.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Biomedical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/biomedical_eng.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Chemical Engineering Co-operative Program",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/chemical.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/civil.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/computer_eng.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/electrical.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Industrial Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/industrial.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/mechanical.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Mechatronics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Architectural Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/feas/mechatronics-engineering.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/science/biology.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Biomedical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/science/biomedical_sci.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/science/chemistry.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/science/computer_sci.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Cyber Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/science/cyber-science.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Financial Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/science/financial_math.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Mathematics and Its Applications",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/science/mathematics.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Medical Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/science/medical_physics.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Accounting and Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Ted Rogers School of Management",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/trsm/accounting_finance.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Business Management",
+   "cycle": "baccalaureat",
+   "faculte": "Ted Rogers School of Management",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/trsm/business_mgt.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Business Technology Management",
+   "cycle": "baccalaureat",
+   "faculte": "Ted Rogers School of Management",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/trsm/business_tech.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Health Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Ted Rogers School of Management",
+   "lien": "https://www.torontomu.ca/content/ryerson/calendar/2026-2027/programs/trsm/health_services.html",
+   "source": "https://www.torontomu.ca/calendar/2026-2027/programs/"
+  },
+  {
+   "nom": "Advanced Accounting",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Applied Digital Geography and GIS",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Advanced Safety Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Aging and Gerontology",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Architecture",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Business Communication",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Business Decision Analysis",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Business Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": "https://continuing.torontomu.ca/public/category/courseCategoryCertificateProfile.do?method=load&certificateId=174116",
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Community Engagement, Leadership, and Development",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Computer Coding (Formerly Computer Programming Applications)",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Crime Analytics",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Criminal Justice and Criminology",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Cybersecurity, Data Protection and Digital Forensics",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Data Analytics, Big Data, and Predictive Analytics",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Data Science, Machine Learning and Applied AI",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Economics: Fundamentals",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Economics: Theory and Applications",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Emergency Management, Threat and Response Planning",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Ethics",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Facility and Property Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Fashion Innovation",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Film Studies",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Financial Mathematics Modeling and Predictive Analytics",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Food Security",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Foundations for Accounting",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": "https://continuing.torontomu.ca/public/category/courseCategoryCertificateProfile.do?method=load&certificateId=13884787",
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Foundations of International Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Full Stack Developer",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Fundamentals of Interior Design",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Fundraising Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Health Informatics",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Health Services Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Health Studies",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Human Resources Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Indigenous Knowledges and Experiences",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Intermediate Accounting I",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Intermediate Accounting II",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Landscape Design for Climate Resilience",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Lighting Design",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Local Economic Development",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Mental Health and Addictions",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Nonprofit and Voluntary Sector Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Occupational Health and Safety",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Occupational Health and Safety Leadership",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Photography Studies",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Privacy, Access, and Information Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Proficiency in French",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Programming for Game Development",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Project Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": "https://continuing.torontomu.ca/public/category/courseCategoryCertificateProfile.do?method=load&certificateId=170539",
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Project Management for Technical Professionals",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Public Administration and Leadership",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Public Relations",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Publishing",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Retail Management",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Robotics and Embedded Systems",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  },
+  {
+   "nom": "Social Sciences and Humanities Foundations",
+   "cycle": "certificat",
+   "faculte": "The G. Raymond Chang School of Continuing Education",
+   "lien": null,
+   "source": "https://www.torontomu.ca/content/ryerson/convocation/dates/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Undeclared Arts (First Year Studies Only)",
+   "raison": "année d'entrée non déclarée, pas un programme menant à un grade distinct"
+  },
+  {
+   "nom": "Undeclared Engineering (First Year Studies Only)",
+   "raison": "année d'entrée non déclarée, pas un programme menant à un grade distinct"
+  },
+  {
+   "nom": "Hospitality and Tourism Management",
+   "raison": "admission fermée (Entry Level « No » pour Fall 2027, Winter 2027) sur la page Program status"
+  },
+  {
+   "nom": "Retail Management",
+   "raison": "admission fermée (Entry Level « No » pour Fall 2027, Winter 2027) sur la page Program status ; le certificat CE homonyme est conservé"
+  },
+  {
+   "nom": "Business Management / Business Technology Management / Accounting & Finance (4 Year, 5-Year Co-op, Part-time, Direct Entry, Advanced Standing, diplômés de collège)",
+   "raison": "variantes d'admission/régime du même programme, fusionnées"
+  },
+  {
+   "nom": "Child and Youth Care, Early Childhood Studies, Disability Studies, Social Work, Public Health, Occupational Health and Safety, Urban and Regional Planning, Nursing Post Diploma, Midwifery, Computer Science (Direct Entry / Degree Completion / part-time / 2-year routes)",
+   "raison": "variantes d'admission/régime du même programme, fusionnées"
+  },
+  {
+   "nom": "Image Arts - Film ; Image Arts - Photography Media Arts",
+   "raison": "volets du programme Image Arts (une seule entrée au calendrier)"
+  },
+  {
+   "nom": "Performance: Acting ; Performance: Dance ; Performance: Design and Production",
+   "raison": "volets du programme Performance (une seule entrée au calendrier)"
+  },
+  {
+   "nom": "Fashion Communication ; Fashion Design",
+   "raison": "anciens libellés fermés (Program status), programme unique Fashion au calendrier"
+  },
+  {
+   "nom": "Nursing - Collaborative Program - TMU / - Centennial",
+   "raison": "sites du même programme collaboratif, fusionnés"
+  },
+  {
+   "nom": "English language pathway programs",
+   "raison": "programme de langue, ni baccalauréat ni certificat"
+  },
+  {
+   "nom": "Primary Health Care Nurse Practitioner Certificate",
+   "raison": "à vérifier : certificat post-baccalauréat professionnel (infirmières praticiennes), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Advanced Human Resources Management - Postgraduate Certificate",
+   "raison": "certificat postgradué (Postgraduate Certificate)"
+  },
+  {
+   "nom": "Human Resources Management - Postgraduate Certificate",
+   "raison": "certificat postgradué (Postgraduate Certificate)"
+  },
+  {
+   "nom": "People Analytics for HR Professionals (Postgraduate)",
+   "raison": "certificat postgradué"
+  },
+  {
+   "nom": "Internationally Educated Engineers Qualification Bridging Program",
+   "raison": "à vérifier : programme passerelle pour ingénieurs formés à l'étranger, pas un certificat de premier cycle"
+  }
+ ]
+}

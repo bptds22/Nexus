@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { cleBrouillon, ecrireBrouillon, lireBrouillon, viderBrouillon, DUREE_BROUILLON_MS, type StockageLocal } from "@/lib/notes/brouillon";
-import { GABARITS_NOTE, insererGabarit, ajouterDictee } from "@/lib/notes/gabarits";
+import { GABARITS_NOTE, insererGabarit } from "@/lib/notes/gabarits";
 
 const lire = (p: string) => readFileSync(join(process.cwd(), p), "utf8").replace(/\r\n/g, "\n");
 function faux(): StockageLocal & { m: Map<string, string> } {
@@ -45,15 +45,11 @@ test("brouillon : un stockage absent ou qui lève ne casse rien", () => {
   assert.equal(lireBrouillon("x", 0, corrompu), "");
 });
 
-test("gabarits : courts, optionnels, insérés sur leur propre ligne ; dictée ajoutée avec une espace", () => {
+test("gabarits : courts, optionnels, insérés sur leur propre ligne", () => {
   assert.ok(GABARITS_NOTE.length >= 4 && GABARITS_NOTE.every((g) => g.length <= 32));
   assert.equal(insererGabarit("", "À suivre de près"), "À suivre de près — ");
   assert.equal(insererGabarit("Bon match", "Parler au parent"), "Bon match\nParler au parent — ");
   assert.equal(insererGabarit("Bon match\n", "Parler au parent"), "Bon match\nParler au parent — ");
-  assert.equal(ajouterDictee("", " vitesse élevée "), "vitesse élevée");
-  assert.equal(ajouterDictee("Bon départ", "et bon passeur"), "Bon départ et bon passeur");
-  assert.equal(ajouterDictee("Bon départ ", "bon passeur"), "Bon départ bon passeur");
-  assert.equal(ajouterDictee("texte", "   "), "texte");
 });
 
 test("le champ unique est branché partout : fiche, liste, processus — web et appli", () => {
@@ -73,11 +69,10 @@ test("le champ unique est branché partout : fiche, liste, processus — web et 
   assert.ok(/sujet=\{`athlete:\$\{athleteId\}`\}/.test(lire("app/recruteur/athletes/[id]/_components/NotesListsPanel.tsx")));
 });
 
-test("le bouton Dicter est visible et la dictée a un repli sur le micro du clavier", () => {
+test("lot E0 (BP 2026-10-28) : aucun bouton Dicter, aucune reconnaissance vocale ; le brouillon reste", () => {
   const c = lire("components/shared/ChampNote.tsx");
-  assert.match(c, /data-testid="champ-note-dicter"/);
-  assert.match(c, /webkitSpeechRecognition/);
-  assert.match(c, /Touche le micro de ton clavier pour dicter ta note\./);
-  assert.match(c, /fr-CA/);
+  assert.doesNotMatch(c, /champ-note-dicter/);
+  assert.doesNotMatch(c, /SpeechRecognition/);
+  assert.doesNotMatch(c, /Dicter/);
   assert.match(c, /Brouillon enregistré/);
 });

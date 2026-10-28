@@ -13,9 +13,11 @@ import type { SchoolProgramIdentity } from "./slots";
 
 export interface ProgramWallMenuProps {
   school: SchoolProgramIdentity;
+  /** Sections masquées de la page : leur lien disparaît du menu (ex. Parcours d'une université, lot D5b). */
+  hidden?: string[];
 }
 
-export default function ProgramWallMenu({ school }: ProgramWallMenuProps) {
+export default function ProgramWallMenu({ school, hidden = [] }: ProgramWallMenuProps) {
   const theme = deriveWallTheme(
     school.colorPrimary,
     school.colorDarker,
@@ -31,7 +33,7 @@ export default function ProgramWallMenu({ school }: ProgramWallMenuProps) {
           <a href="#campus">Campus</a>
           <a href="#apropos">À propos</a>
           <a href="#academique">Académique</a>
-          <a href="#parcours">Débouchés</a>
+          {!hidden.includes("parcours") && <a href="#parcours">Débouchés</a>}
         </nav>
         <div className="mright">
           <span className="pw">⚡ propulsé par Nexus</span>

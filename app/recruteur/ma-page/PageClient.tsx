@@ -41,6 +41,8 @@ export default function MaPageClient() {
   const schoolId = user?.profile.school_id ?? null;
 
   const [schoolName, setSchoolName] = React.useState("");
+  // Lot D5b : recruteur universitaire → la page de SON université, sans pages d'équipes (Q5).
+  const [universite, setUniversite] = React.useState(false);
   const [teams, setTeams] = React.useState<PagesTabTeam[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [err, setErr] = React.useState<string | null>(null);
@@ -53,7 +55,7 @@ export default function MaPageClient() {
       try {
         const client = createClient();
         const [sch, tms] = await Promise.all([
-          client.from("schools").select("name").eq("id", schoolId).maybeSingle(),
+          client.from("schools").select("name, type").eq("id", schoolId).maybeSingle(),
           // FILTRÉ SUR SON ÉCOLE — c'est la seule liste qu'il verra jamais.
           client.from("teams")
             .select("id, name, division, gender, sports:sport_id(nom)")
@@ -63,7 +65,10 @@ export default function MaPageClient() {
         if (annule) return;
         if (sch.error) throw sch.error;
         if (tms.error) throw tms.error;
-        setSchoolName(((sch.data as { name: string } | null)?.name) ?? "Mon collège");
+        const fiche = sch.data as { name: string; type: string | null } | null;
+        const estUniversite = fiche?.type === "UNIVERSITE";
+        setUniversite(estUniversite);
+        setSchoolName(fiche?.name ?? (estUniversite ? "Mon université" : "Mon collège"));
         const rows = (tms.data ?? []) as unknown as {
           id: string; name: string | null; division: string | null; gender: string | null;
           sports: { nom: string | null } | null;
@@ -110,7 +115,7 @@ export default function MaPageClient() {
           Ton compte n&apos;est rattaché à aucun établissement — il n&apos;y a pas de page à modifier.
         </div>
       ) : (
-        <PagesTab schoolId={schoolId} schoolName={schoolName} teams={teams} />
+        <PagesTab schoolId={schoolId} schoolName={schoolName} teams={universite ? [] : teams} universite={universite} />
       )}
     </div>
   );

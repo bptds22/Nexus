@@ -1,0 +1,520 @@
+{
+ "universite": "Trent University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major",
+  "https://calendar.trentu.ca/programs?career=Undergraduate&page=1&pq="
+ ],
+ "blocages": [
+  "https://www.trentu.ca/futurestudents/programs (et /futurestudents/undergraduate/programs, /futurestudents/program/<programme>, /registrar/academic-calendar/past-academic-calendars) : HTTP 500 Internal Server Error, non contourné ; remplacé par la page officielle Academic Advising « First Year Course Suggestions by Major » (liste des majors avec liens vers le calendrier)",
+  "https://calendar.trentu.ca/programs?career=Undergraduate : liste chargée en JavaScript (« Loading results... »), non exploitable",
+  "PDF officiel du calendrier 2025-2026 (trentu.ca/registrar/.../Trent Calendar 2025 26 May Edition) : > 10 Mo, non lisible par l'outil"
+ ],
+ "attendu": {
+  "baccalaureat": 70,
+  "certificat": 0,
+  "comment": "Source de remplacement : page Academic Advising (68 entrées : 2 « non déclaré » + 66 majors) + 2 programmes ayant leur propre rubrique (Swansea Chemical Engineering, Ecological Restoration). Unité = un major par nom, variantes B.A./B.Sc. fusionnées. Faculté non affichée (null). Aucune liste de certificats de premier cycle accessible : attendu certificat = 0, à vérifier."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting & Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.ACEC/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Ancient Greek & Roman Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.AGRS/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.ANTH/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Archaeology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.ARCH/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Artificial Intelligence",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.AIST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Arts & Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAS.ASCI/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Biochemistry & Molecular Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.BICE/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.BIOL/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Biomedical Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.BIOM/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Canadian Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.CAST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Chemical Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.CEPY/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.CHEM/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Child & Youth Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.CHYS/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Communications",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.COMM/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.COIS/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Computer Science & Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.COPH/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Conservation Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.BIOC/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Criminology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.CRIM/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Cultural Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.CUST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.DATA/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.ECON/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Education - Concurrent Indigenous Program",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/B.ED.INDG/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "English Literature",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Environmental & Resource Studies/Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.ERST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Environmental Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.ERCE/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Environmental Geoscience",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.EGEO/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Financial Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.FINA/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Forensic Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.FRAN/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Forensic Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.FRBI/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Forensic Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.FRCH/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Forensic Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/oNNCahqtIRi9IKeSO3Ya/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "French & Francophone Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.FREN/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "French & Canadian Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.FCST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Gender & Social Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.GESO/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.GEOG/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Global Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.GDST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.HEAL/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.HIST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Human Rights and Global Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.HURI/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Indigenous Environmental Studies & Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.IESS/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.INDG/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "International Political Economy (Joint-Major only)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/hPu0yJaaPiqLEeyWpm4Q/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Journalism and Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/NPI7GminEfFyFSLWV9h6",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.KINE/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Mathematical Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.MAEC/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Mathematical Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.MAPH/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.MATH/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.MDST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Nursing - Collaborative Program",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSN.NURS/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.PHIL/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.PHYS/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Policing & Community Well-Being",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.PLCW/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Political Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.POST/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.PSYC/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSW.SWRK/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.SOCI/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Software Engineering (Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.SOEN.COOP/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Supply Chain Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.LSCM/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Sustainable Agriculture & Food Systems",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BAH.SAFS/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Trent/Swansea Dual Degree - Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Trent/Swansea Dual Degree - Law",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Trent/Swansea Dual Degree - Medical",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BASG.MED/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Water Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.WASC/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Trent/Swansea Dual Degree - Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BS.CHEM.SWAN/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  },
+  {
+   "nom": "Ecological Restoration",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.trentu.ca/programs/BSH.ECRT/requirements-EbHxU",
+   "source": "https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Arts, General/Honours",
+   "raison": "entrée « non déclaré » (pas un programme/major)"
+  },
+  {
+   "nom": "Science, General/Honours",
+   "raison": "entrée « non déclaré » (pas un programme/major)"
+  },
+  {
+   "nom": "Education – Teacher Education Stream",
+   "raison": "voie d'admission au B.Ed. consécutif (« not a major itself » sur la page) ; à vérifier"
+  },
+  {
+   "nom": "Nursing - Compressed Program",
+   "raison": "voie accélérée du même B.Sc.N., fusionnée dans « Nursing - Collaborative Program »"
+  },
+  {
+   "nom": "Variantes B.A. / B.Sc. d'un même nom (Anthropology, Archaeology, Artificial Intelligence, Economics, Geography, IESS, SAFS, Psychology, Forensic Science, ERST/ERSC)",
+   "raison": "même programme en deux grades, une seule ligne"
+  },
+  {
+   "nom": "Computing Systems",
+   "raison": "à vérifier : cité seulement dans le texte (joint-major only), sans entrée propre"
+  },
+  {
+   "nom": "Business & Science ; Exploration Year: Sciences",
+   "raison": "à vérifier : vus dans les résultats de recherche (pages futurestudents/program/...) mais pages en HTTP 500 et absents de la page de remplacement ; Exploration Year = année non déclarée"
+  },
+  {
+   "nom": "Diplômes et certificats postgradués (Postgraduate Certificates, Graduate Diplomas)",
+   "raison": "hors périmètre (diplômes / cycles supérieurs)"
+  },
+  {
+   "nom": "Certificats de premier cycle",
+   "raison": "à vérifier : aucun relevé — catalogue officiel chargé en JavaScript et pages Future Students en HTTP 500"
+  }
+ ]
+}

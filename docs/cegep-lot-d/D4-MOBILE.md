@@ -61,3 +61,9 @@ Rien de la base ne change : tout ce qui suit est du code mobile (Capacitor), ave
   messages athlète / coach avec le nom de l'université.
 - Recruteur collégial mobile : inchangé (régression).
 - 1.4.5 face au plancher 1.4.6 : écran de mise à jour.
+
+## Ajouts du lot D5b (2026-10-28)
+- « Ma page » rouverte au recruteur universitaire (lib/auth/recruteurUniversitaire.ts, partagé web et appli) : dans
+  l'appli, l'entrée « Ma page » du panneau Plus renvoie au web (MaPageMobile), comme pour le cégep. À vérifier dans la 1.4.6.
+- Page publique universitaire : web seulement (/universite/[école]) ; dans le bundle Capacitor la route rend un renvoi
+  vers le web. Q4 : RPC de lecture sous ON + rendu natif (ProgramPageMobile) à faire dans la 1.4.6.

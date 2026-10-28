@@ -1,0 +1,624 @@
+{
+ "universite": "University of Lethbridge",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.ulethbridge.ca/future-student/programs"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 89,
+  "certificat": 1,
+  "comment": "Répertoire officiel « Programs » (90 entrées sur une seule page ; la page annonce « more than 150 programs » en comptant les combinaisons de grades). Unité = entrée du répertoire (matière/programme). 89 entrées menant à des grades de baccalauréat ou apparentées + 1 certificat de premier cycle (Certificate in Arts and Science). Certificats de gestion (Management Certificates) cités dans les fiches mais non listés comme programmes. Faculté non affichée : null."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/accounting",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Addictions and Mental Health Counselling",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/addictions-counselling-post-diploma",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Addictions Counselling",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/addictions-counselling",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Agricultural Biotechnology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/agricultural-biotechnology",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Agricultural Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/agricultural-studies",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/anthropology",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Applied Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/applied-statistics",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Archaeology and Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/archaeology-and-geography",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Art (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/art-ba",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Art Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/art-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Art History and Museum Studies (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/art-historymuseum-studies",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Art Studio (BFA - Art)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/art-studio-bfa",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/biochemistry",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Biological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/biological-sciences",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Business & Supply Chain Management (integrated diploma & degree)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/business-supply-chain-management-integrated-diploma-degree",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Certificate in Arts and Science",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/certificate-arts-and-science",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/chemistry",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Cinema and Media Studies (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/cinema-media",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Computer Science (Arts & Science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/computer-science-arts-science",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Computer Science (BBA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/computer-science-management",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Computer Science & Geographical Information Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/computer-science-geographical-information-science",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Digital Audio Arts (BMus)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/digital-audio-arts",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Drama Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/drama-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Dramatic Arts (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/dramatic-arts-ba",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Dramatic Arts (BFA - Dramatic Arts)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/dramatic-arts-bfa-dramatic-arts",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Early Years Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/early-years-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Economics (Arts & Science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/economics-arts-science",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Economics (BBA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/economics-management",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Engineering (Integrated Engineering)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/engineering",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/english",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "English Language Arts Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/english-language-arts-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/environmental-science",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/finance",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/french",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "French/Spanish",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/french-spanish",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "General Major in Humanities",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/general-major-humanities",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "General Major in the Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/general-major-sciences",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "General Major in the Social Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/general-major-social-sciences",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "General Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/general-management",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/geography",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Geography with Concentration GIS (Post-Diploma)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/geography-concentration-gis-post-diploma",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Global Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/global-business",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/history",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Human Resource Management & Labour Relations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/human-resource-management-labour-relations",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Indigenous Art (Art History/Museum Studies)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/indigenous-art",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Indigenous Art (Art Studio)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/indigenous-art-studio",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Indigenous Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/indigenous-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Indigenous Governance and Business Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/indigenous-governance-and-business-management",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Indigenous Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/indigenous-health",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/indigenous-studies",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/kinesiology",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/marketing",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/mathematics",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Mathematics Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/mathematics-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Modern Languages Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/modern-languages-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Multidisciplinary",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/multidisciplinary",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Music (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/music-ba",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Music (BMus)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/music-studio-bmus",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Music Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/music-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/neuroscience",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "New Media",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/new-media",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "New Media/Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/new-mediacomputer-science",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "New Media/General Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/new-mediamanagement",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/nursing",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Performance (BFA - Dramatic Arts)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/performance-bfa",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/philosophy",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Philosophy, Politics and Law",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/philosophy-politics-and-law",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Physical Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/physical-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/physics",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/political-science",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Political Science (BBA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/political-science-management",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/psychology",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Public Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/public-health",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/religious-studies",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Remote Sensing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/remote-sensing",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Science Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/science-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Social Studies Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/social-studies-education",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/sociology",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Technical/Design (BFA - Dramatic Arts)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/technicaldesign",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Therapeutic Recreation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/therapeutic-recreation",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  },
+  {
+   "nom": "Women and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ulethbridge.ca/future-student/program/women-and-gender-studies",
+   "source": "https://www.ulethbridge.ca/future-student/programs"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Accounting (CPA Bridging)",
+   "raison": "certificats post-baccalauréat (Post-Bachelor Certificates, CPA Bridging) — hors premier cycle"
+  },
+  {
+   "nom": "Agricultural Studies (Post-Diploma)",
+   "raison": "voie post-diplôme du même programme, fusionnée avec « Agricultural Studies »"
+  },
+  {
+   "nom": "Computer Science (Post-Diploma)",
+   "raison": "voie post-diplôme, fusionnée avec « Computer Science (Arts & Science) »"
+  },
+  {
+   "nom": "Engineering (Pre-professional transfer program)",
+   "raison": "programme de transfert pré-professionnel ; grade délivré par l'établissement d'accueil (University of Alberta)"
+  },
+  {
+   "nom": "Environmental Science (Post-Diploma)",
+   "raison": "voie post-diplôme, fusionnée avec « Environmental Science »"
+  },
+  {
+   "nom": "Law (Dual degree BA/LLB)",
+   "raison": "double grade incluant un Bachelor of Laws (diplôme professionnel de droit) — à vérifier"
+  },
+  {
+   "nom": "Law (Dual degree BBA/LLB)",
+   "raison": "double grade incluant un Bachelor of Laws (diplôme professionnel de droit) — à vérifier"
+  },
+  {
+   "nom": "Nursing - After Degree",
+   "raison": "voie après-diplôme du même grade, fusionnée avec « Nursing »"
+  },
+  {
+   "nom": "Public Health (Post Diploma)",
+   "raison": "voie post-diplôme, fusionnée avec « Public Health »"
+  },
+  {
+   "nom": "Agricultural Studies — Bachelor of Arts",
+   "raison": "admission suspendue (effective Winter 2027) selon la page ; la ligne « Agricultural Studies » est conservée pour le BSc encore offert"
+  }
+ ]
+}

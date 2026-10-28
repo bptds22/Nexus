@@ -1,0 +1,485 @@
+{
+ "universite": "Mount Allison University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://mta.ca/programs",
+  "https://mta.ca/academics/programs-and-degrees/undergraduate-certificates",
+  "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+ ],
+ "blocages": [
+  "https://www.mta.ca/programs redirects to http://mta.ca/programs (followed; not a block)"
+ ],
+ "attendu": {
+  "baccalaureat": 55,
+  "certificat": 16,
+  "comment": "Baccalaureat: the official program directory shows '55 Programs' (subject entries; unit = directory entry). Each was checked against the 2026-2027 calendar major lists (11.2.17, 11.2.18, 11.3.18) or its program page; 15 are minor/certificate-only. Certificat: 16 certificates in calendar 11.11.3 'Certificate Programs Available' (2026-2027); the web certificates page lists 15 (no Anti-Colonial Thought)."
+ },
+ "programmes": [
+  {
+   "nom": "Art History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/art-history",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Aviation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/aviation",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/biochemistry",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/biology",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Biopsychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/biopsychology",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Canadian Public Policy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/canadian-public-policy",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Canadian Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/canadian-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/chemistry",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Classical Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/classical-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Cognitive Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/cognitive-science",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Commerce",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/commerce",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Community, Education, and Social Change",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/community-education-and-social-change",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/computer-science",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Drama Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/drama-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/economics",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/education",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/english",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/environmental-science",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/environmental-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Feminist and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/feminist-and-gender-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Fine Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/fine-arts",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "French Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/french-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Geocomputing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/geocomputing",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/geography",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Hispanic Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/hispanic-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/history",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/indigenous-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "International Relations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/international-relations",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/mathematics",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Modern Languages, Literatures, and Cultures",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/modern-languages-literatures-and-cultures",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/music",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Music Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/music-education",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/philosophy",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Philosophy, Politics, and Economics (PPE)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/philosophy-politics-and-economics-ppe",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/physics",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/political-science",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/psychology",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/religious-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/sociology",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Visual and Material Culture Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://mta.ca/academics/programs-and-degrees/visual-and-material-culture-studies",
+   "source": "https://mta.ca/programs"
+  },
+  {
+   "nom": "Certificate in Anti-Colonial Thought",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Arts Administration",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Biopsychology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Canadian Arts and Culture",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Community Engaged Learning",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Data Analytics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Data Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Diversity, Equity, and Inclusion",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Foundations of Health",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Mi'kmaw Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Music Education",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Public History",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Social Research Methodologies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Studies of Indigenous History",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Theatre Arts",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  },
+  {
+   "nom": "Certificate in Visual Literacy and Culture",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://mta.ca/academic_calendar/CertificatePrograms.html",
+   "source": "https://mta.ca/academic_calendar/26-27/calendar_acad_prog_mar_2026-27.pdf"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Applied Physics",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Astronomy",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Geographic Information Systems (GIS)",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "German Studies",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Greek",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Health Studies",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "International Economics and Business",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "International Politics",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Japanese Studies",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Language and the Mind",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Latin",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Museum and Curatorial Studies",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Screen Studies and Popular Culture",
+   "raison": "Directory entry offered as minor only (no major/degree) (counted)"
+  },
+  {
+   "nom": "Community Engaged Learning",
+   "raison": "Directory entry offered as minor/certificate (the major is 'Community, Education, and Social Change') (counted)"
+  },
+  {
+   "nom": "Data Science",
+   "raison": "Directory entry offered as minor and certificate only, no major (counted)"
+  },
+  {
+   "nom": "Certificate of Bilingualism / Certificat de bilinguisme",
+   "raison": "Proficiency attestation by examination, not a certificate program (not counted)"
+  },
+  {
+   "nom": "Free-standing certificates",
+   "raison": "Calendar/certificates page: not available at this time; certificates are embedded only (info)"
+  },
+  {
+   "nom": "Master of Science",
+   "raison": "Graduate (not counted)"
+  }
+ ]
+}

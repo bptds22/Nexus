@@ -1,0 +1,1498 @@
+{
+  "universite": "Université de Montréal",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://admission.umontreal.ca/programmes-detudes/",
+    "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5",
+    "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3",
+    "https://www.hec.ca/programmes/baccalaureat",
+    "https://www.hec.ca/programmes/certificats",
+    "https://www.polymtl.ca/futur/bac/programmes",
+    "https://www.polymtl.ca/futur/certificat/programmes",
+    "https://www.polymtl.ca/admission/baccalaureat/programmes-detudes-au-baccalaureat",
+    "https://share.polymtl.ca/alfresco/service/api/path/content;cm:content/workspace/SpacesStore/Company%20Home/Sites/futur-web/documentLibrary/Brochures%20et%20feuillets/Baccalaur%C3%A9at/BR_Poly_Bac_Secondaire.pdf?guest=true",
+    "https://share.polymtl.ca/alfresco/service/api/path/content;cm:content/workspace/SpacesStore/Company%20Home/Sites/futur-web/documentLibrary/Brochures%20et%20feuillets/Certificats/BR_Certificat-1.pdf?a=true&guest=true"
+  ],
+  "attendu": {
+    "baccalaureat": 135,
+    "certificat": 79,
+    "comment": "UdeM (hors HEC/Poly) : facettes du répertoire admission.umontreal.ca « Baccalauréat (122) » et « Certificat de 1er cycle (41) » ; ces totaux excluent les programmes à admission suspendue (liste complète : 126 bacc., 47 cert.). Obtenu UdeM : 88 bacc. / 40 cert., après retrait de 3 orientations, 2 pages génériques, 22 baccalauréats par cumul thématiques sans code, 4 bacc. et 6 cert. suspendus, et regroupement des variantes campus/cheminement (7 lignes bacc., 1 cert.). HEC Montréal : attendu 1 baccalauréat (B.A.A.) et 25 certificats listés sur hec.ca/programmes/certificats (pas de total affiché) ; obtenu 1 / 25. Polytechnique Montréal : la page admission annonce 12 baccalauréats en génie accrédités (la brochure Admission 2027 en annonce 13, dont génie mathématique, exclu « à vérifier ») ; 13 certificats (12 dans la brochure Certificats Admission 2026, à jour au 1er juillet 2025, + certificat en cryptomonnaies et chaîne de blocs, nouveau à l'automne 2026) ; obtenu 12 / 13. polymtl.ca refuse la lecture automatisée : liste établie à partir des brochures PDF officielles (share.polymtl.ca) et de résultats de recherche limités à polymtl.ca ; pour génie informatique et pour 12 des 13 certificats, le lien pointe vers la page de liste officielle faute d'URL de page programme vérifiée."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat en anthropologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-anthropologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en architecture",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de l'aménagement",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-architecture/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en architecture de paysage",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de l'aménagement",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-architecture-de-paysage/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat 4 ans en arts et lettres",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-4-ans-en-arts-et-lettres/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en bio-informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-bio-informatique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en biochimie et médecine moléculaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-biochimie-et-medecine-moleculaire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en sciences biologiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-sciences-biologiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en chimie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-chimie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en cinéma et arts médiatiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-cinema-et-arts-mediatiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en sciences de la communication",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-sciences-de-la-communication/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en communication et politique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-communication-et-politique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en criminologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-criminologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en démographie et statistique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-demographie-et-statistique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en design d'intérieur",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de l'aménagement",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-design-dinterieur/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en design industriel",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de l'aménagement",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-design-industriel/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en droit",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de droit",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-droit/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en sciences économiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-sciences-economiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en économie et politique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-economie-et-politique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en écriture de scénario et création littéraire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-ecriture-de-scenario-et-creation-litteraire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en musique - Écriture",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-musique-ecriture/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et enseignement primaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-education-prescolaire-et-enseignement-primaire-campus-montreal/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'éducation physique et à la santé",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-enseignement-de-leducation-physique-et-a-la-sante/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'univers social au secondaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-enseignement-de-lunivers-social-au-secondaire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de la culture et de la citoyenneté québécoise au secondaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-enseignement-de-la-culture-et-de-la-citoyennete-quebecoise-au-secondaire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en enseignement des mathématiques au secondaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-enseignement-des-mathematiques-au-secondaire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en enseignement des sciences et des technologies au secondaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-enseignement-des-sciences-et-des-technologies-au-secondaire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en enseignement du français au secondaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-enseignement-du-francais-au-secondaire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en enseignement du français langue seconde",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-enseignement-du-francais-langue-seconde/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-enseignement-en-adaptation-scolaire-campus-montreal/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en ergothérapie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-ergotherapie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études allemandes",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-allemandes/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études allemandes et histoire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-allemandes-et-histoire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études anglaises",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-anglaises/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études asiatiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-asiatiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études classiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-classiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études classiques et anthropologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-classiques-et-anthropologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études hispaniques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-hispaniques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études internationales",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-internationales/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en études religieuses",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-etudes-religieuses/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en géographie environnementale",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-geographie-environnementale/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en histoire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-histoire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en histoire de l’art",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-histoire-de-lart/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en histoire et études classiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-histoire-et-etudes-classiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-informatique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en kinésiologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-kinesiologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en linguistique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-linguistique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en littérature comparée",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-litterature-comparee/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en littératures de langue française",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-litteratures-de-langue-francaise/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en littératures de langue française et linguistique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-litteratures-de-langue-francaise-et-linguistique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en littératures de langue française et philosophie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-litteratures-de-langue-francaise-et-philosophie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en littératures de langues anglaise et française",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-litteratures-de-langues-anglaise-et-francaise/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-mathematiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques et économie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-mathematiques-et-economie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques et informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-mathematiques-et-informatique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques et physique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-mathematiques-et-physique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en microbiologie et immunologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-microbiologie-et-immunologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en musicologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-musicologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en musique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-musique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en musique - Composition",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-musique-composition/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en musique - Interprétation chant classique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-musique-interpretation-chant-classique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en musique - Interprétation instruments classiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-musique-interpretation-instruments-classiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en musique - Interprétation jazz",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-musique-interpretation-jazz/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en musiques numériques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-musiques-numeriques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en neuroscience cognitive",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-neuroscience-cognitive/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en neurosciences",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-neurosciences/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en nutrition",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-nutrition/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en philosophie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-philosophie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en philosophie et études classiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-philosophie-et-etudes-classiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en physiothérapie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-physiotherapie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en physique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-physique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en physique et informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-physique-et-informatique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en psychoéducation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-psychoeducation/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en psychologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-psychologie-campus-montreal/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en psychologie et sociologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-psychologie-et-sociologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en relations industrielles",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-relations-industrielles/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en santé environnementale et santé au travail",
+      "cycle": "baccalaureat",
+      "faculte": "École de santé publique",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-sante-environnementale-et-sante-au-travail/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en science politique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-science-politique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en science politique et philosophie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-science-politique-et-philosophie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en sciences biomédicales",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-sciences-biomedicales/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en sciences biopharmaceutiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de pharmacie",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-sciences-biopharmaceutiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat 4 ans en sciences humaines et sociales",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-4-ans-en-sciences-humaines-et-sociales/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences infirmières",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-sciences-infirmieres-formation-initiale-campus-montreal/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat 4 ans en sciences naturelles et formelles",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-4-ans-en-sciences-naturelles-et-formelles/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en sécurité et études policières",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-securite-et-etudes-policieres/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en sociologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-sociologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en traduction",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-traduction/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en travail social",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-travail-social-campus-montreal/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Baccalauréat en urbanisme",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de l'aménagement",
+      "lien": "https://admission.umontreal.ca/programmes/baccalaureat-en-urbanisme/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A5"
+    },
+    {
+      "nom": "Certificat en action communautaire",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-action-communautaire/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en archivistique",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-archivistique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en communication et relations publiques",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-communication-et-relations-publiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en coopération et solidarité internationales",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-cooperation-et-solidarite-internationales/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en création et en gestion de contenus",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-creation-et-en-gestion-de-contenus/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en criminologie",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-criminologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en droit",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-droit/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en enquête et renseignement",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-enquete-et-renseignement/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en éthique",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-ethique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat d'études individualisées ès arts",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-detudes-individualisees-es-arts/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat d'études individualisées ès sciences",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-detudes-individualisees-es-sciences/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat de gérontologie",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-de-gerontologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en gestion appliquée à la sécurité intérieure",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-gestion-appliquee-a-la-securite-interieure/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en gestion de données",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-gestion-de-donnees/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en gestion de l'information numérique",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-gestion-de-linformation-numerique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en gestion des services de santé et des services sociaux",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-gestion-des-services-de-sante-et-des-services-sociaux/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en informatique appliquée",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-informatique-appliquee/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en intelligence artificielle au travail : utilisation responsable",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-intelligence-artificielle-au-travail-utilisation-responsable/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat d'intervention auprès des jeunes : fondements et pratiques",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-dintervention-aupres-des-jeunes-fondements-et-pratiques/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat d'intervention en déficience intellectuelle et en troubles du spectre de l'autisme",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-dintervention-en-deficience-intellectuelle-et-en-troubles-du-spectre-de-lautisme/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat d'intervention en dépendances",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-dintervention-en-dependances/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en intervention psychoéducative",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-intervention-psychoeducative/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en journalisme multiplateforme",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-journalisme-multiplateforme/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en justice réparatrice",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-justice-reparatrice/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en leadership pour militaires",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-leadership-pour-militaires/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en musique et arts",
+      "cycle": "certificat",
+      "faculte": "Faculté de musique",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-musique-et-arts/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en pair-aidance",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-pair-aidance/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en pratiques rédactionnelles",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-de-redaction-professionnelle/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en publicité et communication créative",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-publicite-et-communication-creative/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat de relations industrielles",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-de-relations-industrielles/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat de santé et sécurité du travail",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-de-sante-et-securite-du-travail/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en santé mentale : fondements et pratiques d'intervention",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-sante-mentale-fondements-et-pratiques-dintervention/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en santé publique : prévention et promotion de la santé",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-sante-publique-prevention-et-promotion-de-la-sante/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en sécurité du travail et santé publique",
+      "cycle": "certificat",
+      "faculte": "École de santé publique",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-securite-du-travail-et-sante-publique/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en sexualité : enjeux de société et pratiques d'intervention",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-sexualite-enjeux-de-societe-et-pratiques-dintervention/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en technologie et innocuité des aliments",
+      "cycle": "certificat",
+      "faculte": "Faculté de médecine vétérinaire",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-technologie-et-innocuite-des-aliments/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat de traduction 1",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-de-traduction-1/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat de traduction 2",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-de-traduction-2/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat de traduction 3e langue",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts et des sciences",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-de-traduction-3e-langue/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Certificat en victimologie",
+      "cycle": "certificat",
+      "faculte": "Faculté de l'apprentissage continu",
+      "lien": "https://admission.umontreal.ca/programmes/certificat-en-victimologie/",
+      "source": "https://admission.umontreal.ca/programmes-detudes/?tx_solr%5Bfilter%5D%5B0%5D=niveau%3A3"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires (B.A.A.)",
+      "cycle": "baccalaureat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/baccalaureat/baa",
+      "source": "https://www.hec.ca/programmes/baccalaureat"
+    },
+    {
+      "nom": "Certificat en affaires internationales",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-affaires-internationales",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en analyse d’affaires",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-analyse-affaires",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en analyse d’affaires – cybersécurité",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-analyse-affaires-cybersecurite",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en comptabilité professionnelle",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-comptabilite-professionnelle",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en développement organisationnel",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-developpement-organisationnel",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en entrepreneuriat, innovation et développement des PME",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-entrepreneuriat-innovation-developpement-pme",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en exploitation et valorisation des données",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-exploitation-valorisation-donnees",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en finance d’entreprise",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-finance-entreprise",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en finance de marché",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-finance-marche",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion de la chaîne logistique",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-chaine-logistique",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion comptable des organisations",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-comptable-organisations",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion d’entreprises",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-entreprise",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion de l'excellence opérationnelle",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-excellence-operationnelle",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion du marketing",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-marketing",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion des opérations dans les entreprises de services",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-operations-entreprises-services",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion de projets",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-projets",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-ressources-humaines",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en gestion de la transition durable",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-gestion-transition-durable",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en leadership organisationnel",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-leadership-organisationnel",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat multidisciplinaire en gestion",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-multidisciplinaire-gestion",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat personnalisé en comptabilité",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-personnalise-comptabilite",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat personnalisé en administration",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-personnalise-en-administration",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en planification financière personnelle",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-planification-financiere-personnelle",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en supervision",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-supervision",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Certificat en vente relationnelle",
+      "cycle": "certificat",
+      "faculte": "HEC Montréal",
+      "lien": "https://www.hec.ca/programmes/certificats/certificat-vente-relationnelle",
+      "source": "https://www.hec.ca/programmes/certificats"
+    },
+    {
+      "nom": "Baccalauréat en génie aérospatial",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/aerospatial",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie biomédical",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/biomedical",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie chimique",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/programmes/programmes/baccalaureat-en-genie-chimique",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie civil",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/civil",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/electrique",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie géologique",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/geologique",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie industriel",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/industriel",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie logiciel",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/programmes/programmes/bc-logiciel",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/mecanique",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie des mines",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/mines",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie physique",
+      "cycle": "baccalaureat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/bac/programmes/physique",
+      "source": "https://www.polymtl.ca/futur/bac/programmes"
+    },
+    {
+      "nom": "Certificat en analyse et cybersécurité opérationnelle",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en architecture et gestion de la cybersécurité",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en automatisation industrielle",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en conception et fabrication mécanique",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en cryptomonnaies et chaîne de blocs",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes/certificat-en-cryptomonnaies-et-chaine-de-blocs",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en cyberenquête",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en cyberfraude",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en électricité du bâtiment",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en gestion des opérations d'urgence en sécurité incendie",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en gestion et réponse aux cyberincidents",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en Internet industriel des objets",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en mécanique du bâtiment",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    },
+    {
+      "nom": "Certificat en technologies avancées en prévention des incendies",
+      "cycle": "certificat",
+      "faculte": "Polytechnique Montréal",
+      "lien": "https://www.polymtl.ca/futur/certificat/programmes",
+      "source": "https://www.polymtl.ca/futur/certificat/programmes"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Baccalauréat en mathématiques, option Actuariat (1-190-1-0)",
+      "raison": "Orientation/option d'un baccalauréat déjà listé (marquée « Orientation » dans le répertoire)"
+    },
+    {
+      "nom": "Baccalauréat en analyse d’affaires – technologies de l’information",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat par cumul",
+      "raison": "Page générique (baccalauréat par cumul / regroupement des baccalauréats 4 ans), pas un programme distinct"
+    },
+    {
+      "nom": "Baccalauréats 4 ans UdeM",
+      "raison": "Page générique (baccalauréat par cumul / regroupement des baccalauréats 4 ans), pas un programme distinct"
+    },
+    {
+      "nom": "Baccalauréat en cinéma (1-171-1-1)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Baccalauréat en créativité, innovation et entrepreneuriat",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en cultures et humanités numériques",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en cultures visuelles",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en cultures, sociétés et religions",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en direction et leadership",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en données, information et société",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et enseignement primaire - Campus Laval (1-820-1-9)",
+      "raison": "Variante campus/cheminement regroupée sous « Baccalauréat en éducation préscolaire et enseignement primaire »"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'éthique et de la culture religieuse au secondaire (1-835-1-8)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire - Campus Laval (1-857-1-9)",
+      "raison": "Variante campus/cheminement regroupée sous « Baccalauréat en enseignement en adaptation scolaire »"
+    },
+    {
+      "nom": "Baccalauréat en environnement, société et transitions",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en études du phénomène criminel",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en finance",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en fondements et pratiques en sciences sociales et santé",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en gestion de projets",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en gestion des opérations et de la logistique",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en gestion des ressources humaines",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en gestion et sécurité des systèmes d’information",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en gestion internationale",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en langues modernes",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en marketing",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Microbiologie environnementale (1-500-1-0)",
+      "raison": "Orientation/option d'un baccalauréat déjà listé (marquée « Orientation » dans le répertoire)"
+    },
+    {
+      "nom": "Baccalauréat en musique - Composition instrumentale (1-610-1-3)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Baccalauréat en musique - Composition mixte (1-610-1-4)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Baccalauréat en planification financière personnelle",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en pratiques de la communication",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en psychologie - Campus Laval (1-220-1-9)",
+      "raison": "Variante campus/cheminement regroupée sous « Baccalauréat en psychologie »"
+    },
+    {
+      "nom": "Baccalauréat en religions, spiritualités et pratiques d’intervention",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en sciences de la population",
+      "raison": "Baccalauréat par cumul thématique (combinaison de programmes UdeM/HEC/Polytechnique), sans code de programme propre"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques et informatique, option Sciences des données (1-191-1-0)",
+      "raison": "Orientation/option d'un baccalauréat déjà listé (marquée « Orientation » dans le répertoire)"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières - Formation intégrée DEC-BAC - Campus Laval (1-630-1-9)",
+      "raison": "Variante campus/cheminement regroupée sous « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières - Formation intégrée DEC-BAC - Campus Montréal (1-630-1-2)",
+      "raison": "Variante campus/cheminement regroupée sous « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières - Formation initiale - Campus Laval (1-630-1-8)",
+      "raison": "Variante campus/cheminement regroupée sous « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en travail social - Campus Laval (1-250-1-5)",
+      "raison": "Variante campus/cheminement regroupée sous « Baccalauréat en travail social »"
+    },
+    {
+      "nom": "Certificat en communication appliquée (1-226-5-1)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Certificat en créativité et innovation (1-407-5-1)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Certificat en études néo-helléniques (1-130-5-0)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Certificat en français langue seconde : culture, études et travail (1-821-5-1)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Certificat en gestion philanthropique (1-067-5-0)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Certificat en informatique appliquée - Campus Brossard (1-175-5-6)",
+      "raison": "Variante campus/cheminement regroupée sous « Certificat en informatique appliquée »"
+    },
+    {
+      "nom": "Certificat en petite enfance et famille: éducation et intervention précoce (1-253-5-0)",
+      "raison": "Admission suspendue (filtre « admission suspendue » du répertoire UdeM)"
+    },
+    {
+      "nom": "Doctorat de 1er cycle en médecine (1-450-1-0)",
+      "raison": "Doctorat de 1er cycle (hors périmètre)"
+    },
+    {
+      "nom": "Doctorat de 1er cycle en médecine dentaire (1-300-1-0)",
+      "raison": "Doctorat de 1er cycle (hors périmètre)"
+    },
+    {
+      "nom": "Doctorat de 1er cycle en médecine vétérinaire (1-580-1-0)",
+      "raison": "Doctorat de 1er cycle (hors périmètre)"
+    },
+    {
+      "nom": "Doctorat de 1er cycle en médecine vétérinaire – Rimouski et Saint-Hyacinthe (1-580-1-9)",
+      "raison": "Doctorat de 1er cycle (hors périmètre)"
+    },
+    {
+      "nom": "Doctorat de 1er cycle en optométrie (1-655-1-1)",
+      "raison": "Doctorat de 1er cycle (hors périmètre)"
+    },
+    {
+      "nom": "Doctorat de 1er cycle en pharmacie (1-675-1-1)",
+      "raison": "Doctorat de 1er cycle (hors périmètre)"
+    },
+    {
+      "nom": "B.A.A. avec année préparatoire (HEC Montréal)",
+      "raison": "Cheminement du même B.A.A. (année préparatoire pour candidats hors Québec), non dupliqué"
+    },
+    {
+      "nom": "Baccalauréat en génie mathématique (Polytechnique Montréal)",
+      "raison": "À vérifier : présent dans la brochure Admission 2027 (« 13 programmes de génie »), mais la page admission le dit « sous réserve de l'approbation du MES », description « à venir »"
+    },
+    {
+      "nom": "Baccalauréat par cumul / par cumul avec appellation en cybersécurité (Polytechnique Montréal)",
+      "raison": "Baccalauréat par cumul (combinaison de certificats), hors périmètre"
+    },
+    {
+      "nom": "Certificat en cybersécurité des réseaux informatiques (Polytechnique Montréal)",
+      "raison": "N'est plus offert (brochure Certificats Admission 2026 : « ces programmes ne sont plus offerts à Polytechnique Montréal »)"
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+ "universite": "Brandon University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.brandonu.ca/programs/",
+  "https://www.brandonu.ca/future-students/programs/degrees/",
+  "https://www.brandonu.ca/future-students/programs/certificate-programs/",
+  "https://www.brandonu.ca/future-students/programs/bu-acc/"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 11,
+  "certificat": 4,
+  "comment": "Pas de total affiché ; compte des entrées du répertoire « Degree Programs » (11 grades, unité = grade) et de la page « Certificate Programs » (4 certificats crédités). 11 − 1 fusion (B.Ed. After Degree) = 10."
+ },
+ "programmes": [
+  {
+   "nom": "Bachelor of Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.brandonu.ca/arts/departments-programs/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.brandonu.ca/business-administration/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Education (5-Year Integrated)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.brandonu.ca/education/programs/5-year-integrated/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Fine Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.brandonu.ca/visual-art/programs/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Music",
+   "cycle": "baccalaureat",
+   "faculte": "School of Music",
+   "lien": "https://www.brandonu.ca/music/programs/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health Studies",
+   "lien": "https://www.brandonu.ca/health-studies/programs/bachelor-of-nursing/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Physical Education Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://gobobcats.ca/sports/2016/6/22/bachelor-of-physical-education-studies.aspx",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.brandonu.ca/science/departments/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Science in Psychiatric Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health Studies",
+   "lien": "https://www.brandonu.ca/health-studies/programs/bscpn/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Bachelor of Science in Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.brandonu.ca/environmental-science/program/",
+   "source": "https://www.brandonu.ca/future-students/programs/degrees/"
+  },
+  {
+   "nom": "Certificate in Business Administration",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": null,
+   "source": "https://www.brandonu.ca/future-students/programs/certificate-programs/"
+  },
+  {
+   "nom": "Certificate in French Language Proficiency",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": null,
+   "source": "https://www.brandonu.ca/future-students/programs/certificate-programs/"
+  },
+  {
+   "nom": "Certificate in Public History",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": null,
+   "source": "https://www.brandonu.ca/future-students/programs/certificate-programs/"
+  },
+  {
+   "nom": "Certificate in Justice System",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": null,
+   "source": "https://www.brandonu.ca/future-students/programs/certificate-programs/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Bachelor of Education (After Degree)",
+   "raison": "voie après-diplôme du même B.Ed., fusionnée avec « Bachelor of Education (5-Year Integrated) »"
+  },
+  {
+   "nom": "BU & AC Programs : Business Administration (2 + 2), Digital Media and Design (2 + 2), Environmental Science (2 + 2), Geography (2 + 2), Public History (3 + 1)",
+   "raison": "voies de transfert/partenariat avec Assiniboine College menant aux BBA, BFA, BSc Env. Sci., BA/BSc déjà listés — non comptées comme programmes distincts"
+  },
+  {
+   "nom": "Pre-Professional Programs",
+   "raison": "préparation pré-professionnelle (1 à 4 ans), pas un grade — non comptée"
+  },
+  {
+   "nom": "Majeures du BA et du BSc (pages départementales)",
+   "raison": "le répertoire officiel liste les grades, pas les majeures : unité du répertoire conservée"
+  }
+ ]
+}

@@ -23,6 +23,8 @@ export interface SchoolRow {
   name: string;
   /** LIGUE_CIVILE → les équipes y portent un vrai nom (« L'affiche » le montre). */
   type?: string | null;
+  /** Code de province (QC, ON…, lot D0) : repli de la région affichée quand la page ne la donne pas. */
+  province?: string | null;
   city: string | null;
   region: string | null;
   langue: string | null;
@@ -140,8 +142,9 @@ export function libelleSportGenre(
 /** Groupe les équipes d'une école par sport et construit « L'affiche ».
  *  Le libellé d'une équipe est DÉRIVÉ (sport + genre) : `teams.name` porte le
  *  nom de l'établissement, il ne distingue pas les équipes entre elles.
- *  Chaque équipe pointe vers sa route publique `/college/<école>/<équipe>`. */
-export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[], nomClub: string | null = null): Sport[] {
+ *  Chaque équipe pointe vers sa route publique `/college/<école>/<équipe>`, sauf `avecLiens` faux
+ *  (université, lot D5b : pas encore de page d'équipe universitaire, Q5) — le chip n'ouvre rien. */
+export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[], nomClub: string | null = null, avecLiens = true): Sport[] {
   /* FUSION MULTI-SAISON — une équipe qui existe sur deux saisons est UNE
      équipe, donc UN chip ; le sélecteur de saison de la page d'équipe fait
      naviguer entre elles. Sans cette fusion, « L'affiche » montrait deux
@@ -204,7 +207,7 @@ export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[], nomCl
         nom: nomClub !== null && nommee(t) ? (t.name ?? "").trim() : libelleSportGenre(sport, t.gender),
         division: t.division && t.division.trim() ? t.division : null,
         genre: genreCourt(t.gender),
-        url: `/college/${schoolId}/${t.id}`,
+        url: avecLiens ? `/college/${schoolId}/${t.id}` : "",
         ...(nomClub !== null && nommee(t) ? { detail: attributsEquipe(brut(t)) } : {}),
       })),
     });
@@ -231,7 +234,9 @@ export function dbToProgramPage(
    *  (SportsGrid s'efface), comme avant l'arrivée de ce paramètre. */
   teams: TeamRowForGrid[] = [],
 ): { school: SchoolProgramIdentity; content: ProgramPageContent } {
-  const code = PROV_CODE[nn(c.province, "Québec")] ?? "QC";
+  const universite = school.type === "UNIVERSITE";
+  // Province : celle de la page si l'école l'a saisie, sinon celle de la fiche (universités hors Québec, lot D1b).
+  const code = c.province?.trim() ? (PROV_CODE[c.province] ?? "QC") : (school.province?.trim() || "QC");
   const words = (c.wall_words ?? []).filter(Boolean);
   const identity: SchoolProgramIdentity = {
     id: school.id,
@@ -260,10 +265,11 @@ export function dbToProgramPage(
     slogan: c.slogan?.trim() ? c.slogan : null,
     nickname: null,
     customWords: { eliteWord: words[0], boldWord: words[1], allezWord: words[2], ensembleWord: words[3] },
-    league: "RSEQ",
+    // Les universités du Québec jouent au RSEQ ; les autres (lot D1b) en U SPORTS.
+    league: universite && code !== "QC" ? "USPORTS" : "RSEQ",
     province: code,
     division: "",
-    tagline: c.tagline?.trim() ? c.tagline : undefined,
+    tagline: c.tagline?.trim() ? c.tagline : (universite ? "élite universitaire" : undefined),
     railWordOverride: c.rail_word?.trim() ? c.rail_word : undefined,
     deviseWords: (c.devise_1 || c.devise_2) ? { first: nn(c.devise_1, ""), second: nn(c.devise_2, "") } : undefined,
     arrowPhrase: (c.arrow_avant || c.arrow_apres) ? { before: nn(c.arrow_avant, ""), after: nn(c.arrow_apres, "") } : undefined,
@@ -277,7 +283,7 @@ export function dbToProgramPage(
   // Noms d'équipe seulement pour un CLUB civil : 90 % des équipes RSEQ portent
   // une abréviation de leur école (« Poly. St-Georges ») — la page d'une école
   // reste donc dérivée (sport + genre), inchangée.
-  const affiche = sportsFromTeams(school.id, teams, school.type === "LIGUE_CIVILE" ? school.name : null);
+  const affiche = sportsFromTeams(school.id, teams, school.type === "LIGUE_CIVILE" ? school.name : null, !universite);
   // « Le nombre d'équipes et la région sont AUTO » (libellé de l'éditeur, §6) :
   // le compte vient donc des équipes RÉELLES, jamais d'une constante. Il compte
   // ce que « L'affiche » montre — une équipe au sport orphelin n'est ni listée
@@ -327,7 +333,9 @@ export function dbToProgramPage(
     followersCount,
     news: news.filter((n) => n.titre).map((n) => ({ source: domainOf(n.url), titre: n.titre, url: n.url || "#" })),
     ctaTitle: "Prêt à porter les couleurs ?", ctaNotifyName: nn(c.nickname, school.name),
-    hiddenSections: (c.hidden_sections ?? []).filter(Boolean),
+    // Université (lot D5b) : la section Parcours ne parle que de recrues vers l'université — masquée.
+    hiddenSections: [...(c.hidden_sections ?? []).filter(Boolean), ...(universite ? ["parcours"] : [])],
+    etablissement: universite ? "universite" : "college",
   };
   return { school: identity, content };
 }
@@ -358,10 +366,14 @@ const SECTIONS_SANS_SOURCE = ["about", "programs", "parcours", "news"];
 export function degradedProgramPage(
   school: SchoolRow,
   teams: TeamRowForGrid[],
+  /** Programmes pré-remplis par Nexus (universités, lot D5a) : ils ont une source, la section reste visible. */
+  programs: { name: string; is_displayed: boolean }[] = [],
 ): { school: SchoolProgramIdentity; content: ProgramPageContent } {
   const { school: identity, content } = dbToProgramPage(
-    school, {}, [], [], [], 0, 0, () => null, teams,
+    school, {}, [], programs, [], 0, 0, () => null, teams,
   );
+  const masquees = programs.some((p) => p.is_displayed)
+    ? SECTIONS_SANS_SOURCE.filter((k) => k !== "programs") : SECTIONS_SANS_SOURCE;
   return {
     school: {
       ...identity,
@@ -370,6 +382,6 @@ export function degradedProgramPage(
       initials: initialesDuNom(school.name) || identity.initials,
       areaCode: null, // resolveWall retombe alors sur les initiales
     },
-    content: { ...content, hiddenSections: SECTIONS_SANS_SOURCE },
+    content: { ...content, hiddenSections: masquees },
   };
 }

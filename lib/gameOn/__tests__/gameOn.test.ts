@@ -239,8 +239,8 @@ test("tableau de bord : quatre pastilles, plus de liste « Matchs d'aujourd'hui 
 
 test("fiche du joueur : pas de Dicter, bloc qui se vide, ajout daté à SA note, prénom au crayon", () => {
   const ui = lire("components/game-on/GameOn.tsx");
-  assert.ok(ui.includes("sansGabarits sansDictee"), "pas de bouton Dicter");
-  assert.ok(lire("components/shared/ChampNote.tsx").includes("{!sansDictee && ("));
+  assert.ok(ui.includes("sansGabarits"), "pas de gabarits");
+  assert.ok(!lire("components/shared/ChampNote.tsx").includes("Dicter"), "pas de bouton Dicter (lot E0)");
   assert.ok(ui.includes('setTexte("");'), "le bloc se vide après Enregistrer");
   assert.ok(ui.includes('aria-label="Modifier le prénom"'));
   assert.ok(ui.includes("entete={entete}"), "en-tête fixe, hors de la zone qui défile");

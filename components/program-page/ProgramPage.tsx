@@ -150,7 +150,7 @@ export default function ProgramPage({ school, content, saison }: ProgramPageProp
 
       <div className="frame">
         <ProgramWall school={school} />
-        <ProgramWallMenu school={school} />
+        <ProgramWallMenu school={school} hidden={hidden} />
       </div>
 
       <Ticker words={content.ticker} />
@@ -158,12 +158,12 @@ export default function ProgramPage({ school, content, saison }: ProgramPageProp
       <div className="pagewrap">
         <GrainOverlay />
 
-        <StatRows schoolName={school.schoolName} city={school.city} stats={content.stats} inTargets={inTargets} onToggleTargets={toggleTargets} followers={followers} ciblesVisibles={ciblesVisibles} />
+        <StatRows schoolName={school.schoolName} city={school.city} stats={content.stats} inTargets={inTargets} onToggleTargets={toggleTargets} followers={followers} ciblesVisibles={ciblesVisibles} etablissement={content.etablissement} />
         <SportsGrid sports={content.sports} />
         <SaisonEnCours equipes={saison} />
         {!hidden.includes("campus") && <CampusSection content={content} />}
         {!hidden.includes("about") && <AboutSell title={content.sellTitle} sellText={content.sellText} />}
-        {!hidden.includes("programs") && <AcademicPlanche programs={content.programsList} viewerProgrammeVise={content.viewerProgrammeVise} schoolName={school.schoolName} />}
+        {!hidden.includes("programs") && <AcademicPlanche programs={content.programsList} viewerProgrammeVise={content.viewerProgrammeVise} schoolName={school.schoolName} etablissement={content.etablissement} />}
         {!hidden.includes("parcours") && (
           <ParcoursRoute
             schoolName={school.schoolName}
@@ -175,7 +175,7 @@ export default function ProgramPage({ school, content, saison }: ProgramPageProp
             nexusRecruitedCount={content.nexusRecruitedCount}
           />
         )}
-        {!hidden.includes("news") && <NewsSection news={content.news} />}
+        {!hidden.includes("news") && <NewsSection news={content.news} etablissement={content.etablissement} />}
         {ciblesVisibles && <CtaCibles ctaTitle={content.ctaTitle} inTargets={inTargets} onToggleTargets={toggleTargets} />}
         <div className="pfoot">⚡ Propulsé par Nexus · données de démonstration</div>
       </div>

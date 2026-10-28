@@ -7,6 +7,7 @@ import "server-only";
 // pour que l'appelant applique le fixture Grasset. LA PAGE NE CASSE JAMAIS.
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { lireLancementUniversitaire } from "@/lib/config/lancementUniversitaire";
 import { loadSchoolPage, loadTeamsForGrid } from "./schoolPageData";
 import { loadSaisonEnCours, type EquipeSaison } from "./saisonEnCours";
 import { dbToProgramPage, degradedProgramPage, type SchoolRow } from "./dbToProgramPage";
@@ -23,22 +24,35 @@ export type RenderResult =
   // CETTE école (nom, ville, équipes) au lieu d'emprunter une autre identité.
   | { configured: false; schoolName: string | null; saison?: EquipeSaison[]; degraded?: { school: SchoolProgramIdentity; content: ProgramPageContent } };
 
-export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderResult> {
+/** `universite` (lot D5b, route /universite) : ne cherche QUE les universités, et seulement sous
+ *  lancement_universitaire ON — sous OFF, l'université n'existe pas (404), comme en base (D1a). Sans l'option,
+ *  rien ne change : les universités restent exclues de /college. */
+export async function loadSchoolPageForRender(idOrSlug: string, opts: { universite?: boolean } = {}): Promise<RenderResult> {
   const svc = createServiceClient();
+  const universite = opts.universite === true;
+  if (universite && !(await lireLancementUniversitaire(svc))) return { configured: false, schoolName: null };
   // `logo_url` est lu comme REPLI d'affichage derrière school_page_content.logo_path
   // — voir dbToProgramPage. Sans lui, les écoles jamais configurées perdaient
   // leur logo d'import RSEQ et retombaient sur le monogramme.
   // Lot D1a cégep : la clé service ne passe pas par la policy universites_masquees — une université n'a
   // pas de page publique tant que le lancement universitaire n'est pas fait (vitrine : plus tard).
-  const q = svc.from("schools").select("id, name, city, region, langue, reseau, lat, lng, geo_source, logo_url, type")
-    .neq("type", "UNIVERSITE").limit(1);
+  const base = svc.from("schools").select("id, name, city, region, province, langue, reseau, lat, lng, geo_source, logo_url, type");
+  const q = (universite ? base.eq("type", "UNIVERSITE") : base.neq("type", "UNIVERSITE")).limit(1);
   const { data: rows } = UUID.test(idOrSlug)
     ? await q.eq("id", idOrSlug)
     : await q.ilike("name", "%" + idOrSlug.replace(/-/g, "%") + "%");
   const school = (rows ?? [])[0] as SchoolRow | undefined;
   if (!school) return { configured: false, schoolName: null };
 
-  const { content, cards, programs, news } = await loadSchoolPage(svc, school.id);
+  const page = await loadSchoolPage(svc, school.id);
+  const { content, cards, news } = page;
+  // Université : ses programmes vivent dans university_programs (lot D5a), pas dans school_programs (DEC).
+  let programs: { name: string; is_displayed: boolean }[] = page.programs;
+  if (universite) {
+    const { data: up } = await svc.from("university_programs")
+      .select("name, is_displayed").eq("school_id", school.id).order("position").order("name");
+    programs = (up ?? []) as { name: string; is_displayed: boolean }[];
+  }
 
   // RPC Bloc 2 non encore dans les types générés → cast des args (runtime OK).
   // `teams` alimente « L'affiche » : sans elle, content.sports restait vide et
@@ -63,7 +77,7 @@ export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderR
       configured: false,
       schoolName: school.name,
       saison,
-      degraded: degradedProgramPage(school, teams),
+      degraded: degradedProgramPage(school, teams, universite ? programs : []),
     };
   }
   const assetUrl = (path: string | null | undefined, bucket: "school-logos" | "campus-photos") =>

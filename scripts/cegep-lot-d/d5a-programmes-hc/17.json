@@ -1,0 +1,1402 @@
+{
+ "universite": "University of Windsor",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf",
+  "https://www.uwindsor.ca/secretariat/282/undergraduate-and-graduate-calendars"
+ ],
+ "blocages": [
+  "https://www.future.uwindsor.ca/program-listing/ (répertoire Future Students) : liste chargée en JavaScript, aucune entrée lisible (pas un blocage) ; remplacé par le calendrier officiel de premier cycle Winter 2027 (PDF du Secretariat, table des matières)"
+ ],
+ "attendu": {
+  "baccalaureat": 150,
+  "certificat": 26,
+  "comment": "Calendrier officiel Winter 2027 (PDF, table des matières) : unité = intitulé de programme du calendrier ; fusion des variantes thèse / co-op / voies de complétion et d'articulation / partenaires dans le programme de base ; doublons entre sections retirés ; General et Honours gardés séparément (intitulés distincts). Liens null (PDF unique). attendu = programmes retenus + programmes fermés (les variantes fusionnées et doublons sont listés dans exclus sans être comptés). Certificats : 26 intitulés de certificat de la table des matières (19 « Certificate in ... » retenus + 5 Honours Certificates + 2 Post Graduate Certificates exclus)."
+ },
+ "programmes": [
+  {
+   "nom": "Honours Bachelor of Interdisciplinary Arts and Science (IAS)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours in Commercial Aviation Leadership",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Communication, Media and Film",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Communication, Media and Film (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Communication, Media and Film",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Fine Arts (BFA) in Film Production",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Bachelor of Arts in Drama",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Drama (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Drama in Education and Community with concentration in Applied Theatre (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Bachelor of Arts in Dramatic Art",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours English (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours English and Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours English and Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "BA General History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "BA Honours History (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined BA Honours History Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "BA Honours in Disability Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours BA in Disability Studies and Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours BA in Disability Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Liberal Arts and Professional Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Liberal Arts and Professional Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General BA in Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "BA Honours in Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours in Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Greek and Roman Studies (Greek or Latin Option)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Greek and Roman Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Bachelor of Arts in French Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in French Studies (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours French Studies Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Modern Languages (with year abroad)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Second-Language Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Modern Languages",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Modern Languages with Two Languages Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Philosophy (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Philosophy Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Political Science with French Specialization",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Law and Politics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours International Relations",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Political Science Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Child Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Psychology (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Developmental Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "BSc Honours Program in Behaviour, Cognition and Neuroscience (with/without thesis)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Psychology Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Programs in Developmental Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Social Work and Disability Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Social Work and Women's Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined BA Honours Music Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General BA in Visual Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined BA Honours Visual Arts Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Fine Arts in Visual Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Fine Arts in Visual Arts and the Built Environment (VABE)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Criminology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Criminology Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Sociology Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours in Sociology and Criminology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Commerce (Honours Business Administration) (with/without Thesis; with/without Co-op; with/without Specialization)",
+   "cycle": "baccalaureat",
+   "faculte": "Odette School of Business",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Commerce (Honours Business Administration and Computer Science) (with/without Co-op; with/without Thesis; with/without Specialization)",
+   "cycle": "baccalaureat",
+   "faculte": "Odette School of Business",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Commerce (Honours Business Administration and Economics) (with/without Thesis; with/without Specialization)",
+   "cycle": "baccalaureat",
+   "faculte": "Odette School of Business",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Commerce (Honours Business Administration and Mathematics) (with/without Thesis; with/without Specialization)",
+   "cycle": "baccalaureat",
+   "faculte": "Odette School of Business",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Commerce (Honours Business Administration and Psychology) (with/without thesis; with/without Specialization)",
+   "cycle": "baccalaureat",
+   "faculte": "Odette School of Business",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Education (P/J)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Education (I/S)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Education in Technological Studies/Diploma in Education - Technological Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts with Second Language Education/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts (Communication, Media and Film)/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts (Drama)/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts (English)/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts (French Studies)/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts (History)/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts (Political Science)/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts (Psychology)/Bachelor of Education/Diploma in Early Childhood Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Arts (Visual Arts)/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Science (General Science)/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Concurrent General Bachelor of Mathematics/Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Engineering Technology (BET) Degree Completion Pathways",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Civil Engineering Honours with Architecture Option (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechatronic System Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Industrial Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechanical Engineering - Aerospace Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechanical Engineering - Automotive Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechanical Engineering - Materials Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Science (Kinesiology and Health Studies) (with/without thesis) (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Human Kinetics",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Sport Management and Leadership (with/without thesis) (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Human Kinetics",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Science in Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Nursing",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Science (General Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Biology (with/without thesis)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Biology - Interdisciplinary Health Science (IHS) Stream",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Biology Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Biomedical Sciences (with/without thesis)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Biochemistry and Biomedical Sciences (Health Stream) (with/without thesis)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Chemistry (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Chemistry (Applied Chemistry Stream)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Chemistry Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Biochemistry (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Biochemistry (Pharmacy Stream) (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Biochemistry Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Forensic Science (BFS)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Bachelor of Arts in Forensics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Computer Science (General)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Computer Science (Honours)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Computer Science (Honours Applied Computing)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Science (Honours Computer Information Systems)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Bachelor of Science (Honours Computer Science with Software Engineering Specialization)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Other Combined Honours Computer Science Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Information Technology (BIT)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "BSc Honours Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "BSc Honours Environmental Science (Applied Environmental Science Stream)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Environmental Studies (BES)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Mathematics and Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Mathematics and Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Mathematics with Finance Concentration",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Mathematics Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Physics (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Physics (Medical Physics) (with/without Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Physics Programs",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "General Bachelor of Arts in Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Economics (Applied Economics and Policy Stream)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Honours Bachelor of Science in Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Bachelor of Arts in Economics Programs",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Combined Honours Bachelor of Science in Economics Programs",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Work and Employment Issues",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Women's Studies",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Second Language Education",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Critical Reasoning, Ethics and Law",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Law and Politics",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts, Humanities and Social Sciences (FAHSS)",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Business Administration",
+   "cycle": "certificat",
+   "faculte": "Odette School of Business",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Human Resources",
+   "cycle": "certificat",
+   "faculte": "Odette School of Business",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Coaching",
+   "cycle": "certificat",
+   "faculte": "Faculty of Human Kinetics",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Human Factors and Ergonomics",
+   "cycle": "certificat",
+   "faculte": "Faculty of Human Kinetics",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Film and Media for Sciences",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Science Communication",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Biological Conservation",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Environmental Assessment",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Greenhouse Science",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Applied Information Technology",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Geographic Information Science (GISc)",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Statistical Consulting",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Economic Analysis and Policy",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  },
+  {
+   "nom": "Certificate in Quantitative Economics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": null,
+   "source": "https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Honours Bachelor of Interdisciplinary Arts and Science (IAS) Double Major Concentration",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Bachelor of Interdisciplinary Arts and Science (IAS) Major and Double Minor Concentration",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Drama for Graduates of the Theatre Arts Ontario College Advanced Diploma",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Drama for Graduates of the Music Theatre Performance Ontario College Advanced Diploma",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "BA Honours Bachelor of Arts in Disability Studies for Ontario College Child and Youth Care Program Graduates - Degree Completion Pathway",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Bachelor of Arts in Disability Studies for College of Applied Arts and Technology Graduates - Degree Completion Pathway",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "General Liberal Arts and Professional Studies Degree Completion Program (for Lambton College Liberal Studies Graduates)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Liberal Arts and Professional Studies Degree Completion Program (for Lambton College Liberal Studies Graduates)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "General Liberal Arts and Professional Studies for Career Professionals Degree Completion Program (2 entrées)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Combined Honours Women's and Gender Studies when taken with Criminology",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Political Science (Co-op Education)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Political Science (with Thesis)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Political Science with French Specialization (with Thesis)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Law and Politics (with Thesis)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours International Relations (with Thesis)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Combined Honours Political Science Programs (with Thesis)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Psychology with Thesis",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Developmental Psychology with Thesis",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Combined Honours Programs in Psychology with Thesis",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Combined Honours Programs in Developmental Psychology with Thesis",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "General Psychology for Ontario College Child and Youth Care",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Developmental Psychology for Ontario College Child and Youth Care",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Arts in Developmental Psychology (Honours) with Autism and Behavioural Sciences (ABS) Post-Graduate Certificate program from Fanshawe",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Bachelor of Social Work for University Graduates",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Bachelor of Social Work for Ontario Child and Youth Care Program Graduates",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Commerce (Honours Business Administration) for Baccalaureate Degree Holders",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Commerce (Honours Business Administration) — 10 voies CAAT / Fast-Track / Georgian / St. Clair / SWUFE / partenaires / Chitkara",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Civil Engineering for Graduates of St. Mary's University Diploma of Engineering",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Articulation Agreement with St. Clair College, Civil Engineering Technology Program",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Industrial Engineering (with/without Co-operative Education)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Industrial Engineering with Minor in Business Administration (with/without Co-operative Education)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechanical Engineering - General",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechanical Engineering Articulation Agreements with St. Mary's University (4 entrées)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Sport Management and Leadership / Kinesiology and Health Studies — 10 voies pour diplômés de collèges (Lambton, Durham, St. Clair, Saskatchewan Polytechnic, Fanshawe, Mohawk, Georgian)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "BSc Honours in Behaviour, Cognition and Neuroscience (with Thesis / without Thesis) — section Biology",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Chemistry with Thesis (with/without Co-op)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Biochemistry with Thesis (with/without Co-op)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Biochemistry (Pharmacy Stream) with Thesis (with/without Co-op)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Combined Bachelor of Arts in Forensics and Criminology (Applied Forensic Science Stream) - Degree Completion Pathway",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Bachelor of Computer Science (General / Honours / Honours Applied Computing) for University Graduates et pour diplômés de collège / CAAT (7 entrées)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Bachelor of Information Technology (BIT) Degree Completion Pathways (4 entrées)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "BSc Honours Environmental Science (with Thesis)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Physics with Thesis (with/without Co-op)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Honours Physics (Medical Physics with Thesis) (with/without Co-op)",
+   "raison": "variante fusionnée (thèse / co-op / voie de complétion pour diplômés de collège ou d'université / entente d'articulation / partenaire étranger) dans la ligne du programme de base"
+  },
+  {
+   "nom": "Concurrent programmes BA/BEd et BMath/BEd listés aussi dans les sections disciplinaires (CMF, Drama, English, History, French, Modern Languages, Political Science, Psychology, Visual Arts, Mathematics, Science)",
+   "raison": "doublon : même programme listé dans deux sections du calendrier"
+  },
+  {
+   "nom": "Disability Studies (3 entrées) et Honours BSW and Disability Studies / and Women's Studies répétés dans la section Psychology et Women's and Gender Studies",
+   "raison": "doublon : même programme listé dans deux sections du calendrier"
+  },
+  {
+   "nom": "Honours Business Administration and Computer Science / Economics / Mathematics / Psychology / Political Science / Women's and Gender Studies répétés dans les sections disciplinaires",
+   "raison": "doublon : même programme listé dans deux sections du calendrier"
+  },
+  {
+   "nom": "Honours Mathematics with Finance Concentration (section Odette) ; Honours Mathematics and Computer Science (section Computer Science)",
+   "raison": "doublon : même programme listé dans deux sections du calendrier"
+  },
+  {
+   "nom": "Honours Biochemistry and Biomedical Sciences (Health Stream) (section Chemistry and Biochemistry)",
+   "raison": "doublon : même programme listé dans deux sections du calendrier"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechatronic System Engineering (2e occurrence)",
+   "raison": "doublon : même programme listé dans deux sections du calendrier"
+  },
+  {
+   "nom": "General Family and Social Relations",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Honours Family and Social Relations",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Combined Honours Family and Social Relations",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Combined Honours in Social Justice",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Bachelor of Fine Arts (BFA) in Dramatic Art - Acting",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Honours Bachelor of Music",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Concurrent Bachelor of Music Education/Bachelor of Education",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Concurrent Bachelor of Arts/Bachelor of Education/Diploma in Early Childhood Education",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Bachelor of Commerce Honours (Business Administration and Political Science) (with/without thesis; with/without Specialization)",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Bachelor of Commerce (Honours Business Administration and Women's and Gender Studies) (with/without thesis; with/without Specialization)",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Bachelor of Applied Science in Mechanical Engineering - Environmental Option",
+   "raison": "admission fermée (« there are no new admissions » au calendrier Winter 2027)"
+  },
+  {
+   "nom": "Discovery Program (undeclared majors in FAHSS)",
+   "raison": "programme non déclaré, pas un grade distinct"
+  },
+  {
+   "nom": "Dramatic Art ; French Studies Outside of the University of Windsor ; Latin Studies ; Race and Ethnicity Studies ; Labour Studies",
+   "raison": "rubriques sans programme de baccalauréat (règlements / mineures / cours)"
+  },
+  {
+   "nom": "Specializations (Odette : Accounting, Human Resources, Finance, Business Analytics and Supply Chain Management, Marketing, Strategy and Entrepreneurship, International Business)",
+   "raison": "spécialisations à l'intérieur du BComm, pas des programmes distincts"
+  },
+  {
+   "nom": "Honours Modern Languages / Combined Honours Modern Languages — volets Italian et German",
+   "raison": "volets fermés (no new admissions) ; les programmes restent ouverts pour les autres langues"
+  },
+  {
+   "nom": "Honours Certificate in Environmental Engineering ; Civil Engineering ; Electrical Engineering ; Industrial and Management Engineering ; Physics",
+   "raison": "à vérifier : « Honours Certificates » (titre complémentaire de niveau baccalauréat spécialisé), non classés comme certificats de premier cycle"
+  },
+  {
+   "nom": "Post Graduate Certificate in Accounting ; Post Graduate Certificate in Entrepreneurship and International Business",
+   "raison": "certificats postgradués"
+  },
+  {
+   "nom": "Faculty of Law (JD)",
+   "raison": "premier grade professionnel ; hors calendrier de premier cycle"
+  },
+  {
+   "nom": "Économie : faculté non attribuée",
+   "raison": "le calendrier place Economics dans le bloc de la Faculty of Science sans l'indiquer explicitement : faculte = null"
+  }
+ ]
+}

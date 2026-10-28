@@ -39,6 +39,8 @@ export interface EditorSchool {
   reseau: string | null;
   address: string | null;
   postal_code: string | null;
+  /** schools.type — UNIVERSITE ouvre la variante universitaire de l'éditeur (lot D5b). */
+  type: string | null;
 }
 
 /* ── forme d'init consommée par les sections (neutre) ─────────────────────── */
@@ -114,6 +116,10 @@ interface EditorCtx {
   schoolId: string; userId: string; schoolName: string;
   /** Fiche `schools` de l'école connectée — lecture seule, sections AUTO. */
   school: EditorSchool;
+  /** Lot D5b : l'école est une université (programmes university_programs, pas de Parcours, pas de pages d'équipes). */
+  estUniversite: boolean;
+  /** « ton collège » / « ton université » — pour les textes d'aide. */
+  tonEtab: string;
   /** Athlètes recrutés par ce collège (count_recruited_by_school : pipeline
    *  recruteur, stages ENGAGE et LETTRE_SIGNEE). MÊME source que la page
    *  publique — l'aperçu du parcours ne doit jamais afficher un autre nombre. */
@@ -186,7 +192,7 @@ export function SchoolPageEditorProvider(
       try {
         const [sch, page, rec] = await Promise.all([
           client.from("schools")
-            .select("id, name, city, region, langue, reseau, address, postal_code")
+            .select("id, name, city, region, langue, reseau, address, postal_code, type")
             .eq("id", schoolId).maybeSingle(),
           loadSchoolPage(client, schoolId),
           // MÊME RPC que loadSchoolPageForRender : l'aperçu du parcours affiche
@@ -198,13 +204,14 @@ export function SchoolPageEditorProvider(
         const row = (sch.data ?? {}) as Partial<EditorSchool>;
         const school: EditorSchool = {
           id: schoolId,
-          name: row.name || "Mon collège",
+          name: row.name || (row.type === "UNIVERSITE" ? "Mon université" : "Mon collège"),
           city: row.city ?? null,
           region: row.region ?? null,
           langue: row.langue ?? null,
           reseau: row.reseau ?? null,
           address: row.address ?? null,
           postal_code: row.postal_code ?? null,
+          type: row.type ?? null,
         };
         jetonsRef.current = { cards: page.jetons.cards, news: page.jetons.news };
         setLoad({
@@ -383,6 +390,8 @@ export function SchoolPageEditorProvider(
   const value: EditorCtx = {
     schoolId, userId: user.authUser.id, schoolName: load.school.name,
     school: load.school,
+    estUniversite: load.school.type === "UNIVERSITE",
+    tonEtab: load.school.type === "UNIVERSITE" ? "ton université" : "ton collège",
     recrutedCount: load.recrutedCount ?? 0,
     initial: load.initial, client, assetUrl, uploadAsset, report, saveAll,
     dirty: dirtyKeys.length > 0, saving,

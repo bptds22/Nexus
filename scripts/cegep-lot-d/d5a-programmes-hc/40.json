@@ -1,0 +1,457 @@
+{
+ "universite": "University of Northern British Columbia",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.unbc.ca/programs-and-admissions/undergraduate/programs",
+  "https://www.unbc.ca/calendar/certificates"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 49,
+  "certificat": 15,
+  "comment": "Baccalauréats : répertoire officiel « Undergraduate Programs » (liste par grade), une ligne par entrée nommée (49 entrées sous 9 grades ; le grade n'est pas ajouté au nom, d'où « Geography, BA » et « Geography, BSc » tels quels). Campus multiples = même ligne. Certificats : page officielle du calendrier « Certificates », 15 entrées dont 3 de cycle supérieur exclues → 12. Faculté non affichée dans le répertoire (null)."
+ },
+ "programmes": [
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/civil-engineering",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/environmental-engineering",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Environmental Engineering (Joint UNBC and UBC)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/environmental-engineering-joint-unbc-and-ubc",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/anthropology",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/economics",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/english",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Environmental and Sustainability Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/environmental-and-sustainability-studies",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "First Nations Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/first-nations-studies",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "General Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/general-studies",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Geography, BA",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/ba-geography",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Global and International Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/global-and-international-studies",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/history",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Nature-Based Tourism Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/nature-based-tourism-management",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Northern Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/northern-studies",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/political-science",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Public Administration and Community Development",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/public-administration-and-community-development",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Women's Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/womens-studies",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/accounting",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/finance",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "General Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/general-business",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Human Resources Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/human-resources-management",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Management Information Systems",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/management-information-systems",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/marketing",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Education - Elementary (K - 7)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/bed-elementary-k-7",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Education - Secondary (8 - 12)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/bed-secondary-8-12",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Biomedical Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/biomedical-studies",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Community and Population Health: Aboriginal and Rural Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/community-and-population-health-aboriginal-and-rural-health",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Community and Population Health: Environmental Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/community-and-population-health-environmental-health",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Community Planning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/community-planning",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Environmental Planning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/environmental-planning",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "First Nations Planning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/first-nations-planning",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Biochemistry and Molecular Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/biochemistry-and-molecular-biology",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/biology",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/chemistry",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/computer-science",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Conservation Science and Practice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/environmental-science-0",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/environmental-science",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Forest Ecology and Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/forest-ecology-and-management",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Geography, BSc",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/bsc-geography",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Integrated Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/integrated-science",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Landscape Conservation and Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/conservation-science-and-practice-landscape-conservation-management",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Mathematics and Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/mathematics-and-statistics",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/physics",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/psychology",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Wildland Conservation and Recreation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/conservation-science-and-practice-wildland-conservation-and-recreation",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Wildlife and Fisheries",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/wildlife-and-fisheries",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Northern Baccalaureate Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/northern-baccalaureate-nursing-program",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Northern Collaborative Baccalaureate Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/northern-collaborative-baccalaureate-nursing",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs/social-work",
+   "source": "https://www.unbc.ca/programs-and-admissions/undergraduate/programs"
+  },
+  {
+   "nom": "Business Administration Fundamentals",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/undergraduate/commerce#CBAF",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "Aboriginal Community Resource Planning",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first_nations.html#acrp",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "Aboriginal / Indigenous Health and Healing",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first_nations.html#ahs",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "First Nations Language",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first_nations.html#fnl",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "First Nations Public Administration",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first_nations.html#fnpa",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "General First Nations Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first_nations.html#fns",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "Métis Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first_nations.html#ms",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "Nisga'a Language Fluency",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first-nations#NisgaaFluency",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "Nisga'a Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first_nations.html#ns",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "Traditional Ecological Knowledge",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/first_nations.html#tek",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "Local Government Administration",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/certificates/public_administration.html",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  },
+  {
+   "nom": "Rural Nursing Certificate Program",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.unbc.ca/calendar/undergraduate/nursing#RuralandNorthernNursing",
+   "source": "https://www.unbc.ca/calendar/certificates"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Change Leadership (Business Administration Graduate Certificate)",
+   "raison": "Certificat de cycle supérieur"
+  },
+  {
+   "nom": "Leading for Learning (Education Graduate Certificate)",
+   "raison": "Certificat de cycle supérieur"
+  },
+  {
+   "nom": "Indigenous Child and Youth Mental Health (Social Work Graduate Certificate)",
+   "raison": "Certificat de cycle supérieur"
+  }
+ ]
+}

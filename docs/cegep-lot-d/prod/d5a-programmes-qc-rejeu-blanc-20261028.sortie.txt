@@ -1,0 +1,61 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user 
+-------------------------------+--------------
+ 2026-10-28 18:41:19.170907+00 | postgres
+(1 row)
+
+CREATE TABLE
+INSERT 0 1292
+CREATE TABLE
+INSERT 0 12
+DO
+SELECT 1
+INSERT 0 1292
+SELECT 12
+              universite               | bacc_attendus | bacc_obtenus | cert_attendus | cert_obtenus | sans_lien | sans_faculte 
+---------------------------------------+---------------+--------------+---------------+--------------+-----------+--------------
+ École de technologie supérieure       |            10 |           10 |             1 |            1 |         0 |            0
+ Université Bishop's                   |            64 |           64 |            13 |           13 |         0 |            0
+ Université Concordia                  |           110 |          110 |            18 |           18 |         0 |            0
+ Université de Montréal                |           101 |          101 |            78 |           78 |         0 |            0
+ Université de Sherbrooke              |            49 |           49 |            49 |           49 |         0 |            0
+ Université du Québec à Chicoutimi     |            41 |           41 |            51 |           51 |         0 |            0
+ Université du Québec à Montréal       |            67 |           67 |            68 |           68 |         6 |            0
+ Université du Québec à Rimouski       |            28 |           28 |            27 |           27 |         1 |           35
+ Université du Québec à Trois-Rivières |            41 |           41 |            43 |           43 |         1 |            2
+ Université du Québec en Outaouais     |            27 |           27 |            36 |           36 |         6 |           63
+ Université Laval                      |           109 |          109 |            82 |           82 |         0 |            0
+ Université McGill                     |           157 |          157 |            22 |           22 |         0 |            4
+(12 rows)
+
+CREATE FUNCTION
+SELECT 7
+                 appelant                 | programmes_lus 
+------------------------------------------+----------------
+ anon                                     | refusé
+ athlète                                  | 0
+ coach                                    | 0
+ recruteur collégial                      | 0
+ partenaire                               | 0
+ admin                                    | 1292
+ recruteur universitaire (Laval, sous ON) | 191
+(7 rows)
+
+DO
+psql:docs/cegep-lot-d/prod/d5a-programmes-qc-rejeu-blanc-20261028.sql:1443: NOTICE:  NEXUS: VERDICT données D5a — 1292 programmes du Québec, attendu = obtenu, rien d'autre ne bouge, lus par l'admin seulement (et SA liste pour le recruteur universitaire sous ON)
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DELETE 1292
+psql:docs/cegep-lot-d/prod/d5a-programmes-qc-rejeu-blanc-20261028.sql:1452: NOTICE:  NEXUS: rollback des données D5a vérifié
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

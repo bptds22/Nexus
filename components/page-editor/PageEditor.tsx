@@ -20,6 +20,7 @@ import SaisonEnCoursSection from "./SaisonEnCoursSection";
 import CampusSection from "./CampusSection";
 import AboutSell from "./AboutSell";
 import ProgramsSection from "./ProgramsSection";
+import UniversityProgramsSection from "./UniversityProgramsSection";
 import ParcoursSection from "./ParcoursSection";
 import NewsSection from "./NewsSection";
 import PlatformSection from "./PlatformSection";
@@ -64,7 +65,7 @@ function Topbar() {
 // valeurs S1 partagées (nick/init/nbath/slog) sont remontées ici depuis l'init
 // DB et passées à S1 (IdentityWall) + S6 (ParcoursSection : route + marker).
 function EditorBody() {
-  const { initial } = useEditor();
+  const { initial, estUniversite } = useEditor();
   const [nick, setNick] = React.useState(initial.nick);
   const [init, setInit] = React.useState(initial.init);
   const [nbath, setNbath] = React.useState(initial.nbath);
@@ -75,7 +76,7 @@ function EditorBody() {
       <Topbar />
       <div className="wrap">
         <div className="head">
-          <div className="cap">ÉDITEUR « MA PAGE » · desktop · recruteur / gestionnaire du collège (comptes validés)</div>
+          <div className="cap">ÉDITEUR « MA PAGE » · desktop · recruteur / gestionnaire {estUniversite ? "de l'université" : "du collège"} (comptes validés)</div>
           <div className="sub">L'éditeur suit <b>l'ordre exact de la page publique</b>. Tu édites ce qui t'appartient (badge <b style={{ color: "var(--nexus)" }}>MANUEL</b>), le reste est automatique (badge <b style={{ color: "var(--ok)" }}>AUTO</b>) — visible mais verrouillé, jamais un mystère. Budget total : <b>~5 minutes</b>.</div>
         </div>
 
@@ -84,8 +85,10 @@ function EditorBody() {
         <SaisonEnCoursSection />
         <CampusSection />
         <AboutSell />
-        <ProgramsSection />
-        <ParcoursSection nick={nick} init={init} nbath={nbath} slog={slog} />
+        {/* Université (lot D5b) : programmes de premier cycle (university_programs) ; pas de Parcours, qui ne
+            parle que de recrues vers l'université. */}
+        {estUniversite ? <UniversityProgramsSection /> : <ProgramsSection />}
+        {!estUniversite && <ParcoursSection nick={nick} init={init} nbath={nbath} slog={slog} />}
         <NewsSection />
         <PlatformSection />
       </div>

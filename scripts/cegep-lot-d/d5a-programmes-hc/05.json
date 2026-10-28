@@ -1,0 +1,609 @@
+{
+ "universite": "Université Laurentienne",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://laurentienne.ca/etudes/programmes-de-premier-cycle",
+  "https://laurentian.ca/academics/customize-your-degree",
+  "https://laurentian.ca/academics/indigenous-programs/programs"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 72,
+  "certificat": 14,
+  "comment": "Baccalauréats : 72 entrées du répertoire officiel des programmes de premier cycle (laurentienne.ca/etudes/programmes-de-premier-cycle, toutes pages ; la page annonce « plus de 70 ») ; unité = entrée du répertoire, chaque langue a ses propres entrées (nom officiel tel qu'affiché, FR ou EN). Le répertoire n'indique pas le grade ; la faculté n'est pas affichée par programme. Certificats : 14 certificats nommés sur la page officielle « Majors, Minors, and Certificates » (9 EN, 4 FR, + Certificate of Bilingualism). Liens http convertis en https."
+ },
+ "programmes": [
+  {
+   "nom": "Administration des affaires",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/administration-des-affaires",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Administration des affaires - comptabilité",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/comptabilite",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Administration des affaires - entrepreneuriat",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/entrepreneuriat",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Administration des affaires - finance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/finances",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Administration des affaires - gestion internationale",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/gestion-internationale",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Architectural Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/architecture",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Behavioural Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/behavioural-neuroscience",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/biochemistry",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Biochimie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/biochimie",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Biologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/biologie",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Biologie biomédicale",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/biologie-biomedicale",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/biology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Biomedical Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/biomedical-biology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Business Administration - Accounting",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/accounting",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Business Administration - Finance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/finance",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Business Administration - Human Resources Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/human-resources-management",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Business Administration - Marketing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/marketing",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Business Administration (BBA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/business-administration",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/chemical-engineering",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/chemistry",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Chimie pharmaceutique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/chimie-pharmaceutique",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/computer-science",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Criminal Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/criminal-justice",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Criminologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/criminologie",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Criminology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/criminology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Droit et justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/droit-et-justice",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/earth-sciences",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/economics",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Éducation (b.ed.)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/educationf",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Education (Concurrent B.Ed.)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/education",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Éducation (concurrent)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/education-concurrent",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "English Literature, Media, and Writing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/english",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Environmental Solutions",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/environmental-solutions",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Équité, diversité et droits de la personne",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/equite-diversite-droits-personne",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Equity, Diversity, and Human Rights",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/equity-diversity-human-rights",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Études interdisciplinaires",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/etudes-interdisciplinaires",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Forensic Identification",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/forensicidentification",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Forensic Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/forensic-science",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "French as a Second Language",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/french-studies",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Gerontology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/gerontology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Health Promotion",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/health-promotion",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/history",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Indigenous Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/Indigenous-social-work",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Interdisciplinary Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/interdisciplinary-science",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Interdisciplinary Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/interdisciplinary-studies",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Kinésiologie (éducation physique et santé)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/education-physique",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Kinésiologie (science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/kinesiologie",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Kinesiology (Physical & Health Education)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/sport-and-physical-education",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Kinesiology (Science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/kinesiology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Law and Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/law-and-justice",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/mechanical-engineering",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Mining Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/mining-engineering",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/nursing",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Orthophonie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/orthophonie",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Outdoor Adventure Leadership",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/outdoor-adventure-leadership",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Pharmaceutical Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/pharmachem",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Psychologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/psychologie",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Psychologie du sport",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/psychologie-sport",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/psychology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Sciences infirmières - formation initiale",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/sciences-infirmieres",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Sciences pluridisciplinaires",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/sciences-pluridisciplinaires",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Service social",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/service-social",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/social-work",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Sociologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/etudes/programme/sociologie",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/sociology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Sport Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/sport-psychology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Sports Administration",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/sports-administration",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Zoology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/program/zoology",
+   "source": "https://laurentienne.ca/etudes/programmes-de-premier-cycle"
+  },
+  {
+   "nom": "Anishnaabemowin Land-Based Immersion",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/program/INDG/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Certificate in Forensic Identification for the Honours Bachelor of Forensic Science",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/program/forensic-science/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Ecohealth Promotion",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/certificate-ecohealth-promotion",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Environmental Chemistry",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/program/chemistry/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Environmental Solutions",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/program/biology/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Family Life Studies and Human Sexuality",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/program/sociology/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Gerontology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/program/gerontology/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Indigenous Interdisciplinary Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/program/INDG/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Social Research Methods",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/program/sociology/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Études familiales et sexualité humaine",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/programme/sociologie/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Intervention auprès des femmes",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/programme/service-social/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Méthodes de recherche sociale",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/programme/sociologie/details#options",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Promotion de l'écosanté",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentienne.ca/certificat-promotion-ecosante",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  },
+  {
+   "nom": "Certificate of Bilingualism",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://laurentian.ca/academics/customize-your-degree/certificate-bilingualism",
+   "source": "https://laurentian.ca/academics/customize-your-degree"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Business Administration (online BBA)",
+   "raison": "variante en ligne fusionnée avec « Business Administration (BBA) »"
+  },
+  {
+   "nom": "Indigenous *Minors*",
+   "raison": "entrée regroupant des mineures autochtones, pas un baccalauréat"
+  },
+  {
+   "nom": "Sciences infirmières - passerelle pour infirmiers et infirmières auxiliaires autorisées",
+   "raison": "voie passerelle (IAA) du même B.Sc.Inf., fusionnée avec « Sciences infirmières - formation initiale »"
+  },
+  {
+   "nom": "Sciences infirmières - pour infirmiers et infirmières autorisées",
+   "raison": "voie pour infirmières autorisées du même B.Sc.Inf., fusionnée avec « Sciences infirmières - formation initiale »"
+  }
+ ]
+}

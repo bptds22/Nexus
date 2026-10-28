@@ -1,0 +1,758 @@
+{
+ "universite": "Université de Moncton",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.umoncton.ca/repertoire/programmes",
+  "https://www.umoncton.ca/feuilles-de-route",
+  "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+ ],
+ "blocages": [
+  "https://www.umoncton.ca/repertoire/programmes (Répertoire 2026-2027) and the campus 'programmes' pages render their program dropdown by script (empty to WebFetch, not a block); replaced by the official 'Feuilles de route' page (one link per program to the répertoire PDF) and the official Formation continue part-time program list (certificates)"
+ ],
+ "attendu": {
+  "baccalaureat": 109,
+  "certificat": 12,
+  "comment": "Baccalaureat: 107 first-cycle entries of the official 'Feuilles de route' listing (each linking to its répertoire PDF; minors listed separately and not counted) + 2 bachelor's listed only in the Formation continue list (B.Éd. primaire, whose roadmap is 'à venir', and Baccalauréat appliqué en technologie, information et leadership). Unit = répertoire program; co-op, profil (régulier/avec distinction/appliqué/mixte/littérature/linguistique), accelerated and admission-route variants merged. Certificat: the 12 first-cycle certificates of the official Formation continue part-time program list (the répertoire dropdown was not readable)."
+ },
+ "programmes": [
+  {
+   "nom": "Baccalauréat en administration des affaires (comptabilité)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25256.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (finance)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25234.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (général)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25265.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (gestion des opérations)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25235.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (gestion internationale)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25236.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (management)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25238.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (marketing)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25239.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (systèmes d'information organisationnels)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25237.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en aménagement des forêts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25260.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en anglais)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25291.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en art dramatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25287.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en arts visuels",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25288.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences bidisciplinaire en mathématiques appliquées et informatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25115.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences bidisciplinaire en mathématiques et statistique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25114.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en biochimie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25198.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (spécialisation en biochimie et biologie moléculaire)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25196.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en biologie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25258.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (spécialisation en biologie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25262.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (spécialisation en chimie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25171.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en chimie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25174.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales (majeure en criminologie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25266.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat appliqué en design d'intérieur",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25285.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en développement durable et zone côtière",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25205.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales (majeure en économie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25203.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B.E.P.-B. Éd. (majeure en éducation physique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25219.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B.A.-B. Éd. (primaire)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25220.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B.A.-B. Éd. (majeure en anglais)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25211.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B. Sc.-B. Éd. (concentration en biologie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25212.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B. Sc.-B. Éd. (concentration en chimie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25213.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B.A.-B. Éd. (majeure en environnement et géographie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25217.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B.A.-B. Éd. (majeure en études françaises)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25216.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B.A.-B. Éd. (majeure en histoire)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25218.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B. Sc.-B. Éd. (concentration en mathématiques)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25214.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en musique - Baccalauréat en éducation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25277.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "B. Sc.-B. Éd. (concentration en physique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25215.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en environnement et géographie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25189.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en études françaises)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25274.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en ingénierie (génie civil)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25192.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en ingénierie (génie électrique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25193.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en ingénierie (génie mécanique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25194.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en gestion de l'information",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25132.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en gestion du loisir, sport et tourisme",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25209.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en histoire)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25221.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en information-communication)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25123.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en informatique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25183.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en informatique appliquée",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25207.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en sciences de kinésiologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25210.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en mathématiques)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25141.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires multidisciplinaire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25251.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts multidisciplinaire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25122.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences multidisciplinaire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25146.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en musique (général)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25289.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en musique (interprétation)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25290.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (nutrition) avec internat",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25264.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en philosophie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25295.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en physique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25166.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (spécialisation en physique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25167.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (spécialisation en physique numérique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25113.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en psychologie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25126.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès arts (spécialisation en psychologie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25127.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en science infirmière",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25120.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales (majeure en science politique)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25130.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales (majeure en sociologie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25222.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en traduction",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/31.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en travail social",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.umoncton.ca/institutionnel/modules/repertoire/pdf/25117.pdf",
+   "source": "https://www.umoncton.ca/feuilles-de-route"
+  },
+  {
+   "nom": "Baccalauréat en éducation primaire",
+   "cycle": "baccalaureat",
+   "faculte": "Sciences de l'éducation",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=278&programme_id=2649",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Baccalauréat appliqué en technologie, information et leadership",
+   "cycle": "baccalaureat",
+   "faculte": "Sciences",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=163&programme_id=25250",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat de comptabilité",
+   "cycle": "certificat",
+   "faculte": "Administration",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=170&programme_id=2623",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat de finance d'entreprise",
+   "cycle": "certificat",
+   "faculte": "Administration",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=172&programme_id=2624",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat de gestion des services financiers",
+   "cycle": "certificat",
+   "faculte": "Administration",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=176&programme_id=2625",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat de management",
+   "cycle": "certificat",
+   "faculte": "Administration",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=177&programme_id=2626",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat de marketing",
+   "cycle": "certificat",
+   "faculte": "Administration",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=178&programme_id=25252",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat en gestion des ressources humaines",
+   "cycle": "certificat",
+   "faculte": "Administration",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=175&programme_id=2642",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat en planification et gestion logistique",
+   "cycle": "certificat",
+   "faculte": "Administration",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=179&programme_id=25253",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat en systèmes d'information organisationnels",
+   "cycle": "certificat",
+   "faculte": "Administration",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=182&programme_id=2629",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat sur les toxicomanies",
+   "cycle": "certificat",
+   "faculte": "Arts et sciences sociales",
+   "lien": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000043",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat en création littéraire",
+   "cycle": "certificat",
+   "faculte": "Arts et sciences sociales",
+   "lien": "https://www.umoncton.ca/repertoire/programmes?programme_select=25255",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat en sociolinguistique",
+   "cycle": "certificat",
+   "faculte": "Arts et sciences sociales",
+   "lien": "https://www.umoncton.ca/repertoire/programmes?programme_select=2632",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  },
+  {
+   "nom": "Certificat en gestion de la sécurité de l'information des entreprises",
+   "cycle": "certificat",
+   "faculte": "Sciences",
+   "lien": "https://www.umoncton.ca/formation-continue/fr/programmes?programme_select=250&programme_id=25270",
+   "source": "https://fc.umoncton.ca/contentManagement.do?method=load&code=CM000002&lang=fr_ca"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Baccalauréat en administration des affaires (comptabilité) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en administration des affaires (comptabilité) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (finance) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en administration des affaires (finance) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (gestion des opérations) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en administration des affaires (gestion des opérations) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (gestion internationale) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en administration des affaires (gestion internationale) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (management) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en administration des affaires (management) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (marketing) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en administration des affaires (marketing) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en administration des affaires (systèmes d'information organisationnels) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en administration des affaires (systèmes d'information organisationnels) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en anglais - profil avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès arts (majeure en anglais) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en biochimie)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences (majeure en biochimie) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (spécialisation en biochimie et biologie moléculaire)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences (spécialisation en biochimie et biologie moléculaire) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en biologie) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences (majeure en biologie) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (spécialisation en biologie) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences (spécialisation en biologie) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales (majeure en criminologie - profil appliqué)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences sociales (majeure en criminologie) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales (majeure en criminologie - profil avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences sociales (majeure en criminologie) » (counted)"
+  },
+  {
+   "nom": "D.S.S. - Diplôme préparatoire aux sciences de la santé (Programme préparatoire aux sciences de la santé (D.S.S))",
+   "raison": "Diplôme préparatoire (D.S.S.), not a bachelor's (counted)"
+  },
+  {
+   "nom": "Baccalauréat en développement durable et zone côtière - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en développement durable et zone côtière » (counted)"
+  },
+  {
+   "nom": "Diplôme en administration des affaires",
+   "raison": "Diplôme, excluded (counted)"
+  },
+  {
+   "nom": "Diplôme en analyse et action communautaires",
+   "raison": "Diplôme, excluded (counted)"
+  },
+  {
+   "nom": "Juris Doctor",
+   "raison": "Juris Doctor - first-professional law degree, excluded (counted)"
+  },
+  {
+   "nom": "Juris Doctor (pour titulaire de la licence en droit civil)",
+   "raison": "Juris Doctor (for civil-law licence holders) - first-professional, excluded (counted)"
+  },
+  {
+   "nom": "Postbaccalauréat en éducation primaire (immersion/inclusion scolaire)",
+   "raison": "à vérifier: postbaccalauréat en éducation (after-degree teacher education route), not listed as a named baccalauréat (counted)"
+  },
+  {
+   "nom": "Postbaccalauréat en éducation secondaire (immersion/inclusion scolaire)",
+   "raison": "à vérifier: postbaccalauréat en éducation (after-degree route) (counted)"
+  },
+  {
+   "nom": "Postbaccalauréat en éducation secondaire",
+   "raison": "à vérifier: postbaccalauréat en éducation (after-degree route) (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en environnement et géographie - profil avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès arts (majeure en environnement et géographie) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en études françaises - profil littérature)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès arts (majeure en études françaises) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en études françaises - profil littérature avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès arts (majeure en études françaises) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en études françaises - profil linguistique)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès arts (majeure en études françaises) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en études françaises - profil linguistique avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès arts (majeure en études françaises) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en ingénierie (génie civil) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en ingénierie (génie civil) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en ingénierie (génie électrique) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en ingénierie (génie électrique) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en ingénierie (génie mécanique) - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en ingénierie (génie mécanique) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en histoire - profil avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès arts (majeure en histoire) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en informatique appliquée - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en informatique appliquée » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences (majeure en mathématiques)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences (majeure en mathématiques) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès arts (majeure en philosophie - profil avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès arts (majeure en philosophie) » (counted)"
+  },
+  {
+   "nom": "Passerelle menant à la 3e année du Baccalauréat en science infirmière",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en science infirmière » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales (majeure en science politique - profil avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences sociales (majeure en science politique) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales (majeure en sociologie - profil avec distinction)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat ès sciences sociales (majeure en sociologie) » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en traduction",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en traduction » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en traduction - régime coopératif",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en traduction » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en travail social (pour personnes candidates avec un baccalauréat ou une formation connexes)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en travail social » (counted)"
+  },
+  {
+   "nom": "Baccalauréat en travail social (pour personnes candidates ayant une expérience pertinente de travail)",
+   "raison": "Variant (co-op / profil / accéléré / admission route / passerelle) merged into « Baccalauréat en travail social » (counted)"
+  },
+  {
+   "nom": "Baccalauréat d'études individualisées",
+   "raison": "Individualised-studies degree (Formation continue list), à vérifier (not counted)"
+  },
+  {
+   "nom": "46 mineures et deuxièmes concentrations (feuilles de route)",
+   "raison": "Minors excluded (not counted)"
+  },
+  {
+   "nom": "Microprogrammes de 1er cycle (gestion documentaire, écriture professionnelle, initiation aux études, enseignement au Canada)",
+   "raison": "Micro-programs excluded (not counted)"
+  },
+  {
+   "nom": "Certificats de deuxième cycle (gestion des services de santé, administration publique, études de l'environnement, littératie et francisation)",
+   "raison": "Graduate (not counted)"
+  }
+ ]
+}

@@ -1,0 +1,741 @@
+{
+ "universite": "University of Guelph",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/",
+  "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/",
+  "https://calendar.uoguelph.ca/undergraduate-calendar/special-study-opportunities/certificates-diplomas/"
+ ],
+ "blocages": [
+  "https://www.uoguelph.ca/programs/undergraduate/ et https://www.uoguelph.ca/explore-all-programs/ : répertoire d'admission rendu en JavaScript (contenu vide à la lecture), pas un blocage HTTP ; remplacé par le calendrier officiel (Undergraduate Calendar, pages des grades et « Areas of Study »)."
+ ],
+ "attendu": {
+  "baccalaureat": 90,
+  "certificat": 11,
+  "comment": "Répertoire d'admission illisible (JS) : unité = majeure (programme spécialisé « Honours ») listée sur chaque page de grade du calendrier officiel, ou le grade lui-même quand il n'a pas de majeures (B.A.S., B.L.A., B.C.A., B.I.E.S.P., B.O.H.). 89 majeures/grades de baccalauréat + le D.V.M. (listé parmi les grades) = 90. Certificats : 11 entrées de la section « Certificates » de la page Areas of Study. Lien = page du grade dans le calendrier (le calendrier n'a pas de page propre par majeure)."
+ },
+ "programmes": [
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Art History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Classical Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Criminal Justice and Public Policy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Culture and Technology Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Environmental Governance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "European Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Food, Agricultural and Resource Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "French Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "International Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Justice and Legal Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Mathematical Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Mathematical Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Sexualities, Genders and Social Change",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Spanish and Hispanic Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Studio Art",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Theatre Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-ba/"
+  },
+  {
+   "nom": "Animal Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Biological Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Bio-Medical Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Biomedical Toxicology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Food Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Human Health and Nutritional Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Human Kinetics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Marine and Freshwater Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Microbiology and Immunology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Molecular Biology and Genetics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Plant Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Wildlife Biology and Conservation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Zoology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Biological and Medical Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Biological and Pharmaceutical Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Chemical Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Physical Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Theoretical Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-bsc/"
+  },
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Food and Agricultural Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Government, Economics and Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Hospitality and Tourism Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Management Economics and Finance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Marketing Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Real Estate",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Sport and Event Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-commerce-bcomm/"
+  },
+  {
+   "nom": "Biological Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Biomedical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Engineering Systems and Computing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Mechatronics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Water Resources Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-engineering-beng/"
+  },
+  {
+   "nom": "Applied Human Nutrition",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-applied-science-basc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-applied-science-basc/"
+  },
+  {
+   "nom": "Child Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-applied-science-basc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-applied-science-basc/"
+  },
+  {
+   "nom": "Family Studies and Human Development",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-applied-science-basc/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-applied-science-basc/"
+  },
+  {
+   "nom": "Environmental Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-bio-resource-management-degree-bbrm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-bio-resource-management-degree-bbrm/"
+  },
+  {
+   "nom": "Equine Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-bio-resource-management-degree-bbrm/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-bio-resource-management-degree-bbrm/"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-computing-bcomp/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-computing-bcomp/"
+  },
+  {
+   "nom": "Software Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-computing-bcomp/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-computing-bcomp/"
+  },
+  {
+   "nom": "Mathematical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-mathematics/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-mathematics/"
+  },
+  {
+   "nom": "Bachelor of Arts and Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-sciences-bas/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-arts-sciences-bas/"
+  },
+  {
+   "nom": "Bachelor of Landscape Architecture",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-landscape-architecture-bla/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-landscape-architecture-bla/"
+  },
+  {
+   "nom": "Bachelor of Creative Arts, Health and Wellness",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-creative-arts-health-and-wellness/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-creative-arts-health-and-wellness/"
+  },
+  {
+   "nom": "Bachelor of Indigenous Environmental Science and Practice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-indigenous-environmental-science-and-practice-biesp/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-indigenous-environmental-science-and-practice-biesp/"
+  },
+  {
+   "nom": "Bachelor of One Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-of-one-health-boh/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-of-one-health-boh/"
+  },
+  {
+   "nom": "Agriculture, Honours",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-agriculture-bsc-agr/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-agriculture-bsc-agr/"
+  },
+  {
+   "nom": "Animal Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-agriculture-bsc-agr/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-agriculture-bsc-agr/"
+  },
+  {
+   "nom": "Crop Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-agriculture-bsc-agr/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-agriculture-bsc-agr/"
+  },
+  {
+   "nom": "Horticulture",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-agriculture-bsc-agr/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-agriculture-bsc-agr/"
+  },
+  {
+   "nom": "Earth Observation and Geographic Information Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/"
+  },
+  {
+   "nom": "Ecology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/"
+  },
+  {
+   "nom": "Environment and Resource Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/"
+  },
+  {
+   "nom": "Environmental Economics and Policy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/"
+  },
+  {
+   "nom": "Environmental Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/degree-programs/bachelor-science-environmental-sciences-bsc-env/"
+  },
+  {
+   "nom": "Certificate in Accounting",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/accounting-acct/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Business",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/business-bus/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Environmental Citizenship",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/environmental-citizenship-ect/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Environmental Conservation",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/environmental-conservation-ecv/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Food Science",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/food-science-food/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in German Language and Culture",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/german-germ/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Hospitality Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/hospitality-tourism-management-htm/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Indigenous Environmental Governance",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/indigenous-environmental-governance-ieg/",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Leadership",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/leadership-lead/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Public Policy Administration",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/public-policy-administration-ppa/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  },
+  {
+   "nom": "Certificate in Spanish Language and Culture",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/spanish-hispanic-studies-spah/#certificatetext",
+   "source": "https://calendar.uoguelph.ca/undergraduate-calendar/programs-majors-minors/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Doctor of Veterinary Medicine (D.V.M.)",
+   "raison": "doctorat professionnel de premier accès (DVM), exclu"
+  },
+  {
+   "nom": "Versions Co-op des majeures B.Sc. (14 : Biochemistry, Chemistry, Physics, etc.)",
+   "raison": "variante co-op fusionnée avec la majeure (non comptée dans attendu)"
+  },
+  {
+   "nom": "Programme général B.A. (15 « Areas of Concentration »)",
+   "raison": "concentrations du B.A. général, non listées comme majeures ; non comptées dans attendu"
+  },
+  {
+   "nom": "Applied Statistics (Diploma)",
+   "raison": "diplôme, hors périmètre (non compté dans attendu)"
+  },
+  {
+   "nom": "Associate Diploma in Agriculture (AGR)",
+   "raison": "diplôme, hors périmètre (non compté dans attendu)"
+  }
+ ]
+}

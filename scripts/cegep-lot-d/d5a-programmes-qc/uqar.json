@@ -1,0 +1,465 @@
+{
+  "universite": "Université du Québec à Rimouski",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.uqar.ca/programmes-formations-et-admission/domaines-etudes/resultats-de-recherche-de-programmes/",
+    "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109",
+    "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106",
+    "https://www.uqar.ca/programmes-formations-et-admission/admission/programmes-ouverts-a-ladmission/"
+  ],
+  "attendu": {
+    "baccalaureat": 36,
+    "certificat": 28,
+    "comment": "Le répertoire officiel (page de recherche de programmes, rendue en JS) est alimenté par l’API WordPress officielle uqar.ca/wp-json/wp/v2/programmes (192 fiches) ; la taxonomie « Categorie » annonce 36 fiches « Baccalauréat » et 28 « Certificat ». Des 36 fiches baccalauréat : 7 « Baccalauréat avec majeure en … » ramenées à la ligne « Baccalauréat par cumul et baccalauréat avec majeure », 4 doublons de cheminement base DEC (génie) regroupés, 1 suspendu → 24 retenus. Des 28 certificats : 1 suspendu → 27. Recoupé avec la page « Programmes ouverts à l’admission » (hiver et automne 2027)."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat en administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-administration/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en biologie",
+      "cycle": "baccalaureat",
+      "faculte": "Département de biologie, chimie et géographie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-biologie/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en chimie de l’environnement et des bioressources",
+      "cycle": "baccalaureat",
+      "faculte": "Département de biologie, chimie et géographie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-chimie-de-lenvironnement-et-des-bioressources/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en développement des sociétés et territoires",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-developpement-des-societes-et-territoires/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-education-prescolaire-et-en-enseignement-primaire/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de la musique",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-de-la-musique/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire et sociale",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-en-adaptation-scolaire-et-sociale/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en enseignement professionnel",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-professionnel/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en génie civil",
+      "cycle": "baccalaureat",
+      "faculte": "Département de mathématiques, informatique et génie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-genie-civil-base-dec-preuniversitaire-ou-lequivalent/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en génie des systèmes électromécaniques",
+      "cycle": "baccalaureat",
+      "faculte": "Département de mathématiques, informatique et génie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-genie-des-systemes-electromecaniques-base-dec-preuniversitaire-ou-lequivalent/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique",
+      "cycle": "baccalaureat",
+      "faculte": "Département de mathématiques, informatique et génie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-genie-electrique-base-dec-preuniversitaire-ou-lequivalent/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique",
+      "cycle": "baccalaureat",
+      "faculte": "Département de mathématiques, informatique et génie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-genie-mecanique-base-dec-preuniversitaire-ou-lequivalent/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en géographie",
+      "cycle": "baccalaureat",
+      "faculte": "Département de biologie, chimie et géographie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-geographie/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en gestion des ressources humaines et de la santé et sécurité au travail",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-gestion-des-ressources-humaines-et-de-la-sante-et-securite-au-travail/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en histoire",
+      "cycle": "baccalaureat",
+      "faculte": "Département des lettres et humanités",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-histoire/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Département de mathématiques, informatique et génie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-informatique/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en kinésiologie",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-kinesiologie/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en lettres et création littéraire",
+      "cycle": "baccalaureat",
+      "faculte": "Département des lettres et humanités",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-lettres-et-creation-litteraire/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en psychologie",
+      "cycle": "baccalaureat",
+      "faculte": "Département des sciences de la santé",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-psychologie/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-sciences-comptables/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (chem. DEC-BAC)",
+      "cycle": "baccalaureat",
+      "faculte": "Département des sciences de la santé",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-sciences-infirmieres-chem-dec-bac/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en travail social",
+      "cycle": "baccalaureat",
+      "faculte": "Département de psychosociologie et travail social",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-travail-social/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat par cumul et baccalauréat avec majeure",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-par-cumul-et-baccalaureat-avec-majeure/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Certificat en adaptation scolaire et sociale",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-adaptation-scolaire-et-sociale/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en administration",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-administration/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en animation et accompagnement de petits groupes",
+      "cycle": "certificat",
+      "faculte": "Département de psychosociologie et travail social",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-animation-et-accompagnement-de-petits-groupes/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en commerce électronique",
+      "cycle": "certificat",
+      "faculte": "Département de mathématiques, informatique et génie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-commerce-electronique/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en création artistique",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-creation-artistique/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en écritures créatives et professionnelles",
+      "cycle": "certificat",
+      "faculte": "Département des lettres et humanités",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-ecritures-creatives-et-professionnelles/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en éducation contemporaine",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-education-contemporaine/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en éducation préscolaire et en enseignement primaire",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-education-prescolaire-et-en-enseignement-primaire/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en entrepreneuriat",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-entrepreneuriat/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en expertise comptable",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-expertise-comptable/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en finance",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-finance/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en fiscalité",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-fiscalite/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en gestion de projet",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-gestion-de-projet/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-gestion-des-ressources-humaines/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en gestion des technologies d’affaires",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-gestion-des-technologies-daffaires/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en informations et gestion financière",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-informations-et-gestion-financiere/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en informatique",
+      "cycle": "certificat",
+      "faculte": "Département de mathématiques, informatique et génie",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-informatique/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en kinésiologie",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-kinesiologie/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en marketing",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-marketing/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en planification financière",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-planification-financiere/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en pratiques psychosociales",
+      "cycle": "certificat",
+      "faculte": "Département de psychosociologie et travail social",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-pratiques-psychosociales/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en psychoéducation",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-psychoeducation/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en psychologie",
+      "cycle": "certificat",
+      "faculte": "Département des sciences de la santé",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-psychologie/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en santé et sécurité au travail",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-sante-et-securite-au-travail/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en santé mentale",
+      "cycle": "certificat",
+      "faculte": "Département des sciences de la santé",
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-sante-mentale/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en sciences sociales et territoires",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-sciences-sociales-et-territoires/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Certificat en trouble du spectre de l’autisme",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-trouble-du-spectre-de-lautisme/",
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire profil Français",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire profil Mathématique",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-mathematique/",
+      "source": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-mathematique/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire profil Science et technologie",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-science-et-technologie/",
+      "source": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-science-et-technologie/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire profil Univers social",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-univers-social/",
+      "source": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-univers-social/"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Baccalauréat avec majeure en biologie",
+      "raison": "Combinaison majeure + certificat/mineure (admission à la majeure, sans code de programme propre) ; couverte par la ligne « Baccalauréat par cumul et baccalauréat avec majeure »"
+    },
+    {
+      "nom": "Baccalauréat avec majeure en géographie",
+      "raison": "Combinaison majeure + certificat/mineure (admission à la majeure, sans code de programme propre) ; couverte par la ligne « Baccalauréat par cumul et baccalauréat avec majeure »"
+    },
+    {
+      "nom": "Baccalauréat avec majeure en histoire",
+      "raison": "Combinaison majeure + certificat/mineure (admission à la majeure, sans code de programme propre) ; couverte par la ligne « Baccalauréat par cumul et baccalauréat avec majeure »"
+    },
+    {
+      "nom": "Baccalauréat avec majeure en informatique",
+      "raison": "Combinaison majeure + certificat/mineure (admission à la majeure, sans code de programme propre) ; couverte par la ligne « Baccalauréat par cumul et baccalauréat avec majeure »"
+    },
+    {
+      "nom": "Baccalauréat avec majeure en lettres",
+      "raison": "Combinaison majeure + certificat/mineure (admission à la majeure, sans code de programme propre) ; couverte par la ligne « Baccalauréat par cumul et baccalauréat avec majeure »"
+    },
+    {
+      "nom": "Baccalauréat avec majeure en sciences sociales et territoires",
+      "raison": "Combinaison majeure + certificat/mineure (admission à la majeure, sans code de programme propre) ; couverte par la ligne « Baccalauréat par cumul et baccalauréat avec majeure »"
+    },
+    {
+      "nom": "Baccalauréat avec majeure en transport maritime",
+      "raison": "Combinaison majeure + certificat/mineure (admission à la majeure, sans code de programme propre) ; couverte par la ligne « Baccalauréat par cumul et baccalauréat avec majeure »"
+    },
+    {
+      "nom": "Baccalauréat en génie civil (Base DEC techniques ou l’équivalent)",
+      "raison": "Cheminement d’admission (base DEC) du Baccalauréat en génie civil ; une seule ligne pour le programme parent"
+    },
+    {
+      "nom": "Baccalauréat en génie des systèmes électromécaniques (Base DEC techniques ou l’équivalent)",
+      "raison": "Cheminement d’admission (base DEC) du Baccalauréat en génie des systèmes électromécaniques ; une seule ligne pour le programme parent"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique (base DEC techniques ou l’équivalent)",
+      "raison": "Cheminement d’admission (base DEC) du Baccalauréat en génie électrique ; une seule ligne pour le programme parent"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique (base DEC techniques ou l’équivalent)",
+      "raison": "Cheminement d’admission (base DEC) du Baccalauréat en génie mécanique ; une seule ligne pour le programme parent"
+    },
+    {
+      "nom": "Baccalauréat en psychosociologie des relations humaines",
+      "raison": "Admissions suspendues pour l’automne 2026, l’hiver 2027 et l’automne 2027 (fiche officielle) ; à vérifier : la page « Programmes ouverts à l’admission » le liste encore pour l’automne 2027"
+    },
+    {
+      "nom": "Certificat en psychosociologie",
+      "raison": "Admissions suspendues pour l’automne 2026, l’hiver 2027 et l’automne 2027 (fiche officielle) ; à vérifier : la page « Programmes ouverts à l’admission » le liste encore pour l’automne 2027"
+    },
+    {
+      "nom": "Doctorat de 1ᵉʳ cycle en médecine de l’Université Laval",
+      "raison": "Doctorat de premier cycle (hors périmètre ; programme d’une autre université offert en extension)"
+    },
+    {
+      "nom": "Doctorat de 1ᵉʳ cycle en médecine vétérinaire de l’Université de Montréal",
+      "raison": "Doctorat de premier cycle (hors périmètre ; programme d’une autre université offert en extension)"
+    }
+  ],
+  "regle_1": "Concentrations et profils à nom propre réintégrés (décision BP 2026-10-28) : 4 ligne(s)"
+}

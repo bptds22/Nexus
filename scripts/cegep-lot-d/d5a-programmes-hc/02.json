@@ -1,0 +1,980 @@
+{
+ "universite": "Carleton University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://admissions.carleton.ca/cu-programs/",
+  "https://calendar.carleton.ca/undergrad/undergradprograms/"
+ ],
+ "blocages": [
+  "https://admissions.carleton.ca/programs/ : répertoire filtrable rendu en JavaScript (« No Programs found »), pas un blocage ; remplacé par la liste A-Z officielle https://admissions.carleton.ca/cu-programs/"
+ ],
+ "attendu": {
+  "baccalaureat": 131,
+  "certificat": 7,
+  "comment": "Baccalauréats : 131 entrées de la liste A-Z officielle des programmes de premier cycle (admissions.carleton.ca/cu-programs) ; unité = entrée du répertoire (inclut les spécialisations BGInS et BIT que le répertoire liste comme programmes ; noms gardés avec le sigle de grade quand le répertoire l'affiche). Certificats : 7 certificats de premier cycle nommés dans le calendrier officiel (Undergraduate Programs)."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting (BAcc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/bachelor-of-accounting/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Accounting (BCom)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/accounting/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/actuarial-science/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Aerospace Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/aerospace-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Africa and Globalization",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/africa-globalization/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "African Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/african-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Algorithms",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/algorithms/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/anthropology/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Applied Linguistics and Discourse Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/applied-linguistics-and-discourse-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Applied Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/applied-physics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Architectural Conservation and Sustainability Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/architectural-conservation-and-sustainability-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Architectural Studies (BAS)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/architectural-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Art History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/art-history/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Artificial Intelligence and Machine Learning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/ai-and-machine-learning/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Arts (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/arts/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/biochemistry/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Bioinformatics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/bioinformatics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Biology (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/biology-ba/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Biology (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/biology-bsc/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Biomedical and Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/biomedical-and-electrical-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Biomedical and Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/biomedical-and-mechanical-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Biomedical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/biomedical-sciences/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Biotechnology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/biotechnology/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Business Analytics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/business-analytics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/chemistry/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Childhood and Youth Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/childhood-and-youth-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/civil-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Cognitive Science (BCogSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/cognitive-science/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Commerce (Business) (BCom)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/commerce/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Communication and Media Studies (BCoMS)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/communication-media-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Computational and Applied Mathematics and Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/computational-and-applied-mathematics-and-statistics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Computer Game Development",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/computer-game-development/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Computer Science (BCS)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/computer-science/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Computer Systems Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/computer-systems-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Criminology and Criminal Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/criminology-and-criminal-justice/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Cybersecurity (BCS)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/cybersecurity/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Cybersecurity (BCyber)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/bachelor-of-cybersecurity/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Data Science (BDS)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/data-science/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Disability and Chronic Illness",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/disability-chronic-illness/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/earth-sciences/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Earth Sciences in Vertebrate Paleontology and Paleoecology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/earth-sciences-in-vertebrate-paleontology-and-paleoecology/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Economics (BEcon)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/economics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/electrical-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Engineering (BEng)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Engineering Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/engineering-physics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/english/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Entrepreneurship (BCom)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/entrepreneurship/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Entrepreneurship (BEnt)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/bachelor-of-entrepreneurship/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Environment and Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/environment-health/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Environmental and Climate Change Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/environmental-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/environmental-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/environmental-science/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Europe and Russia in the World",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/europe-russia-world/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "European and Russian Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/european-and-russian-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Film Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/film-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/finance/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/french/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "General Studies (Online)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/general-studies-online/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Geography (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/geography-ba/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Geomatics (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/geomatics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Geomatics (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/geomatics-bsc/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global and International Studies (BGInS)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-international-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global and Transnational History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-transnational-history/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global Development",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-development/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global Genders and Sexualities",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-genders-sexualities/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-health/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global Inequalities and Social Change",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-inequalities-social-change/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global Law and Social Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-law-social-justice/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global Media and Communication",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-media-and-communication/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global Politics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-politics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Global Religions: Identity and Community",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/global-religions-identity-and-community/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Globalization and the Environment",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/globalization-environment/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Globalization, Culture, and Power",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/globalization-culture-power/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Greek and Roman Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/greek-and-roman-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Health Sciences (BHSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/health-sciences/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Health Throughout the Lifespan",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/health-throughout-lifespan/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/history/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "History and Theory of Architecture",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/history-and-theory-of-architecture/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Human Rights and Social Justice (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/human-rights-ba/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Humanities (Great Books) (includes HUMS-Biology) (BHum)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/humanities/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Humanities and Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/humanities-and-biology/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/indigenous-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Industrial Design (BID)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/industrial-design/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Information Resource Management (IRM)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/information-resource-management-irm/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Information Systems",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/information-systems/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Information Technology (BIT)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/information-technology/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Interactive Multimedia and Design (IMD)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/interactive-multimedia-and-design-imd/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "International Business (BCom)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/international-business-bcomm/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "International Economic Policy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/international-economic-policy/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Journalism (BJ)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/journalism/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Journalism and Humanities (BJHum)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/journalism-humanities/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Law (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/law-ba/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Linguistics (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/linguistics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Linguistics (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/linguistics-bsc/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/management/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Management and Business Systems",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/management-and-business-systems/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/marketing/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/mathematics-3/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Mathematics (BMath)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/mathematics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/mechanical-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Mechatronics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/mechatronics-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Media Production and Design (BMPD)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/media-production-design/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Music (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/music-ba/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Music (BMus)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/music-bmus/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Network Technology (NET)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/network-technology-net/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Neuroscience and Mental Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/neuroscience-and-mental-health/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Nursing (BScN) with RN Prescribing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/nursing/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/philosophy/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Physical Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/physical-geography/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/physics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/political-science/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Psycholinguistics and Communication Differences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/psycholinguistics-and-communication-differences/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Psychology (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/psychology-ba/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Psychology (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/psychology-bsc/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Public Affairs and Policy Management (BPAPM)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/public-affairs-and-policy-management/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Religion",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/religion/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Science (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/science/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Social Work (BSW)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/social-work/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/sociology/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Software Engineering (BEng)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/software-engineering-beng/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Software Engineering (Computer Science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/software-engineering-computer-science/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/statistics/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Supply Chain Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/supply-chain-management/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Sustainable Electrical Power Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/sustainable-electrical-power-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Sustainable Energy Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/sustainable-energy-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Systems Security Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/systems-security-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Telecommunications Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/telecommunications-engineering/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "User Experience and User Interfaces (UX/UI)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/user-experience-and-user-interfaces-ux-ui/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://admissions.carleton.ca/programs/womens-and-gender-studies/",
+   "source": "https://admissions.carleton.ca/cu-programs/"
+  },
+  {
+   "nom": "Certificate in Carillon Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.carleton.ca/undergrad/undergradprograms/music/#Certificate_in_Carillon_Studies",
+   "source": "https://calendar.carleton.ca/undergrad/undergradprograms/"
+  },
+  {
+   "nom": "Certificate in Journalism in Indigenous Communities",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.carleton.ca/undergrad/undergradprograms/journalism/#Certificate_in_Journalism_in_Indigenous_Communities",
+   "source": "https://calendar.carleton.ca/undergrad/undergradprograms/"
+  },
+  {
+   "nom": "Certificate in Multidisciplinary Studies in Mental Health and Well-Being",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.carleton.ca/undergrad/undergradprograms/psychology/#Certificate_in_Multidisciplinary_Studies_in_Mental_Health_and_Well_Being",
+   "source": "https://calendar.carleton.ca/undergrad/undergradprograms/"
+  },
+  {
+   "nom": "Certificate in Nunavut Public Service Studies (C.N.P.S.S.)",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.carleton.ca/undergrad/undergradprograms/nunavutpublicservicestudies/",
+   "source": "https://calendar.carleton.ca/undergrad/undergradprograms/"
+  },
+  {
+   "nom": "Certificate in Science and Policy",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.carleton.ca/undergrad/undergradprograms/scienceandpolicy/",
+   "source": "https://calendar.carleton.ca/undergrad/undergradprograms/"
+  },
+  {
+   "nom": "Certificate in Science Communication",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.carleton.ca/undergrad/undergradprograms/sciencecommunication/",
+   "source": "https://calendar.carleton.ca/undergrad/undergradprograms/"
+  },
+  {
+   "nom": "Certificate in the Teaching of English as a Second Language (CTESL)",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.carleton.ca/undergrad/undergradprograms/appliedlinguisticsanddiscoursestudies/#Certificate_in_the_Teaching_of_English_as_a_Second_Language_CTESL",
+   "source": "https://calendar.carleton.ca/undergrad/undergradprograms/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Gateway (Life Sciences or Physical Sciences)",
+   "raison": "voie d'entrée de première année (Gateway), pas un programme de grade en soi"
+  },
+  {
+   "nom": "Undeclared",
+   "raison": "entrée « non déclarée », pas un programme de grade"
+  }
+ ]
+}

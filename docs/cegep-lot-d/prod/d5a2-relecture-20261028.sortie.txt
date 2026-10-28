@@ -1,0 +1,6 @@
+﻿Pager usage is off.
+    version     | op | lignes | rls |                      policies                       | anon_lit | anon_rpc | interrupteur 
+----------------+----+--------+-----+-----------------------------------------------------+----------+----------+--------------
+ 20261028090000 |  1 |      0 | t   | university_programs_read, university_programs_write | f        | f        | false
+(1 row)
+

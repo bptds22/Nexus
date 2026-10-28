@@ -1,0 +1,420 @@
+{
+ "universite": "Memorial University of Newfoundland",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.mun.ca/undergrad/programs/",
+  "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificates--diplomas/"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 52,
+  "certificat": 11,
+  "comment": "Baccalaureat: 52 bachelor-level entries of the official undergraduate program directory across St. John's (28 incl. duplicates and first/second-degree routes), Grenfell (15), Marine Institute (4), Labrador (2) plus MD, PharmD and Engineering One listed in the same directory. Unit = directory entry (St. John's lists degrees, Grenfell lists majors). Certificat: 8 HSS certificates (directory 'Certificates' page) + 2 Grenfell + 1 Marine Institute undergraduate certificate."
+ },
+ "programmes": [
+  {
+   "nom": "Bachelor of Commerce",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business Administration",
+   "lien": "https://www.mun.ca/undergrad/programs/business/bachelor-of-commerce/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Joint Bachelor of Commerce and Bachelor of Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business Administration",
+   "lien": "https://www.mun.ca/undergrad/programs/music/joint-bachelor-of-music-and-bachelor-of-commerce/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Joint Bachelor of Commerce (Co-operative) and Bachelor of Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business Administration",
+   "lien": "https://www.mun.ca/undergrad/programs/business/joint-bachelor-of-commerce-co-op-and-arts/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Education (Primary/Elementary)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.mun.ca/undergrad/programs/education/bed-primaryelementary/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Education (Intermediate/Secondary)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.mun.ca/undergrad/programs/education/bed-intermediatesecondary/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Education (Post-secondary)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.mun.ca/educ/programs/undergraduate/adult_post/boePostSec1st.php",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Music Education as a second degree",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.mun.ca/undergrad/programs/education/bachelor-of-music-education-as-a-second-degree/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering and Applied Science",
+   "lien": "https://www.mun.ca/undergrad/programs/engineering/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Human Kinetics and Recreation Co-operative",
+   "cycle": "baccalaureat",
+   "faculte": "School of Human Kinetics and Recreation",
+   "lien": "https://www.mun.ca/undergrad/programs/human-kinetics--recreation/bachelor-of-human-kinetics-and-recreation-co-op/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": "School of Human Kinetics and Recreation",
+   "lien": "https://www.mun.ca/undergrad/programs/human-kinetics--recreation/bachelor-of-kinesiology/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Physical Education (general or teaching)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Human Kinetics and Recreation",
+   "lien": "https://www.mun.ca/undergrad/programs/human-kinetics--recreation/bachelor-of-physical-education/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Recreation",
+   "cycle": "baccalaureat",
+   "faculte": "School of Human Kinetics and Recreation",
+   "lien": "https://www.mun.ca/undergrad/programs/human-kinetics--recreation/bachelor-of-recreation/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities and Social Sciences",
+   "lien": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/bachelor-of-arts/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "International Bachelor of Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities and Social Sciences",
+   "lien": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/international-bachelor-of-arts/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Joint Bachelor of Arts and Bachelor of Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities and Social Sciences / Faculty of Science",
+   "lien": "https://www.mun.ca/undergrad/programs/science/joint-bachelor-of-arts-and-bachelor-of-science/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Music",
+   "cycle": "baccalaureat",
+   "faculte": "School of Music",
+   "lien": "https://www.mun.ca/undergrad/programs/music/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Joint Bachelor of Music and Bachelor of Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": "School of Music",
+   "lien": "https://www.business.mun.ca/undergraduate/joint-degrees/music-business/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Nursing",
+   "lien": "https://www.mun.ca/undergrad/programs/nursing/four-year-option/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.mun.ca/undergrad/programs/science/bachelor-of-science/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "School of Social Work",
+   "lien": "https://www.mun.ca/undergrad/programs/social-work/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Arts and Social Science",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-arts--social-science/programs/english/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Historical Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Arts and Social Science",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-arts--social-science/programs/historical-studies/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Arts and Social Science",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-arts--social-science/programs/psychology/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Social/Cultural Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Arts and Social Science",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-arts--social-science/programs/socialcultural-studies/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Arts and Social Science",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-arts--social-science/programs/business-administration/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Environment and Sustainability",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Science and the Environment",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-science-and-the-environment/programs/environment-and-sustainability/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Theatre (Acting or Technical Theatre)",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Fine Arts",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-fine-arts/programs/theatre/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Visual Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Fine Arts",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-fine-arts/programs/visual-arts/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Science and the Environment",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-science-and-the-environment/programs/environmental-science/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "General Science",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Science and the Environment",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-science-and-the-environment/programs/general-science/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Science and the Environment",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-science-and-the-environment/programs/mathematics/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Joint Mathematics/Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Science and the Environment",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-science-and-the-environment/programs/joint-mathematicsphysics/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Grenfell Campus - School of Science and the Environment",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-science-and-the-environment/programs/physics/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Maritime Management (Bachelor of Maritime Studies)",
+   "cycle": "baccalaureat",
+   "faculte": "Fisheries and Marine Institute",
+   "lien": "https://www.mi.mun.ca/programs/maritimestudiesmaritimemanagement-bachelordegree/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Safety Management (Bachelor of Maritime Studies)",
+   "cycle": "baccalaureat",
+   "faculte": "Fisheries and Marine Institute",
+   "lien": "https://www.mi.mun.ca/programs/maritimestudiessafetymanagement-bachelordegree/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Engineering Technology and Applied Science (Bachelor of Technology)",
+   "cycle": "baccalaureat",
+   "faculte": "Fisheries and Marine Institute",
+   "lien": "https://www.mi.mun.ca/programs/bacheloroftechnology-technologyengineeringtechnologyandappliedscience/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Health Sciences Technology (Bachelor of Technology)",
+   "cycle": "baccalaureat",
+   "faculte": "Fisheries and Marine Institute",
+   "lien": "https://www.mi.mun.ca/programs/bacheloroftechnology-healthsciencestechnology/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Bachelor of Arctic and Subarctic Interdisciplinary Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Labrador Campus",
+   "lien": "https://www.mun.ca/labradorcampus/programs/undergraduate/basis-degree-program/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Certificate in Criminology",
+   "cycle": "certificat",
+   "faculte": "Faculty of Humanities and Social Sciences",
+   "lien": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificate-in-criminology/",
+   "source": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificates--diplomas/"
+  },
+  {
+   "nom": "Certificate in Film Studies",
+   "cycle": "certificat",
+   "faculte": "Faculty of Humanities and Social Sciences",
+   "lien": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificate-in-film-studies/",
+   "source": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificates--diplomas/"
+  },
+  {
+   "nom": "Certificate in Geomatics and Environment",
+   "cycle": "certificat",
+   "faculte": "Faculty of Humanities and Social Sciences",
+   "lien": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificate-geomatics-environment/",
+   "source": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificates--diplomas/"
+  },
+  {
+   "nom": "Certificate in History and Philosophy of Science and Technology",
+   "cycle": "certificat",
+   "faculte": "Faculty of Humanities and Social Sciences",
+   "lien": "https://www.mun.ca/hss/programs/undergraduate/certificate-programs/history-and-philosophy-of-science-and-technology/",
+   "source": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificates--diplomas/"
+  },
+  {
+   "nom": "Certificate in Indigenous Studies",
+   "cycle": "certificat",
+   "faculte": "Faculty of Humanities and Social Sciences",
+   "lien": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificate-in-indigenous-studies/",
+   "source": "https://www.mun.ca/undergrad/programs/humanities-and-social-sciences/certificates--diplomas/"
+  },
+  {
+   "nom": "Entrepreneurship (Certificate)",
+   "cycle": "certificat",
+   "faculte": "Grenfell Campus - School of Arts and Social Science",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/school-of-arts--social-science/programs/business-administration/program-options/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Sustainable Rural Communities (Certificate)",
+   "cycle": "certificat",
+   "faculte": "Grenfell Campus",
+   "lien": "https://www.mun.ca/grenfellcampus/programs--schools/certificate-programs/sustainable-rural-communities/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  },
+  {
+   "nom": "Certificate in Leadership",
+   "cycle": "certificat",
+   "faculte": "Fisheries and Marine Institute",
+   "lien": "https://www.mi.mun.ca/programs/certificateinleadership/",
+   "source": "https://www.mun.ca/undergrad/programs/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Bachelor of Commerce (Co-operative)",
+   "raison": "Co-op stream merged into Bachelor of Commerce (counted)"
+  },
+  {
+   "nom": "Bachelor of Education (Primary/Elementary) as a second degree",
+   "raison": "After-degree route merged (counted)"
+  },
+  {
+   "nom": "Bachelor of Education (Primary/Elementary) as a second degree - French as a second language",
+   "raison": "After-degree route merged into BEd (Primary/Elementary) (counted)"
+  },
+  {
+   "nom": "Bachelor of Education (Intermediate/Secondary) conjoint with a Diploma in Technology Education",
+   "raison": "Conjoint variant merged into BEd (Intermediate/Secondary) (counted)"
+  },
+  {
+   "nom": "Bachelor of Education (Post-secondary) as a second degree",
+   "raison": "After-degree route merged (counted)"
+  },
+  {
+   "nom": "Joint Bachelor of Arts and Bachelor of Science (Science listing)",
+   "raison": "Same program listed twice (HSS and Science) (counted)"
+  },
+  {
+   "nom": "Joint Bachelor of Arts and Bachelor of Commerce (Co-operative) (HSS listing)",
+   "raison": "Same program listed twice (Business and HSS) (counted)"
+  },
+  {
+   "nom": "Bachelor of Social Work (as a second degree)",
+   "raison": "After-degree route merged (counted)"
+  },
+  {
+   "nom": "Nursing (four-year option) - Grenfell Campus",
+   "raison": "Campus variant merged into Bachelor of Science in Nursing (counted)"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing - Labrador Campus",
+   "raison": "Campus variant merged into Bachelor of Science in Nursing (counted)"
+  },
+  {
+   "nom": "Psychology (Bachelor of Science and the Environment) - Grenfell",
+   "raison": "Same name as Grenfell Psychology (BA); merged (counted)"
+  },
+  {
+   "nom": "Doctor of Medicine",
+   "raison": "First-professional doctorate (counted)"
+  },
+  {
+   "nom": "Doctor of pharmacy (entry to practice)",
+   "raison": "First-professional doctorate (counted)"
+  },
+  {
+   "nom": "Engineering One (Labrador Campus)",
+   "raison": "First-year engineering at Labrador, not a separate degree (counted)"
+  },
+  {
+   "nom": "Certificate in Ancient Languages",
+   "raison": "Not accepting new students (counted)"
+  },
+  {
+   "nom": "Certificate in Food Studies",
+   "raison": "Not accepting new students (counted)"
+  },
+  {
+   "nom": "Certificate in Newfoundland and Labrador Studies",
+   "raison": "Not accepting new students (counted)"
+  },
+  {
+   "nom": "Marine Institute Technical Certificates (Bridge Watch, Fire Rescue, Marine Diesel Mechanics)",
+   "raison": "Technical (vocational) certificates, not undergraduate university credit certificates; à vérifier (not counted)"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing (three-year accelerated option)",
+   "raison": "Paused, not accepting applications for fall 2027 (not counted)"
+  },
+  {
+   "nom": "Diplomas (HSS diplomas, Adult Learning, Northern Peoples, MI Diplomas of Technology/Technician Diploma)",
+   "raison": "Diplomas excluded (not counted)"
+  }
+ ]
+}

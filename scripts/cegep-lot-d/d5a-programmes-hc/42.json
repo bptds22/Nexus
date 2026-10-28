@@ -1,0 +1,1122 @@
+{
+ "universite": "University of Saskatchewan",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://admissions.usask.ca/programs/find-a-program.php"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 95,
+  "certificat": 68,
+  "comment": "Répertoire officiel « Find a program » (liste JSON servie dans la page même). Baccalauréat = 87 entrées typées « Bachelor's degree » + 8 entrées uniquement « Non-direct entry » (dont Nursing, Nutrition et Education - Sequential Music, qui mènent à un baccalauréat et sont retenues ; 5 programmes professionnels exclus). Certificat = 68 entrées typées « Certificate ». Une ligne par entrée nommée du répertoire. Les 160 pages de programme ont été ouvertes pour repérer « not currently accepting applications ». Faculté = collège(s) indiqué(s) par le répertoire."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/accounting.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Agribusiness",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/agribusiness.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Agricultural Biology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/agricultural-biology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Agricultural Economics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/agricultural-economics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Agronomy",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/agronomy.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Animal Bioscience",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/animal-bioscience.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Animal Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/animal-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Applied Computing",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/applied-computing.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Applied Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/applied-mathematics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Applied Plant Ecology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/applied-plant-ecology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/anthropology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Art History",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/art-history.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Biochemistry, Microbiology and Immunology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/biochemistry-microbiology-and-immunology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Biological Research",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/biological-research.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/biology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Biomedical Foundations",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/biomedical-foundations.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Biomedical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/biomedical-sciences.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Biomedical Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/biomedical-neuroscience.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Business",
+   "cycle": "certificat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/business.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Business Economics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/business-economics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Catholic Studies",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/catholic-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Cellular, Physiological and Pharmacological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/cellular-physiological-and-pharmacological-sciences.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/chemical-engineering.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/chemistry.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/civil-engineering.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Classical and Medieval Latin",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/classical-medieval-latin.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Classical, Medieval and Renaissance Studies",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/classical-medieval-renaissance-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/computer-engineering.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/computer-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Computing",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/computing.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Crop Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/crop-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Dental Assisting",
+   "cycle": "certificat",
+   "faculte": "College of Dentistry",
+   "lien": "https://admissions.usask.ca/dental-assisting.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Drama",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/drama.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/economics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Education",
+   "cycle": "baccalaureat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/education.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Education - Sequential Music",
+   "cycle": "baccalaureat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/education-sequential-music.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/electrical-engineering.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Engineering Physics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/engineering-physics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/english.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Entrepreneurship",
+   "cycle": "certificat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/entrepreneurship.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Environment and Society",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/environment-society.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Environmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/environmental-biology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/environmental-engineering.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Environmental Geoscience",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/environmental-geoscience.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/environmental-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Ethics, Justice and Law",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/ethics-justice-law.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Exercise and Sport Studies",
+   "cycle": "baccalaureat",
+   "faculte": "College of Kinesiology",
+   "lien": "https://admissions.usask.ca/exercise-and-sport-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/finance.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Food and Bioproduct Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/food-and-bioproduct-sciences.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Food and Nutrition",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/food-and-nutrition.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Food Industry Management",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/food-industry-management.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Food Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/food-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Forest Resources",
+   "cycle": "certificat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/forest-resources.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/french.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Geological Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/geological-engineering.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Geology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/geology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Geomatics",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/geomatics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Geophysics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/geophysics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Global Studies",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/global-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Health Studies",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/health-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/history.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Horticulture Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/horticulture-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Human Resources",
+   "cycle": "baccalaureat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/human-resources.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Hydrology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/hydrology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Indian Teacher Education Program (ITEP)",
+   "cycle": "baccalaureat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/itep.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Indigenous Governance and Politics",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/indigenous-governance-politics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/indigenous-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Interdisciplinary Biomedical Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/interdisciplinary-biomedical-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "International Studies",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/international-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Internationally Educated Teachers",
+   "cycle": "certificat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/internationally-educated-teachers.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Jazz",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/jazz.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Kanawayihetaytan Askiy",
+   "cycle": "certificat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/kanawayihetaytan-askiy.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Kinesiology and Education",
+   "cycle": "baccalaureat",
+   "faculte": "College of Kinesiology / College of Education",
+   "lien": "https://admissions.usask.ca/kinesiology-education.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/linguistics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Management",
+   "cycle": "baccalaureat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/management.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/marketing.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Mathematical Modelling",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/mathematical-modelling.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Mathematical Physics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/mathematical-physics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/mathematics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/mechanical-engineering.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Medical Language",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/medical-language.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Modern Languages",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/modern-languages.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/music.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Music Education",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/music-education.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "College of Nursing",
+   "lien": "https://admissions.usask.ca/nursing.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Nutrition",
+   "cycle": "baccalaureat",
+   "faculte": "College of Pharmacy and Nutrition",
+   "lien": "https://admissions.usask.ca/nutrition.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Palaeobiology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/palaeobiology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/philosophy.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/physics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Political Studies",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/political-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Politics and Law",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/politics-law.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Practical and Applied Arts",
+   "cycle": "certificat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/practical-and-applied-arts.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Prairie Horticulture",
+   "cycle": "certificat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/prairie-horticulture.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Professional Communication - Leadership and Negotiation",
+   "cycle": "certificat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/professional-communication-leadership-and-negotiation.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Professional Communication - Persuasive Communication",
+   "cycle": "certificat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/professional-communication-persuasive-communication.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Professional Communication - Technical and Professional Writing",
+   "cycle": "certificat",
+   "faculte": "College of Engineering",
+   "lien": "https://admissions.usask.ca/professional-communication-technical-and-professional-writing.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/psychology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Regional and Urban Planning",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/regional-urban-planning.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Religion and Culture",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/religion-culture.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Resource Economics and Policy",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/resource-economics-and-policy.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Resource Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/resource-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Saskatchewan Urban Native Teacher Education Program (SUNTEP)",
+   "cycle": "baccalaureat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/suntep.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/sociology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Soil Science",
+   "cycle": "baccalaureat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/soil-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Special Education",
+   "cycle": "certificat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/special-education.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/statistics.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Studio Art",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/studio-art.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Study of Indigenous Storytelling",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/indigenous-storytelling.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Supply Chain Management",
+   "cycle": "baccalaureat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/supply-chain-management.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Sustainability",
+   "cycle": "certificat",
+   "faculte": "School of Environment and Sustainability",
+   "lien": "https://admissions.usask.ca/sustainability.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Technical Vocational Education",
+   "cycle": "baccalaureat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/technical-vocational-education.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Technical Vocational Education",
+   "cycle": "certificat",
+   "faculte": "College of Education",
+   "lien": "https://admissions.usask.ca/technical-vocational-education.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Engineering Innovation and Entrepreneurship",
+   "cycle": "certificat",
+   "faculte": "College of Engineering / Edwards School of Business",
+   "lien": "https://admissions.usask.ca/engineering-innovation-and-entrepreneurship.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Engineering Entrepreneurship - Leading Innovative Teams",
+   "cycle": "certificat",
+   "faculte": "College of Engineering / Edwards School of Business",
+   "lien": "https://admissions.usask.ca/engineering-innovation-and-entrepreneurship.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Engineering Entrepreneurship - New Product Market",
+   "cycle": "certificat",
+   "faculte": "College of Engineering / Edwards School of Business",
+   "lien": "https://admissions.usask.ca/engineering-innovation-and-entrepreneurship.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Toxicology",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/toxicology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Urban Design",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/urban-design.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Water Science",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/water-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "wîcêhtowin Theatre",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/wicehtowin-theatre.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Gender, Sexualities and Social Justice",
+   "cycle": "baccalaureat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/gender-sexualities-social-justice.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Precision Agriculture",
+   "cycle": "certificat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/precision-agriculture.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Formal Reasoning",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/formal-reasoning.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Dental Therapy",
+   "cycle": "baccalaureat",
+   "faculte": "College of Dentistry",
+   "lien": "https://admissions.usask.ca/dental-therapy.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Dental Hygiene",
+   "cycle": "baccalaureat",
+   "faculte": "College of Dentistry",
+   "lien": "https://admissions.usask.ca/dental-hygiene.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Peace Studies",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/peace-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Queer Theory, Gender Diversity, and Sexualities Studies",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/queer-theory-gender-diversity-and-sexualities-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "French-English Translation",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/french-english-translation.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Religious Literacy",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/religious-literacy.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Ukrainian Studies",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/ukrainian-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Statistical Methods",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/statistical-methods.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Japanese Language and Culture",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/japanese-language-and-culture.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Spanish Language and Culture",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/spanish-language-and-culture.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Labour Studies",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/labour-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Creative Writing",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/creative-writing.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Music and Wellbeing",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/music-and-wellbeing.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Geology Fundamentals",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/geology-fundamentals.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Sedimentary Geology",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/sedimentary-geology.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Quantitative Geosciences",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/quantitative-geosciences.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Hard Rock Geoscience",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/hard-rock-geoscience.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Foundations of Drama",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/drama-certificates.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Speech Development and Diversity",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/speech-development-and-diversity.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Applied Gender Justice",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/applied-gender-justice.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Intermediate French Language and Culture",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/french-language-and-culture.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Advanced French Language and Culture",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/french-language-and-culture.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Curation Studies",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/curation-studies.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Chemistry Foundations I and II",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/chemistry-foundations.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Human Nutrition",
+   "cycle": "certificat",
+   "faculte": "College of Pharmacy and Nutrition",
+   "lien": "https://admissions.usask.ca/human-nutrition.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Human Nutrition for Internationally Trained Dietitians",
+   "cycle": "certificat",
+   "faculte": "College of Pharmacy and Nutrition",
+   "lien": "https://admissions.usask.ca/human-nutrition-for-internationally-trained-dietitians.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Introductory Agriculture",
+   "cycle": "certificat",
+   "faculte": "College of Agriculture and Bioresources",
+   "lien": "https://admissions.usask.ca/introductory-agriculture.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Foundational Pathways in Arts and Science",
+   "cycle": "certificat",
+   "faculte": "College of Arts and Science",
+   "lien": "https://admissions.usask.ca/foundational-pathways-in-arts-and-science.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  },
+  {
+   "nom": "Accounting for Decision Making",
+   "cycle": "certificat",
+   "faculte": "Edwards School of Business",
+   "lien": "https://admissions.usask.ca/accounting-for-decision-making.php",
+   "source": "https://admissions.usask.ca/programs/find-a-program.php"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Indigenous Business Administration (certificat)",
+   "raison": "Page : « This program is not currently accepting applications » — à vérifier"
+  },
+  {
+   "nom": "Criminology and Addictions (certificat)",
+   "raison": "Page : « This program is not currently accepting applications » (fenêtre annuelle au 15 janvier ?) — à vérifier"
+  },
+  {
+   "nom": "Dentistry",
+   "raison": "Doctorat professionnel (DMD), entrée non directe"
+  },
+  {
+   "nom": "English as an Additional Language Education (certificat)",
+   "raison": "Page : « This program is not currently accepting applications » — à vérifier"
+  },
+  {
+   "nom": "Indigenous Languages (certificat)",
+   "raison": "Page : « This program is not currently accepting applications » — à vérifier"
+  },
+  {
+   "nom": "Language Teacher Education (baccalauréat)",
+   "raison": "Page : « Applications are not being accepted at this time » / « not currently accepting applications »"
+  },
+  {
+   "nom": "Law",
+   "raison": "Diplôme professionnel en droit (JD), entrée non directe"
+  },
+  {
+   "nom": "Leadership in Post Secondary Education (certificat)",
+   "raison": "Page : « We are not currently accepting applications for this certificate program »"
+  },
+  {
+   "nom": "Medicine",
+   "raison": "Doctorat professionnel (MD), entrée non directe"
+  },
+  {
+   "nom": "Pharmacy",
+   "raison": "Doctorat professionnel (PharmD), entrée non directe"
+  },
+  {
+   "nom": "Veterinary Medicine",
+   "raison": "Doctorat professionnel (DVM), entrée non directe"
+  },
+  {
+   "nom": "Astronomy (certificat)",
+   "raison": "Page : « This program is not currently accepting applications » (dates 2027 affichées) — à vérifier"
+  }
+ ]
+}

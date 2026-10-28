@@ -1,0 +1,1543 @@
+{
+ "universite": "Université d'Ottawa",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://catalogue.uottawa.ca/fr/premier-cycle/",
+  "https://catalogue.uottawa.ca/fr/premier-cycle/premier-cycle.pdf"
+ ],
+ "blocages": [
+  "https://www.uottawa.ca/etudes/programmes : HTTP 402 (refus du serveur) — non contourné ; remplacé par le catalogue officiel https://catalogue.uottawa.ca/fr/premier-cycle/."
+ ],
+ "attendu": {
+  "baccalaureat": 235,
+  "certificat": 10,
+  "comment": "Catalogue officiel de premier cycle (version française), liste complète des programmes : 399 entrées au total dont 154 majeures/mineures/microprogrammes (hors périmètre, non comptés). Baccalauréats : 235 entrées de type grade (incluant options, programmes bidisciplinaires et concomitants, formation à l'enseignement, et les entrées professionnelles M.D./Pharm.D./J.D./LL.L. puis exclues) ; certificats : 10. Unité = entrée du catalogue ; nom = intitulé français du catalogue (les programmes offerts en anglais seulement y figurent sous leur nom anglais). Faculté non relevée (non affichée dans la liste)."
+ },
+ "programmes": [
+  {
+   "nom": "B.A. spécialisé antiquité grecque et romaine",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-antiquite-grecque-romaine/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé bidisciplinaire en communication et lettres françaises",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-bidisciplinaire-communication-lettres-francaises/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé bidisciplinaire en communication et science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-bidisciplinaire-communication-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé bidisciplinaire en communication et sociologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-bidisciplinaire-communication-sociologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé bidisciplinaire en histoire et science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-bidisciplinaire-histoire-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé bidisciplinaire en philosophie et science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-bidisciplinaire-philosophie-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé bidisciplinaire en psychologie et linguistique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-bidisciplinaire-psychologie-linguistique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé communication",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-communication/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé enseignement des langues secondes - enseignement de l'anglais langue seconde (ESL)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-enseignement-langues-secondes-enseignement-langlais-langue-seconde/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé enseignement des langues secondes - enseignement du français langue seconde (FLS)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-enseignement-langues-secondes-enseignement-francais-langue-seconde/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé Espagnol",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-espagnol/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé éthique et philosophie politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-ethique-philosophie-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé études de l'environnement",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-etudes-lenvironnement/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé géographie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-geographie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé histoire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-histoire/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé Lettres françaises",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-lettres-francaises/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé Lettres françaises et baccalauréat en éducation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-lettres-francaises-baccalaureat-education/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé linguistique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-linguistique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé musique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-musique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé philosophie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-philosophie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé psychologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-psychologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé sciences des religions",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-sciences-religions/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé théâtre",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-theatre/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé traduction anglais-espagnol-français",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-traduction-anglais-espagnol-francais/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.A. spécialisé traduction anglais-français",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/ba-specialise-traduction-anglais-francais/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé bidisciplinaire en informatique et mathématiques",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-bidisciplinaire-informatique-mathematiques/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé bidisciplinaire en mathématiques et science économique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-bidisciplinaire-mathematiques-science-economique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biochimie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biochimie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biochimie et B.Sc.A. génie chimique (biotechnologie)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biochimie-biotechnologie-bsca-genie-chimique-biotechnologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biochimie et option biologie chimique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biochimie-option-biologie-chimique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biochimie et option biologie synthétique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biochimie-option-biologie-synthetique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biochimie et option microbiologie et immunologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biochimie-option-microbiologie-immunologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biologie - option cellulaire/moléculaire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biologie-option-cellulaire-moleculaire/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biologie - option écologie/évolution/comportement",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biologie-option-ecologie-evolution-comportement/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé biologie - option en sciences des plantes",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biologie-option-sciences-plantes/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé Biologie - option physiologie animale",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-biologie-option-physiologie-animale/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé chimie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-chimie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé chimie - option EcoChimie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-chimieoption-ecochimie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé chimie - option matériaux de pointe",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-chimieoption-materiaux-pointe/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé géologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-geologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé géologie-physique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-geologie-physique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé informatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-informatique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé informatique - option gestion et entrepreneuriat",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-informatique-option-gestion-entrepreneuriat/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé informatique - option science des données",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-informatique-option-science-donnees/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé informatique et B.Sc. mathématiques (science des données)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-informatique-bsc-mathematiques/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé mathématiques",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-mathematiques/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé mathématiques financières et économie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-mathematiques-financieres-economie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé physique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-physique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé physique - option photonique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-physique-option-photonique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé physique - option physique biologique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-physique-option-physique-biologique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé physique et B.Sc.A. génie électrique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-physique-bsca-genie-electrique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé physique-mathématiques",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-physique-mathematiques/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé psychologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-psychologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé sciences biomédicales",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-biomedicales/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé sciences biomédicales - option biostatistique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-biomedicales-option-biostatistique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé sciences biomédicales - option médecine cellulaire et moléculaire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-biomedicales-option-medecine-cellulaire-moleculaire/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé sciences biomédicales - option neurosciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-biomedicales-option-neurosciences/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé sciences biopharmaceutiques",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-biopharmaceutiques/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé sciences environnementales",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-environnementales/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé sciences et baccalauréat en éducation - cycles intermédiaire/supérieur",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-baccalaureat-education-cycles-intermediaire-superieur/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé statistique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-statistique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc. spécialisé technologie médicale de l'ophtalmologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-technologie-medicale-lophtalmologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie chimique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-chimique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie chimique - option génie de l'environnement",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-chimique-option-genie-lenvironnement/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie chimique - option gestion et entrepreneuriat en ingénierie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-chimique-option-gestion-entrepreneuriat-ingenierie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie chimique et B.Sc. technologie de l'informatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-chimique-bsc-technologie-linformatique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie civil",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-civil/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie civil - option génie de l'environnement et des ressources hydriques",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-civil-option-genie-lenvironnement-ressources-hydriques/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie civil - option génie des structures et géotechnique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-civil-option-genie-structures-geotechnique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie civil - option gestion et entrepreneuriat en ingénierie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-civil-option-gestion-entrepreneuriat-ingenierie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie civil et B.Sc. technologie de l'informatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-civil-bsc-technologie-linformatique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie de la conception multidisciplinaire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-conception-multidisciplinaire/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie électrique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-electrique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie électrique - option gestion et entrepreneuriat en ingénierie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-electrique-option-gestion-entrepreneuriat-ingenierie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie électrique et B.Sc. technologie de l'informatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-electrique-bsc-technologie-linformatique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie informatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-informatique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie informatique - option gestion et entrepreneuriat en ingénierie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-informatique-option-gestion-entrepreneuriat-ingenierie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie logiciel",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-logiciel/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie logiciel - option gestion et entrepreneuriat en ingénierie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-logiciel-option-gestion-entrepreneuriat-ingenierie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie mécanique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-mecanique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie mécanique - option gestion et entrepreneuriat en ingénierie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-mecanique-option-gestion-entrepreneuriat-ingenierie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie mécanique biomédical",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-mecanique-biomedical/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie mécanique biomédical et B.Sc. technologie de l'informatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-mecanique-biomedical-bsc-technologie-linformatique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.A. génie mécanique et B.Sc. technologie de l'informatique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsca-genie-mecanique-bsc-technologie-linformatique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé administration publique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-administration-publique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé anthropologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-anthropologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en administration publique et science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-administration-publique-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en anthropologie et sociologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-anthropologie-sociologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en communication et science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-communication-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en communication et sociologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-communication-sociologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en criminologie et en études féministes et de genre",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-criminologie-etudes-feministes-genre/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en études féministes et de genre et en science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-etudes-feministes-genre-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en études féministes et de genre et en sociologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-etudes-feministes-genre-sociologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en histoire et science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-histoire-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en mathématiques et science économique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-mathematiques-science-economique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en philosophie et science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-philosophie-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en science économique et science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-bidisciplinaire-science-economique-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé criminologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-criminologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé développement international et mondialisation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-developpement-international-mondialisation/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé économie et politiques publiques",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-economie-politiques-publiques/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé économie et politiques publiques de l'environnement",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-economie-politiques-publiques-lenvironnement/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé économie internationale et développement",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-economie-internationale-developpement/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé études des conflits et droits humains",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-etudes-conflits-droits-humains/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé études internationales et langues modernes",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-etudes-internationales-langues-modernes/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé science économique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-science-economique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé science politique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé sociologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-sociologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé travail social - régime d’apprentissage expérientiel approfondi (RAEA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bscsoc-specialise-travail-social-raea/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "B.Sc.spécialisé géosciences environnementales",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-geosciences-environnementales/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en arts visuels (B.A.V.)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-arts-visuels-bav/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en conception multidisciplinaire - apprentissage expérientiel",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-conception-multidisciplinaire-apprentissage-experientiel/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en musique (B.Mus.)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-musique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en musique et baccalauréat ès sciences spécialisé avec majeure",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-musiquebaccalaureat-sciences-specialise-majeure/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en pratique théâtrale en jeu",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-pratique-theatrale-jeu/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (gestion mondiale)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-gestion-mondiale/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option analytique de gestion)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-analytique-gestion/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option analytique en soins de santé)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-analytique-soins-sante/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en comptabilité)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-comptabilite/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en entrepreneuriat)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-entrepreneuriat/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en finance)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-finance/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en gestion des ressources humaines)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-gestion-ressources-humaines/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en gestion des technologies d'affaires)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-gestion-technologies-daffaires/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en gestion internationale)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-gestion-internationale/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en management)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-management/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en marketing)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-option-marketing/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé en comptabilité",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-comptabilite/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé – double diplôme international",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-commerciales-specialise-double-diplome-international/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat en sciences sociales en études interdisciplinaires",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-sociales-majeure/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès arts études interdisciplinaires",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-arts-etudes-interdisciplinaires/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences avec double mineure",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-double-mineure/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences avec majeure",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-majeure/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences avec mineure",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-mineure/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales avec double mineure",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-sociales-double-mineure/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences sociales avec mineure",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-sociales-mineure/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé en nutrition et diététique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-nutrition-dietetique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé en sciences des aliments",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-aliments/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé en sciences des aliments - option nutrition",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-aliments-option-nutrition/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé en sciences des aliments - option technologie des aliments",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-aliments-option-technologie-aliments/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé médecine moléculaire et translationnelle",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-sciences-specialise-medecine-moleculaire-translationnelle/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé sciences de l'activité physique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-lactivite-physique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé sciences de l'activité physique - études appliquées kinésiologie",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-lactivite-physique-option-kinesiologie/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé sciences infirmières",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/bsc-specialise-sciences-infirmieres/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en conception multidisciplinaire – apprentissage expérientiel",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-conception-multidisciplinaire-apprentissage-experientiel/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en journalisme numérique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-journalisme-numerique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en relations publiques et communication",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-relations-publiques-communication/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-lactivite-physique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique - éducation et coaching",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-lactivite-physique-option-activite-physique-education-coaching/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique - éducation et coaching - option en études des enjeux sociaux du sport, de l'activité physique et du loisir",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-lactivite-physique-activite-physique-education-coaching-option-enjeux-sociaux-sport-activite-physique-loisir/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique - éducation et coaching et Formation à l'enseignement - cycles intermédiaire/supérieur",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-activite-physique-education-coaching-formation-enseignement-cycles-intermediaire-superieur/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique - éducation et coaching et Formation à l'enseignement - cycles moyen/intermédiaire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-activite-physique-education-coaching-formation-enseignement-cycles-moyen-intermediaire/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique - éducation et coaching et Formation à l'enseignement - cycles primaire/moyen",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-activite-physique-education-coaching-formation-enseignement-cycles-primaire-moyen/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique - gestion du sport et des loisirs",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-lactivite-physique-option-gestion-sport-loisirs/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique - gestion du sport et des loisirs - option en études des enjeux sociaux du sport, de l'activité physique et du loisir",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-lactivite-physique-gestion-sport-loisirs-option-enjeux-sociaux-sport-activite-physique-loisir/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique - option en études des enjeux sociaux du sport, de l'activité physique et du loisir",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-lactivite-physique-option-enjeux-sociaux-sport-activite-physique-loisir/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de la santé",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-sante/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de la santé - option en technologies et innovation en soins de santé",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-sante-option-en-technologies-et-innovation-en-soins-de-sante/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de la santé - option en biosciences de santé intégrées",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-sante-option-en-biosciences-sante-integrees/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de la santé - option en santé publique et santé des populations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-sante-option-en-sante-publique-et-sante-des-populations/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Baccalauréat spécialisé sciences intégrées des aliments en partenariat avec le Cordon Bleu",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/baccalaureat-specialise-sciences-integrees-aliments/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat de traduction anglais-français (en ligne)",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificat-traduction-anglais-francais/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat droit autochtone",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificat-droit-autochtone/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat études des francophonies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificat-etudes-francophonies/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat général en droit",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/programme-certificat-general-droit/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat gestion",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificat-gestion/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat gestion des ressources humaines",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificat-gestion-ressources-humaines/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat rédaction professionnelle et édition",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificat-redaction-professionnelle-edition/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat science politique",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificat-science-politique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificat/Baccalauréat en éducation - éducation technologique",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificat-baccalaureat-education-education-technologique/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificate Creative Writing",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificate-creative-writing/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Certificate Professional Writing",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/certificate-professional-writing/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Formation à l'enseignement - cycles intermédiaire/supérieur",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/formation-a-lenseignement-cycles-intermediaire-superieur/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Formation à l'enseignement - cycles moyen/intermédiaire",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/formation-a-lenseignement-cycles-moyen-intermediaire/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Formation à l'enseignement - cycles primaire/moyen",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/formation-a-lenseignement-cycles-primaire-moyen/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Honours BA English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/honours-ba-english/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Honours BA French Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/honours-ba-french-studies/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Indigenous Teacher Education Program - Certificate/BEd (Primary/Junior division)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/indigenous-teacher-education-program-certificate-bed-primary-junior-division/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Teacher Education - Intermediate/Senior division",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/teacher-education-intermediate-senior-division/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Teacher Education - Junior/Intermediate division",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/teacher-education-junior-intermediate-division/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  },
+  {
+   "nom": "Teacher Education - Primary/Junior division",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://catalogue.uottawa.ca/fr/premier-cycle/teacher-education-primary-junior-division/",
+   "source": "https://catalogue.uottawa.ca/fr/premier-cycle/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "B.A. spécialisé études de l'environnement (programme bilingue)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « B.A. spécialisé études de l'environnement »"
+  },
+  {
+   "nom": "B.A. spécialisé traduction anglais-espagnol-français (2 ans)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « B.A. spécialisé traduction anglais-espagnol-français »"
+  },
+  {
+   "nom": "B.A. spécialisé traduction anglais-français (2 ans)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « B.A. spécialisé traduction anglais-français »"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé administration publique et Maîtrise ès arts administration publique",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé anthropologie - régime d’apprentissage expérientiel approfondi (RAEA)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « B.Sc.Soc. spécialisé anthropologie »"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé bidisciplinaire en anthropologie et sociologie - régime d’apprentissage expérientiel approfondi (RAEA)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « B.Sc.Soc. spécialisé bidisciplinaire en anthropologie et sociologie »"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé développement international et mondialisation - régime d’apprentissage expérientiel approfondi (RAEA)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « B.Sc.Soc. spécialisé développement international et mondialisation »"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé études des conflits et droits humains - Régime d’apprentissage expérientiel approfondi (RAEA)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « B.Sc.Soc. spécialisé études des conflits et droits humains »"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé études des conflits et droits humains et Maîtrise ès arts en études de sécurité et défense",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé études internationales et langues modernes - Régime d’apprentissage expérientiel approfondi (RAEA)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « B.Sc.Soc. spécialisé études internationales et langues modernes »"
+  },
+  {
+   "nom": "B.Sc.Soc. spécialisé science politique et Juris Doctor (J.D.)",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option analytique de gestion) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option analytique en soins de santé) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en comptabilité) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en entrepreneuriat) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en finance) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en gestion des ressources humaines) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en gestion des technologies d'affaires) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en gestion internationale) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en management) et Maîtrise ès sciences en Gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé (option en marketing) et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé en comptabilité et maîtrise ès sciences en gestion",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé et Juris Doctor",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Baccalauréat en sciences commerciales spécialisé et Licence en droit (LL.L.)",
+   "raison": "à vérifier : LL.L. (droit civil), classé comme grade de droit professionnel et exclu ; l'admission directe après le cégep existe, BP peut vouloir le réintégrer"
+  },
+  {
+   "nom": "Baccalauréat en sciences sociales en études interdisciplinaires",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « Baccalauréat en sciences sociales en études interdisciplinaires »"
+  },
+  {
+   "nom": "Baccalauréat en sciences sociales études interdisciplinaires",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « Baccalauréat en sciences sociales en études interdisciplinaires »"
+  },
+  {
+   "nom": "Baccalauréat ès arts études interdisciplinaires (en ligne)",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « Baccalauréat ès arts études interdisciplinaires »"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé en sciences des aliments et Maîtrise ès sciences nutrition et biosciences alimentaires",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé médecine moléculaire et translationnelle et doctorat en philosophie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé médecine moléculaire et translationnelle et maitrise ès sciences",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé sciences de l'activité physique et Maîtrise ès sciences de la santé ergothérapie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé sciences de l'activité physique et Maîtrise ès sciences de la santé physiothérapie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé sciences infirmières",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « Baccalauréat ès sciences spécialisé sciences infirmières »"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé sciences infirmières - admission avec préalables universitaires",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « Baccalauréat ès sciences spécialisé sciences infirmières »"
+  },
+  {
+   "nom": "Baccalauréat ès sciences spécialisé sciences infirmières - passerelle",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « Baccalauréat ès sciences spécialisé sciences infirmières »"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique et Maîtrise ès sciences de la santé ergothérapie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de l'activité physique et Maîtrise ès sciences de la santé physiothérapie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de la santé et Maîtrise ès sciences de la santé audiologie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de la santé et Maîtrise ès sciences de la santé ergothérapie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de la santé et Maîtrise ès sciences de la santé orthophonie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Baccalauréat spécialisé en sciences de la santé et Maîtrise ès sciences de la santé physiothérapie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Doctorat de premier cycle en pharmacie (Pharm.D.)",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.)",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.) et doctorat en philosophie biochimie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.) et doctorat en philosophie biochimie spécialisation génétique humaine et moléculaire",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.) et doctorat en philosophie biologie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.) et doctorat en philosophie médecine cellulaire et moléculaire",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.) et doctorat en philosophie médecine cellulaire et moléculaire spécialisation génétique humaine et moléculaire",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.) et doctorat en philosophie microbiologie et immunologie",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.) et doctorat en philosophie neuroscience",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Études médicales de premier cycle (programme M.D.) et doctorat en philosophie neuroscience spécialisation génétique humaine et moléculaire",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Formation à l'enseignement en mode alternatif - B.Éd. (à temps partiel) - cycles moyen/intermédiaire",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « Formation à l'enseignement - cycles moyen/intermédiaire »"
+  },
+  {
+   "nom": "Formation à l'enseignement en mode alternatif - B.Éd. (à temps partiel) - cycles primaire/moyen",
+   "raison": "variante (voie d'admission, temps partiel, en ligne, régime expérientiel RAEA, version bilingue ou doublon d'entrée) fusionnée avec « Formation à l'enseignement - cycles primaire/moyen »"
+  },
+  {
+   "nom": "Juris Doctor (J.D.)",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Juris Doctor (J.D.) / American University, Washington College of Law ou Michigan State University, College of Law) - Entrant",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Juris Doctor (J.D.) / American University, Washington College of Law ou Michigan State University, College of Law) - Sortant",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Juris Doctor (J.D.) / Maîtrise en administration des affaires (M.B.A.)",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Juris Doctor (J.D.) / Maîtrise ès arts (affaires internationales) - Carleton University",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Licence en droit (LL.L.)",
+   "raison": "à vérifier : LL.L. (droit civil), classé comme grade de droit professionnel et exclu ; l'admission directe après le cégep existe, BP peut vouloir le réintégrer"
+  },
+  {
+   "nom": "Licence en droit (LL.L.) et B.Sc.Soc. spécialisé développement international et mondialisation",
+   "raison": "à vérifier : LL.L. (droit civil), classé comme grade de droit professionnel et exclu ; l'admission directe après le cégep existe, BP peut vouloir le réintégrer"
+  },
+  {
+   "nom": "Programme conjoint licence en droit (LL.L.) et maîtrise en administration des affaires (M.B.A.)",
+   "raison": "programme intégré baccalauréat + maîtrise/doctorat, exclu"
+  },
+  {
+   "nom": "Programme de droit canadien – Juris Doctor (J.D.) et licence en droit (LL.L.)",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Programme national (J.D.)",
+   "raison": "programme professionnel (M.D., Pharm.D., J.D.) ou combiné menant à un tel grade, exclu"
+  },
+  {
+   "nom": "Programme national (LL.L.)",
+   "raison": "à vérifier : LL.L. (droit civil), classé comme grade de droit professionnel et exclu ; l'admission directe après le cégep existe, BP peut vouloir le réintégrer"
+  }
+ ]
+}

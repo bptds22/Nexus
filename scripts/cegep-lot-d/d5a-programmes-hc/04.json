@@ -1,0 +1,523 @@
+{
+ "universite": "Lakehead University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.lakeheadu.ca/programs",
+  "https://www.lakeheadu.ca/programs/other-programs/certificates"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 58,
+  "certificat": 18,
+  "comment": "Baccalauréats : 58 entrées de premier cycle du répertoire officiel (www.lakeheadu.ca/programs, filtre Program Level : Any ; entrées diplômes et cycles supérieurs exclues par le répertoire) ; unité = entrée du répertoire. Certificats : 18 entrées de la page officielle Certificate Programs ; liens vers le calendrier officiel (csdc.lakeheadu.ca ; plusieurs pointent vers l'édition catalogid=27, possiblement antérieure — à vérifier). La page précise que certains certificats peuvent comporter des ateliers non crédités."
+ },
+ "programmes": [
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/anthropology/node/14",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Applied Life Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/applied-life-sciences/node/18",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/biology/node/3362",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/business/node/3456",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/chemistry/node/2709",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/computer-science/node/1110",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Criminology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/criminology/node/3363",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/economics/node/2957",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Education - Concurrent",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/education-concurrent/node/3437",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Education - Consecutive",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/education-consecutive/node/3438",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Education - Technological Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/education-technological-education/node/93790",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Engineering - Chemical",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/engineering-chemical/node/1111",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Engineering - Civil",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/engineering-civil/node/3355",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Engineering - Electrical",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/engineering-electrical/node/3570",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Engineering - Mechanical",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/engineering-mechanical/node/3571",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Engineering - Mechatronics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/engineering-mechatronics/node/73740",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Engineering - Software",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/engineering-software/node/3575",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/english/node/3354",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Environmental Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/environmental-management/node/3577",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/environmental-studies/node/3578",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Environmental Sustainability",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/environmental-sustainability/node/3358",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Forestry (HBSCF)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/forestry/node/3579",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Gender and Women's Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/womens-studies/node/2958",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "General Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/general-arts/node/3580",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "General Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/general-science/node/3581",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Geoarchaeology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/geoarchaeology/node/3593",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/geography/node/3357",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Geology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/geology/node/3601",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/history/node/3600",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Indigenous Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/indigenous/indigenous-programs/aboriginal-education/node/54968",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Indigenous Learning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/indigenous/indigenous-programs/indigenous-learning/node/54969",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Indigenous Teacher Education Program",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/indigenous-teacher-education-program/node/3338",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Interdisciplinary Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/interdisciplinary-studies/node/3453",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/kinesiology/node/1113",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Languages",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/languages/node/3353",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/mathematics/node/3597",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Media, Film and Communications",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/media-studies/node/3454",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/music/node/3352",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Natural Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/natural-science/node/3596",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/nursing/node/1571",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Outdoor Recreation, Parks & Tourism",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/orpt/node/2960",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/philosophy/node/3594",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/physics/node/3361",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/political-science/node/3602",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/psychology/node/3592",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Resource and Environmental Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/resource-environmental-economics/node/3360",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/social-work/node/1101",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/sociology/node/23871",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Visual Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/visual-arts/node/2959",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Water Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.lakeheadu.ca/programs/undergraduate-programs/water-resource-science/node/3359",
+   "source": "https://www.lakeheadu.ca/programs"
+  },
+  {
+   "nom": "Aboriginal Language Specialist Certificate Part I",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=8446&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Aboriginal Language Specialist Certificate Part II",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=8447&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in Business Information Technology Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7830&topicgroupid=25564&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in Education Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7972&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Entrepreneur Certificate Program",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7830&topicgroupid=25563&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in Environmental Sustainability",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=8119&topicgroupid=26807&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate of French Proficiency for Non-French Majors - Basic",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7872&topicgroupid=25814&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate of French Proficiency for Non-French Majors - Intermediate",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7872&topicgroupid=25815&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate of French Proficiency for Non-French Majors - Advanced",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7872&topicgroupid=25816&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate Program in Geomatics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=8104&topicgroupid=26694&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in Global Entrepreneurship",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7830&topicgroupid=25584&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in Indigenous Learning",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7863&topicgroupid=25765&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in Interdisciplinary Health Care Ethics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=30&chapterid=9872&topicgroupid=31959&loaduseredits=False",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in International Languages",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=30&chapterid=9864&loaduseredits=False",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Artist Certificate in Performance and Pedagogy",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7882&topicgroupid=25850&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in Public History",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=27&chapterid=7861&topicgroupid=25752&loaduseredits=True",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  },
+  {
+   "nom": "Certificate in Writing",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://csdc.lakeheadu.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=30&chapterid=9843&topicgroupid=31809&loaduseredits=False",
+   "source": "https://www.lakeheadu.ca/programs/other-programs/certificates"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Collaborative Doctor of Veterinary Medicine Program",
+   "raison": "doctorat professionnel (DVM, en collaboration), exclu"
+  },
+  {
+   "nom": "Indigenous Language Instructor's Program",
+   "raison": "mène à un diplôme (Indigenous Language Teacher Diploma, 3 ans), pas un baccalauréat"
+  },
+  {
+   "nom": "Indigenous Nursing Entry Program",
+   "raison": "programme d'accès/préparatoire, pas un grade"
+  },
+  {
+   "nom": "Indigenous STEM Access Program (ISTEM)",
+   "raison": "programme d'accès, pas un grade"
+  },
+  {
+   "nom": "Indigenous Transition Year Program (ITYP)",
+   "raison": "année de transition, pas un grade"
+  },
+  {
+   "nom": "Lakehead Arts One",
+   "raison": "option de première année menant à un HBA (majeure non déclarée), pas un programme distinct"
+  },
+  {
+   "nom": "Lakehead Science One",
+   "raison": "option de première année menant à un baccalauréat en sciences, pas un programme distinct (à vérifier)"
+  },
+  {
+   "nom": "Law",
+   "raison": "Juris Doctor (JD), grade professionnel de deuxième entrée, exclu"
+  },
+  {
+   "nom": "Primary Health Care Nurse Practitioner Certificate",
+   "raison": "à vérifier : certificat d'infirmière praticienne réservé aux infirmières autorisées (niveau post-baccalauréat probable)"
+  }
+ ]
+}

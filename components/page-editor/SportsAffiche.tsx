@@ -22,7 +22,7 @@ type Etat =
   | { s: "ok"; sports: Sport[] };
 
 export default function SportsAffiche() {
-  const { client, schoolId } = useEditor();
+  const { client, schoolId, tonEtab, estUniversite } = useEditor();
   const [etat, setEtat] = React.useState<Etat>({ s: "load" });
 
   React.useEffect(() => {
@@ -66,7 +66,7 @@ export default function SportsAffiche() {
 
           {etat.s === "ok" && etat.sports.length === 0 && (
             <div className="fact" style={{ display: "block" }}>
-              <b>Aucune équipe rattachée à ton collège pour l&apos;instant.</b>
+              <b>Aucune équipe rattachée à {tonEtab} pour l&apos;instant.</b>
               <span style={{ display: "block", marginTop: 8, lineHeight: 1.55 }}>
                 Tant qu&apos;aucune équipe n&apos;existe, la section « L&apos;affiche »
                 n&apos;apparaît pas sur ta page publique.
@@ -99,7 +99,11 @@ export default function SportsAffiche() {
           <div className="pvhead">UNE ÉQUIPE MANQUE OU EST EN TROP ?</div>
           <div className="fact" style={{ display: "block" }}>
             <b>La page suit tes équipes, automatiquement.</b>
-            <span style={{ display: "block", marginTop: 8, lineHeight: 1.55 }}>Un <b style={{ color: "#EDEFF3" }}>coach ou directeur</b> de ton collège crée (ou corrige) l&apos;équipe dans <b style={{ color: "#EDEFF3" }}>Mes équipes</b> → elle apparaît ici toute seule. La plupart des équipes RSEQ sont déjà chargées par Nexus — vérifie avant de créer, le système te proposera d&apos;adopter l&apos;existante.</span>
+            {estUniversite ? (
+              <span style={{ display: "block", marginTop: 8, lineHeight: 1.55 }}>Les équipes de ton université sont chargées par Nexus depuis U SPORTS. Une équipe manque ou est en trop ? Écris à <b style={{ color: "#EDEFF3" }}>info@nexussports.ca</b>.</span>
+            ) : (
+              <span style={{ display: "block", marginTop: 8, lineHeight: 1.55 }}>Un <b style={{ color: "#EDEFF3" }}>coach ou directeur</b> de {tonEtab} crée (ou corrige) l&apos;équipe dans <b style={{ color: "#EDEFF3" }}>Mes équipes</b> → elle apparaît ici toute seule. La plupart des équipes RSEQ sont déjà chargées par Nexus — vérifie avant de créer, le système te proposera d&apos;adopter l&apos;existante.</span>
+            )}
           </div>
         </div></div>
       </div>

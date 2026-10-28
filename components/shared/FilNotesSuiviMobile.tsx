@@ -152,7 +152,6 @@ export default function FilNotesSuiviMobile({
             ariaLabel="Ajouter une note de suivi"
             envoyerAvecEntree={false}
             sansGabarits
-            sansDictee
           />
           <button
             type="button"

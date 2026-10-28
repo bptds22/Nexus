@@ -1,0 +1,731 @@
+{
+ "universite": "University of Victoria",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php",
+  "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/faculty.php"
+ ],
+ "blocages": [
+  "https://www.uvic.ca/undergraduate/programs/ (répertoire nu, sans page d'index) renvoie 403 à une requête simple ; aucune tentative de contournement — la même liste officielle a été lue sur https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php (redirection officielle de /programs/)"
+ ],
+ "attendu": {
+  "baccalaureat": 92,
+  "certificat": 13,
+  "comment": "Répertoire officiel « Undergraduate programs », vue « Program » (A–Z) avec étiquettes DG (Degree) / CT (Certificate). Une ligne par entrée étiquetée ; les deux entrées « Music » (pages BA et BMus) prennent le titre de leur page (« Music (BA) », « Music (BMus) »). Les certificats de Continuing Studies listés par le répertoire sont des programmes à crédits (vérifié sur Collections Management et Transformative Climate Action). Faculté = regroupement de la vue officielle « Faculty » (faculty.php)."
+ },
+ "programmes": [
+  {
+   "nom": "American Sign Language",
+   "cycle": "certificat",
+   "faculte": "Continuing Studies / Humanities",
+   "lien": "https://www.uvic.ca/humanities/sllc/programs/asl/index.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/anthropology.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Applied Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/applied-linguistics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Art History and Visual Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Fine Arts",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/art-history-and-visual-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Astronomy",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/astronomy.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/biology.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Biology and Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/biology-and-earth-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Biology and Mathematics and Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/biology-and-mathematics-and-statistics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Biology and Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Science / Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/biology-and-psychology.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Biomedical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/biomedical-engineering.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/chemistry.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Chemistry and Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/chemistry-and-earth-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Chemistry and Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/chemistry-and-mathematics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Chemistry and Ocean Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/chemistry-and-ocean-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Chemistry for the Medical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/chemistry-for-the-medical-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Child and Youth Care",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/child-and-youth-care.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/civil-engineering.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Climate Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science / Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/climate-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Collections Management",
+   "cycle": "certificat",
+   "faculte": "Continuing Studies",
+   "lien": "https://continuingstudies.uvic.ca/culture-museums-and-indigenous-studies/programs/collections-management",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Commerce",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/commerce.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/computer-engineering.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/computer-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Computer Science and Health Information Science",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science / Health",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/computer-science-and-health-information-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Computer Science and Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science / Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/computer-science-and-mathematics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science / Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/data-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/earth-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/economics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/electrical-engineering.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/english.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/environmental-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Financial Mathematics and Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Science / Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/financial-mathematics-and-economics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Foundations in Indigenous Fine Arts",
+   "cycle": "certificat",
+   "faculte": "Continuing Studies / Fine Arts",
+   "lien": "https://continuingstudies.uvic.ca/museums-heritage-and-indigenous-culture/programs/foundations-in-indigenous-fine-arts",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "French and Francophone Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/french-and-francophone-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/gender-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Gender Studies",
+   "cycle": "certificat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/gender-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/geography.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Geography and Computer Science (Geomatics)",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science / Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/geography-and-computer-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Germanic Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/germanic-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Greek and Latin Language and Literature",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/greek-and-latin-language-and-literature.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Greek and Roman Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/greek-and-roman-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Health Information Science",
+   "cycle": "baccalaureat",
+   "faculte": "Health",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/health-information-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Hispanic Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/hispanic-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/history.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Indigenous Community Development and Governance",
+   "cycle": "certificat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/indigenous-community-development-and-governance.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Indigenous Language Revitalization",
+   "cycle": "baccalaureat",
+   "faculte": "Continuing Studies / Education / Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/indigenous-language-revitalization.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Indigenous Language Revitalization",
+   "cycle": "certificat",
+   "faculte": "Continuing Studies / Education / Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/indigenous-language-revitalization.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/indigenous-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Information Communication Technology certificate",
+   "cycle": "certificat",
+   "faculte": "Education",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/information-communication-technology.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": "Health",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/kinesiology.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Latin American Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/latin-american-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/linguistics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/mathematics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Mathematics and Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/mathematics-and-statistics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/mechanical-engineering.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/media-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Media Studies",
+   "cycle": "certificat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/media-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Medieval Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/medieval-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Molecular Life Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/molecular-life-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Molecular Life Sciences and Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/molecular-life-sciences-and-chemistry.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Music and Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science / Fine Arts",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/music-and-computer-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Music (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "Fine Arts",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/music-ba.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Music (BMus)",
+   "cycle": "baccalaureat",
+   "faculte": "Fine Arts",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/music-bmus.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Health",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/nursing.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Pacific and Asian Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/pacific-and-asian-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/philosophy.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physical and Health Education",
+   "cycle": "baccalaureat",
+   "faculte": "Health",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physical-and-health-education.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physical Geography and Earth and Ocean Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science / Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physical-geography-and-earth-and-ocean-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physics and Astronomy",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physics-and-astronomy.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physics and Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science / Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physics-and-computer-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physics and Earth Sciences (Geophysics)",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physics-and-earth-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physics and Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physics-and-mathematics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physics and Molecular Life Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physics-and-molecular-life-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Physics and Ocean-Atmosphere Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/physics-and-ocean-atmosphere-sciences.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/political-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/psychology.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Psychology and Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science / Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/psychology-and-computer-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Public Administration",
+   "cycle": "certificat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/public-administration.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Public Health",
+   "cycle": "baccalaureat",
+   "faculte": "Health",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/public-health.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Recreation and Health Education",
+   "cycle": "baccalaureat",
+   "faculte": "Health",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/recreation-and-health-education.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Religion, Culture and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/religion-culture-society.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Restoration of Natural Systems",
+   "cycle": "certificat",
+   "faculte": "Continuing Studies",
+   "lien": "https://continuingstudies.uvic.ca/science-and-ecological-restoration/programs/restoration-of-natural-systems-diploma",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Slavic Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Humanities",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/slavic-studies.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "Health",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/social-work.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Social Sciences",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/sociology.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Software Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/software-engineering.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Special and Inclusive Education",
+   "cycle": "certificat",
+   "faculte": "Education",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/special-and-inclusive-education.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/statistics.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Teacher Education: Elementary Curriculum",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/teacher-education-elementary-curriculum.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Teacher Education: Indigenous Education (post-degree professional program)",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/teacher-education-indigenous-education-post-degree.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Teacher Education: Secondary Curriculum (post-degree professional program)",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/teacher-education-secondary-post-degree.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Teaching of English to Speakers of Other Languages",
+   "cycle": "certificat",
+   "faculte": "Education",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/tesol.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Theatre",
+   "cycle": "baccalaureat",
+   "faculte": "Fine Arts",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/theatre.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Transformative Climate Action",
+   "cycle": "certificat",
+   "faculte": "Continuing Studies / Social Sciences",
+   "lien": "https://continuingstudies.uvic.ca/humanities-social-sciences-and-law/programs/transformative-climate-action",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Visual Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Fine Arts",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/visual-arts.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Visual Arts and Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Computer Science / Fine Arts",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/visual-arts-and-computer-science.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  },
+  {
+   "nom": "Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Fine Arts",
+   "lien": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/pages/writing.php",
+   "source": "https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Business programs",
+   "raison": "Page parapluie (BCom listé séparément sous « Commerce », le reste = mineures)"
+  },
+  {
+   "nom": "Engineering and Computer Science LaunchPad",
+   "raison": "Programme d'accès de première année avant choix d'un baccalauréat en génie/informatique, pas un grade propre — à vérifier"
+  },
+  {
+   "nom": "Engineering",
+   "raison": "Page générale d'admission en génie (les baccalauréats en génie sont listés séparément) — à vérifier"
+  },
+  {
+   "nom": "Law",
+   "raison": "Juris Doctor (JD), diplôme professionnel de deuxième entrée"
+  },
+  {
+   "nom": "Teacher Education: Elementary Curriculum (post-degree professional program)",
+   "raison": "Voie après-grade du même BEd : fusionnée dans « Teacher Education: Elementary Curriculum »"
+  },
+  {
+   "nom": "Humanities (Undecided)",
+   "raison": "Voie d'admission « Undecided », pas un programme nommé"
+  },
+  {
+   "nom": "Science (Undecided)",
+   "raison": "Voie d'admission « Undecided », pas un programme nommé"
+  },
+  {
+   "nom": "Social Sciences (Undecided)",
+   "raison": "Voie d'admission « Undecided », pas un programme nommé"
+  }
+ ]
+}

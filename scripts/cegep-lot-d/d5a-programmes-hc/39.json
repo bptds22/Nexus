@@ -1,0 +1,334 @@
+{
+ "universite": "Mount Royal University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 40,
+  "certificat": 7,
+  "comment": "Tableau officiel « Programs Offered » (filtre Program Type = Degrees / Certificates), une ligne par entrée du tableau ; tous les statuts d'admission domestiques = Open au relevé. Diplômes, ponts, options d'entrée et mineures exclus d'office (hors des deux types). Faculté déduite du chemin de l'URL officielle (noms de la navigation du site)."
+ },
+ "programmes": [
+  {
+   "nom": "Bachelor of Arts - Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Arts/Departments/SociologyAnthropology/AnthropologyProgram/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Arts - Criminal Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Arts/Departments/EconomicsJusticePolicyStudies/DegreePrograms/BachelorofArts-CriminalJustice/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Arts - English",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Arts/Departments/EnglishLanguagesCultures/BachelorOfArtsEnglish/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Arts - History",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Arts/Departments/Humanities/program-areas/history/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Arts - Policy Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Arts/Departments/EconomicsJusticePolicyStudies/DegreePrograms/BachelorofArts-PolicyStudies/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Arts - Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Arts/Departments/Psychology/PsychologyMajor/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Arts - Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Arts/Departments/SociologyAnthropology/SociologyProgram/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Aviation Management",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/BachelorofAviationManagement/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Business Administration - Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/Accounting/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Business Administration - Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/Finance/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Business Administration - General Management",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/GeneralManagement/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Business Administration - Human Resources",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/HumanResources/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Business Administration - International Business",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/InternationalBusiness/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Business Administration - Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/Marketing/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Business Administration - Supply Chain Management",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/SupplyChainManagement/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Child and Youth Care",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/ChildandYouthCareCounsellor/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Communication - Broadcast Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Communications",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Communications/Programs/BachelorofCommunication-BroadcastMediaStudies/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Communication - Information Design",
+   "cycle": "baccalaureat",
+   "faculte": "Communications",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Communications/Programs/BachelorofCommunication/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Communication - Journalism and Digital Media",
+   "cycle": "baccalaureat",
+   "faculte": "Communications",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Communications/Programs/BachelorofCommunication-Journalism/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Communication - Public Relations",
+   "cycle": "baccalaureat",
+   "faculte": "Communications",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Communications/Programs/BachelorofCommunication-PublicRelations/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Computer Information Systems",
+   "cycle": "baccalaureat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Majors/Computer-Information-Systems/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Early Childhood Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/EarlyLearingChildCare/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Education - Elementary",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Departments/Education/BachelorOfEducation-Elementary/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Health and Physical Education - Athletic Therapy",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/AthleticTherapy/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Health and Physical Education - Ecotourism and Outdoor Leadership",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/EcotourismandOutdoorLeadership/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Health and Physical Education - Physical Literacy",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/PhysicalLiteracy/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Health and Physical Education - Sport and Recreation Management",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/SportandRecreationManagement/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Interior Design",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Arts/Departments/BachelorofInteriorDesign/BachelorofInteriorDesign/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Midwifery",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/BachelorofMidwifery/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/BachelorofNursing/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Science - Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/Biology/Majors/Biology/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Science - Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/ChemistryPhysics/Majors/Chemistry/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Science - Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Majors/Computer-Science/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Science - Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Majors/Data-Science/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Science - Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/EarthEnvironmentalSciences/Majors/EnvironmentalScience/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Science - Interdisciplinary Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Programs/BachelorofScience/general.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Science - Geology",
+   "cycle": "baccalaureat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/EarthEnvironmentalSciences/Majors/Geology/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Bachelor of Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/BachelorSocialWork/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Athletic Therapy Post Bachelor's Certificate",
+   "cycle": "certificat",
+   "faculte": "Health, Community & Education",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/HealthCommunityEducation/Programs/AthleticTherapyAdvancedCertificate/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Business Administration Post Bachelor's Certificate - Advanced Accounting",
+   "cycle": "certificat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/Accounting/AdvancedAccountingCertificate/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Business Administration Post Bachelor's Certificate - Human Resources",
+   "cycle": "certificat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/HumanResources/HumanResourcesCertificate/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Business Administration Post Bachelor's Certificate - Marketing",
+   "cycle": "certificat",
+   "faculte": "Business",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/Business/Programs/Marketing/MarketingManagementCertificate/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  },
+  {
+   "nom": "Spatial Data Science Post Bachelor's Certificate",
+   "cycle": "certificat",
+   "faculte": "Science & Technology",
+   "lien": "https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Majors/Spatial-Data-Science/index.htm",
+   "source": "https://www.mtroyal.ca/ProgramsCourses/ProgramsOffered/index.htm"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Bachelor of Arts - Undeclared",
+   "raison": "Voie d'entrée sans majeure déclarée (renvoie à la page de la faculté), pas un programme nommé — à vérifier"
+  },
+  {
+   "nom": "Bachelor of Social Work (Post-Diploma)",
+   "raison": "Voie post-diplôme du même programme : fusionnée dans « Bachelor of Social Work » (même page)"
+  },
+  {
+   "nom": "Embalmer Certificate",
+   "raison": "Certificat d'Éducation permanente (programmes professionnels, admission hors exigences générales) ; statut crédit universitaire non indiqué sur la page — à vérifier"
+  },
+  {
+   "nom": "Funeral Director Certificate",
+   "raison": "Certificat d'Éducation permanente (programmes professionnels, admission hors exigences générales) ; statut crédit universitaire non indiqué sur la page — à vérifier"
+  }
+ ]
+}

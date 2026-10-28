@@ -121,8 +121,12 @@ function Ligne({ titre, meta, onClick }: { titre: string; meta: string; onClick:
 }
 
 export default function PagesTab({
-  schoolId, schoolName, teams,
-}: { schoolId: string; schoolName: string; teams: PagesTabTeam[] }) {
+  schoolId, schoolName, teams, universite = false,
+}: {
+  schoolId: string; schoolName: string; teams: PagesTabTeam[];
+  /** Lot D5b : page d'une université — pas de pages d'équipes pour l'instant (Q5), pas de Parcours. */
+  universite?: boolean;
+}) {
   const [cible, setCible] = React.useState<Cible>(null);
 
   if (cible?.kind === "ecole") {
@@ -151,12 +155,18 @@ export default function PagesTab({
       </div>
 
       <Ligne
-        titre={schoolName || "Page du collège"}
-        meta="Page du CÉGEP — identité, campus, programmes, parcours, actualités"
+        titre={schoolName || (universite ? "Page de l'université" : "Page du collège")}
+        meta={universite
+          ? "Page de l'université — identité, campus, programmes d'études, actualités"
+          : "Page du CÉGEP — identité, campus, programmes, parcours, actualités"}
         onClick={() => setCible({ kind: "ecole" })}
       />
 
-      {teams.length === 0 ? (
+      {universite ? (
+        <div className="px-4 py-6 text-[13px] text-[#6b7280]">
+          Les pages des équipes universitaires arrivent plus tard — seule la page de l&apos;université est modifiable.
+        </div>
+      ) : teams.length === 0 ? (
         <div className="px-4 py-6 text-[13px] text-[#6b7280]">
           Aucune équipe — seule la page du collège est modifiable.
         </div>

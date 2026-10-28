@@ -1,0 +1,1622 @@
+{
+ "universite": "University of Manitoba",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/",
+  "https://umanitoba.ca/explore/programs-of-study/undergraduate"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 236,
+  "certificat": 1,
+  "comment": "La page umanitoba.ca « Undergraduate programs » renvoie aux facultés sans liste ; liste officielle = « Academic Programs » de l'annuaire 2026 (catalog.umanitoba.ca), 318 entrées (dont 4 liens de navigation/pages de faculté non comptés). Unité = entrée de l'annuaire (matière + grade + type : General/Advanced/Honours/Double/Joint sont des entrées distinctes). 236 entrées de grade de premier cycle ou assimilées + 1 certificat (SPARC). Faculté déduite du chemin de l'annuaire."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/accounting-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Actuarial Mathematics, B.Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/actuarial-mathematics-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Actuarial Mathematics, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/actuarial-mathematics/actuarial-mathematics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "After-Degree Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/education/after-degree-bachelor-education/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Agribusiness, B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/agribusiness-bsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Agroecology, B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/agroecology-bsc-agriculture/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Agronomy, B.Sc. - Agriculture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/agronomy-bsc-agriculture/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Animal Systems, B.Sc. - Agriculture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/animal-systems-bsc-agriculture/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Anthropology, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/anthropology/anthropology-ba-double-advanced-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Anthropology, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/anthropology/anthropology-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Anthropology, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/anthropology/anthropology-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Anthropology, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/anthropology/anthropology-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Anthropology, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/anthropology/anthropology-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Applied Mathematics with Computer Science Option, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/mathematics/applied-mathematics-bsc-major-computer-science-option/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Applied Mathematics with Economics Option, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/mathematics/applied-mathematics-bsc-major-economics-option/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Applied Mathematics with Statistics Option, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/mathematics/applied-mathematics-bsc-major-statistics-option/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Art History, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/courses-programs-offered-faculties-schools-credit-arts/art-history-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Art History, B.F.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "School of Art",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/art/art-history-bfa-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Art History, B.F.A. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "School of Art",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/art/art-history-bfa-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Asian Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/asian-studies/asian-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Athletic Therapy, B.Kin.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology and Recreation Management",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/kinesiology-recreation-management/athletic-therapy-bkin/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Bachelor of Arts Integrated Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/integrated-studies-ba/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Biochemistry, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/biochemistry/biochemistry-bsc-joint-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Biochemistry, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/biochemistry/biochemistry-bsc-joint-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Biological Sciences, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/biological-sciences/biological-sciences-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Biological Sciences, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/biological-sciences/biological-sciences-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Biosystems Engineering, B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Price Faculty of Engineering",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/engineering/biosystems-engineering/biosystems-engineering-bsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Business Analytics, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/business-analytics-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Canadian Studies, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/canadian-studies/canadian-studies-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Canadian Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/canadian-studies/canadian-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Canadian Studies, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/canadian-studies/canadian-studies-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Central and East European Studies, B.A. Double Advanced",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/central-east-european-studies/central-east-european-studies-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Central and East European Studies, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/central-east-european-studies/central-east-european-studies-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Central and East European Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/central-east-european-studies/central-east-european-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Central and East European Studies, B.A. Single Advanced",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/central-east-european-studies/central-east-european-studies-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Chemistry - Physics Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/chemistry/chemistry-physics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Chemistry, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/chemistry/chemistry-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Chemistry, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/chemistry/chemistry-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Civil Engineering, B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Price Faculty of Engineering",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/engineering/civil-engineering/civil-engineering-bsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Classical Studies, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/classics/classical-studies-ba-double-advanced-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Classical Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/classics/classical-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Classical Studies, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/classics/classical-studies-ba-single-advanced-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Computer Engineering, B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Price Faculty of Engineering",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/engineering/electrical-computer-engineering/computer-engineering-bsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Computer Science - Mathematics Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/computer-science/computer-science-mathematics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Computer Science - Physics & Astronomy Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/computer-science/computer-science-physics-astronomy-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Computer Science - Statistics Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/computer-science/computer-science-statistics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Computer Science, B.C.Sc., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/computer-science/computer-science-bcsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Computer Science, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/computer-science/computer-science-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Criminology, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/sociology-criminology/criminology-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Criminology, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/sociology-criminology/criminology-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Data Science, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/data-science/data-science-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Dental Hygiene, B.Sc.D.Hyg.",
+   "cycle": "baccalaureat",
+   "faculte": "Rady Faculty of Health Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/health-sciences/dental-hygiene/dental-hygiene-bscdhyg/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Earth Sciences, B.Sc. General",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/earth-sciences/earth-sciences-bsc-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Economics, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/economics/economics-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Economics, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/economics/economics-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Economics, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/economics/economics-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Economics, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/economics/economics-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Economics-Mathematics, B.A. Joint Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/economics/economics-mathematics-ba-joint-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Economics-Statistics, B.A. Joint Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/economics/economics-statistics-ba-joint-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Electrical Engineering, B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Price Faculty of Engineering",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/engineering/electrical-computer-engineering/electrical-engineering-bsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "English, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/english-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "English, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/english-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "English, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/english-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "English, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/english-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "English, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/english-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Entrepreneurship and Innovation, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/entrepreneurship-innovation-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Design, B.Env.D.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Architecture",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/architecture/environmental-design-benvd/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Design, B.Env.D. Architecture Master Preparation Option (ED AMP 1 and ED AMP 2)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Architecture",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/architecture/environmental-design-benvd-architecture-master-preparation-option/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Geoscience, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/earth-sciences/environmental-geoscience-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Geoscience, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/earth-sciences/environmental-geoscience-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Science, B.Env.Sc. General",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/environmental-science-benvsc-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Science, B.Env.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/environmental-science-benvsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Science, B.Env.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/environmental-science-benvsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Studies, B.Env.St. General",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/environmental-studies-benvst-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Studies, B.Env.St. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/environmental-studies-benvst-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Environmental Studies, B.Env.St. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/environmental-studies-benvst-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Film Studies, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/film-studies-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Film Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/film-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Film Studies, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/film-studies-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Finance B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/finance-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Fine Arts, B.F.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "School of Art",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/art/fine-arts-bfa-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Fine Arts, B.F.A. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "School of Art",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/art/fine-arts-bfa-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Food Industry Option, B.Sc. - Human Nutritional Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/food-industry-option-bsc-human-nutritional-sciences/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Food Science, B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/food-science-bsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Foods Option, B.Sc. - Human Nutritional Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/foods-option-bsc-human-nutritional-sciences/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "French, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/french-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "French, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/french-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "French, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/french-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "French, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/french-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "French, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/french-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "General B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/general-bsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Generalist, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/generalist-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Genetics, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/genetics/genetics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Genetics, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/genetics/genetics-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Geography, B.A. Advanced",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/geography-ba-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Geography, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/geography-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Geography, B.A. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/geography-ba-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Geology, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/earth-sciences/geology-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Geology, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/earth-sciences/geology-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Geophysics, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/earth-sciences/geophysics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Geophysics, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/earth-sciences/geophysics-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "German, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/german-slavic-studies/german-ba-double-advanced-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "German, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/german-slavic-studies/german-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "German, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/german-slavic-studies/german-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "German, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/german-slavic-studies/german-ba-single-advanced-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "German, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/german-slavic-studies/german-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Global Political Economy, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/global-political-economy/global-political-economy-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Global Political Economy, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/global-political-economy/global-political-economy-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Global Political Economy, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/global-political-economy/global-political-economy-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Greek, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/classics/greek-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Health Sciences, B.H.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Rady Faculty of Health Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/health-sciences/interdisciplinary-health-programs/health-studies-bhsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Health Studies, B.H.St.",
+   "cycle": "baccalaureat",
+   "faculte": "Rady Faculty of Health Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/health-sciences/interdisciplinary-health-programs/health-studies-bhst/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "History, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/history/history-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "History, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/history/history-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "History, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/history/history-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "History, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/history/history-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "History, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/history/history-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Human Ecology (Family Social Sciences), B.H.Ecol.",
+   "cycle": "baccalaureat",
+   "faculte": "Rady Faculty of Health Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/health-sciences/community-global-health/community-health-sciences-family-social-sciences/human-ecology-family-social-sciences-bhecol/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Human Resources Management/Industrial Relations, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/human-resources-management-industrial-relations-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Icelandic, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/icelandic-studies/icelandic-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Icelandic, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/icelandic-studies/icelandic-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Icelandic, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/icelandic-studies/icelandic-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Indigenous Governance, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/indigenous-studies/aboriginal-governance-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Indigenous Business Studies, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/indigenous-business-studies-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Indigenous Studies, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/indigenous-studies/indigenous-studies-ba-double-advanced-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Indigenous Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/indigenous-studies/indigenous-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Indigenous Studies, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/indigenous-studies/indigenous-studies-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Italian Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/italian-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Italian Studies, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/italian-studies-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Kinesiology, B.Kin.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology and Recreation Management",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/kinesiology-recreation-management/kinesiology-bkin/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Labour Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/labour-studies/labour-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Labour Studies, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/labour-studies/labour-studies-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Latin, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/classics/latin-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Linguistics, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/linguistics/linguistics-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Linguistics, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/linguistics/linguistics-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Linguistics, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/linguistics/linguistics-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Linguistics, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/linguistics/linguistics-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Linguistics, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/linguistics/linguistics-ba-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Marketing, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/marketing-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Mathematics - Economics Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/mathematics/mathematics-economics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Mathematics - Physics and Astronomy Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/mathematics/mathematics-physics-astronomy-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Mathematics, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/courses-programs-offered-faculties-schools-credit-arts/mathematics-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Mathematics, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/courses-programs-offered-faculties-schools-credit-arts/mathematics-ba-single-advanced-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Mathematics, B.Sc. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/mathematics/mathematics-bsc-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Mathematics, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/mathematics/mathematics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Mathematics, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/mathematics/mathematics-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Mechanical Engineering, B.Sc.",
+   "cycle": "baccalaureat",
+   "faculte": "Price Faculty of Engineering",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/engineering/mechanical-engineering/mechanical-engineering-bsc/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Medieval and Early Modern Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/medieval-early-modern-studies/medieval-early-modern-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Medieval and Early Modern Studies, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/medieval-early-modern-studies/medieval-early-modern-studies-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Microbiology, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/microbiology/microbiology-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Microbiology, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/microbiology/microbiology-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Midwifery, B.Mid.",
+   "cycle": "baccalaureat",
+   "faculte": "Rady Faculty of Health Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/health-sciences/nursing/midwifery-bmid/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Music Education, B.Mus.",
+   "cycle": "baccalaureat",
+   "faculte": "Desautels Faculty of Music",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/music/music-education-bmus/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Music, B.Jazz Jazz Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Desautels Faculty of Music",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/music/music-bjazz-jazz-studies/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Music, B.Mus. Composition",
+   "cycle": "baccalaureat",
+   "faculte": "Desautels Faculty of Music",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/music/music-bmus-composition/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Music, B.Mus. General",
+   "cycle": "baccalaureat",
+   "faculte": "Desautels Faculty of Music",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/music/music-bmus-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Music, B.Mus. History",
+   "cycle": "baccalaureat",
+   "faculte": "Desautels Faculty of Music",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/music/music-bmus-history/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Music, B.Mus. Music Research",
+   "cycle": "baccalaureat",
+   "faculte": "Desautels Faculty of Music",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/music/music-bmus-music-research/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Music, B.Mus. Performance",
+   "cycle": "baccalaureat",
+   "faculte": "Desautels Faculty of Music",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/music/music-bmus-performance/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Nursing, B.N.",
+   "cycle": "baccalaureat",
+   "faculte": "Rady Faculty of Health Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/health-sciences/nursing/nursing-bn/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Nutrition Option, B.Sc. - Human Nutritional Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/nutrition-option-bsc-human-nutritional-sciences/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Philosophy, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/philosophy/philosophy-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Philosophy, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/philosophy/philosophy-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Philosophy, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/philosophy/philosophy-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Philosophy, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/philosophy/philosophy-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Philosophy, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/philosophy/philosophy-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Physical Education, B.P.E.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology and Recreation Management",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/kinesiology-recreation-management/physical-education-bpe/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Physical Geography, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/physical-geography-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Physical Geography, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Clayton H. Riddell Faculty of Environment, Earth, and Resources",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/environment-earth-resources/environment-geography/physical-geography-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Physics and Astronomy, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/physics-astronomy/physics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Physics and Astronomy, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/physics-astronomy/physics-astronomy-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Plant Biotechnology, B.Sc. - Agriculture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural and Food Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/agricultural-food-sciences-agriculture/plant-biotechnology-bsc-agriculture/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Political Science, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/political-studies/political-studies-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Political Science, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/political-studies/political-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Political Science, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/political-studies/political-studies-ba-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Political Science, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/political-studies/political-studies-ba-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Psychology, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/psychology/psychology-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Psychology, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/psychology/psychology-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Psychology, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/psychology/psychology-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Psychology, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/psychology/psychology-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Psychology, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/psychology/psychology-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Psychology, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/psychology/psychology-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Recreation Management and Community Development, B.R.M.C.D.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology and Recreation Management",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/kinesiology-recreation-management/recreation-management-community-development-brmcd/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Religion and Culture, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/religion/religion-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Religion and Culture, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/religion/religion-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Religion and Culture, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/religion/religion-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Religion and Culture, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/religion/religion-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Religion and Culture, B.A., Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/religion/religion-ba-double-advanced-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Respiratory Therapy, B.R.T.",
+   "cycle": "baccalaureat",
+   "faculte": "Rady Faculty of Health Sciences",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/health-sciences/rehabilitation-sciences/respiratory-therapy-brt/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Russian, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/german-slavic-studies/russian-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Social Work, B.S.W.",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Social Work",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/social-work/social-work-bsw/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Sociology, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/sociology-criminology/sociology-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Sociology, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/sociology-criminology/sociology-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Sociology, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/sociology-criminology/sociology-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Sociology, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/sociology-criminology/sociology-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Spanish, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/spanish-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Spanish, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/french-spanish-italian/spanish-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Sport, Physical Activity and Recreation in the Community Certificate (SPARC)",
+   "cycle": "certificat",
+   "faculte": "Faculty of Kinesiology and Recreation Management",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/kinesiology-recreation-management/sport-physical-activity-recreation-community-certificate/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Statistics - Actuarial Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/statistics/statistics-actuarial-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Statistics - Economics Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/statistics/statistics-economics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Statistics - Mathematics Joint, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/statistics/statistics-mathematics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Statistics, B.Sc. Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/statistics/statistics-bsc-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Statistics, B.Sc. Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/science/statistics/statistics-bsc-major/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Strategy and Global Management, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/strategy-global-management-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Supply Chain Management and Logistics, B. Comm., Honours",
+   "cycle": "baccalaureat",
+   "faculte": "I. H. Asper School of Business",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/management-business/logistics-supply-chain-management-bcomm-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Theatre, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/theatre-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Theatre, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/theatre-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Theatre, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/english-theatre-film-media/theatre-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Ukrainian Canadian Heritage Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/ukrainian-canadian-heritage-studies/ukrainian-canadian-heritage-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Ukrainian Canadian Heritage Studies, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/ukrainian-canadian-heritage-studies/ukrainian-canadian-heritage-studies-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Ukrainian, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/german-slavic-studies/ukrainian-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Women's and Gender Studies, B.A. Double Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/womens-gender-studies/womens-gender-studies-ba-double-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Women's and Gender Studies, B.A. Double Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/womens-gender-studies/womens-gender-studies-ba-double-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Women's and Gender Studies, B.A. General",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/womens-gender-studies/womens-gender-studies-ba-general/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Women's and Gender Studies, B.A. Single Advanced Major",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/womens-gender-studies/womens-gender-studies-ba-single-advanced/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  },
+  {
+   "nom": "Women's and Gender Studies, B.A. Single Honours",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://catalog.umanitoba.ca/undergraduate-studies/arts/womens-gender-studies/womens-gender-studies-ba-single-honours/",
+   "source": "https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Asper School of Business/Red River College Polytechnic Articulation Agreement",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Biosystems Engineering/Red River College Polytechnic Articulation Agreement",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Changing Workplace, The",
+   "raison": "sous-programme (concentration) du Bachelor of Arts Integrated Studies — exclu"
+  },
+  {
+   "nom": "Civil Engineering/Red River College Polytechnic Articulation Agreement",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Computer Engineering/Red River College Polytechnic Articulation Agreement",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Dental Medicine, D.M.D.",
+   "raison": "doctorat/diplôme professionnel (MD, DMD, PharmD, JD) — exclu"
+  },
+  {
+   "nom": "Dental Medicine, D.M.D. International Dentists Degree Program (IDDP)",
+   "raison": "doctorat/diplôme professionnel (MD, DMD, PharmD, JD) — exclu"
+  },
+  {
+   "nom": "Dentistry, B.Sc. Dent",
+   "raison": "à vérifier : B.Sc. Dent obtenu en cours de programme D.M.D. (pas d'admission directe)"
+  },
+  {
+   "nom": "Electrical Engineering/Red River College Polytechnic Articulation Agreement",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Human Ecology (The After Degree Program in Family Social Sciences), B.H.Ecol.",
+   "raison": "voie après-diplôme fusionnée avec « Human Ecology (Family Social Sciences), B.H.Ecol. »"
+  },
+  {
+   "nom": "Human Nutritional Sciences, B.Sc. - Agreement with Red River College Culinary Arts",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Human Nutritional Sciences, B.Sc. - Second Degree Program",
+   "raison": "voie de second grade (Second Degree Program) des B.Sc. Human Nutritional Sciences, fusionnée avec les lignes d'option HNS"
+  },
+  {
+   "nom": "Juris Doctor, J.D.",
+   "raison": "doctorat/diplôme professionnel (MD, DMD, PharmD, JD) — exclu"
+  },
+  {
+   "nom": "Juris Doctor/Master of Business Administration Concurrent Degrees",
+   "raison": "doctorat/diplôme professionnel (MD, DMD, PharmD, JD) — exclu"
+  },
+  {
+   "nom": "Management/Assiniboine College Joint Program, B.Comm. Honours",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Management/L'Ecole Technique et Professionnelle Joint Program, B. Comm. Honours",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Management/University College of the North Joint Program, B. Comm. Honours",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Mechanical Engineering/Red River College Polytechnic Articulation Agreement",
+   "raison": "voie de transfert/articulation ou programme conjoint avec un collège menant au même grade que le programme régulier — fusionnée"
+  },
+  {
+   "nom": "Pharmacy, Pharm.D.",
+   "raison": "doctorat/diplôme professionnel (MD, DMD, PharmD, JD) — exclu"
+  },
+  {
+   "nom": "Preliminary Engineering Program",
+   "raison": "programme préliminaire d'entrée en génie, pas un grade"
+  },
+  {
+   "nom": "Undergraduate Medical Education Program (M.D.)",
+   "raison": "doctorat/diplôme professionnel (MD, DMD, PharmD, JD) — exclu"
+  },
+  {
+   "nom": "Mineures (Minor / Minor (Concentration)), diplômes, post-baccalaureate diplomas, programmes d’accès/Extended Education et Postgraduate Medical Education (77 entrées)",
+   "raison": "hors des deux types retenus — non comptés dans « attendu »"
+  },
+  {
+   "nom": "Université de Saint-Boniface",
+   "raison": "établissement affilié avec son propre annuaire (/saint-boniface/), non inclus ici"
+  }
+ ]
+}
