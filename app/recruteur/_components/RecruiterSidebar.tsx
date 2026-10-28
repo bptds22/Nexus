@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { estRecruteurUniversitaire, pageFermeeUniversitaire } from "@/lib/auth/recruteurUniversitaire";
 import { usePurgeSacOnboarding } from "@/lib/auth/usePurgeSacOnboarding";
 import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
@@ -228,7 +229,11 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
   const nom = profil?.last_name?.trim() ?? "";
   const userName = `${prenom} ${nom}`.trim();
   const userInitials = `${prenom[0] ?? ""}${nom[0] ?? ""}`.toUpperCase();
-  const userSub = profil ? `Recruteur${nomCegep ? ` \u2014 ${nomCegep}` : ""}` : "";
+  // Recruteur universitaire (lot D3b) : pas de « Ma page », « Gestion université » = Recruteurs + Réassignation.
+  const universitaire = estRecruteurUniversitaire(profil);
+  const userSub = profil ? `${universitaire ? "Recruteur universitaire" : "Recruteur"}${nomCegep ? ` \u2014 ${nomCegep}` : ""}` : "";
+  const itemsRecruteur = universitaire ? RECRUITER_ITEMS.filter((i) => !pageFermeeUniversitaire(i.href)) : RECRUITER_ITEMS;
+  const itemsGestion = universitaire ? CEGEP_ITEMS.filter((i) => !pageFermeeUniversitaire(i.href)) : CEGEP_ITEMS;
 
   // Le sac de l'onboarding n'a plus rien \u00e0 faire ici une fois l'onboarding fini.
   usePurgeSacOnboarding();
@@ -325,7 +330,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
       {/* Nav links */}
       <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         {/* ── Free section (recruiter items) ── */}
-        {showRecruiterItems && RECRUITER_ITEMS.map((item) => {
+        {showRecruiterItems && itemsRecruteur.map((item) => {
           const badgeOverride = item.href === "/recruteur/messages" ? msgBadge
             : item.href === "/recruteur/pipeline" ? rapBadge : item.badge;
           return renderNavItem({ ...item, badge: badgeOverride });
@@ -336,7 +341,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
           <div className="flex items-center gap-2">
             <div className="flex-1 border-t border-[#1e2128]" />
             <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#6B7280] shrink-0">
-              Gestion CÉGEP
+              {universitaire ? "Gestion université" : "Gestion CÉGEP"}
             </span>
             <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-[#E63946]/15 text-[#E63946] text-[8px] font-black uppercase tracking-wider">
               All Star
@@ -346,7 +351,7 @@ export default function RecruiterSidebar({ mobileOpen, onClose }: RecruiterSideb
         </div>
 
         {/* ── Pro section (CÉGEP items) ── */}
-        {CEGEP_ITEMS.map((item) => renderNavItem(item))}
+        {itemsGestion.map((item) => renderNavItem(item))}
 
         {/* ── Bottom section ── */}
         <div className="pt-2" />

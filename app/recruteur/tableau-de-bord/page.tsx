@@ -7,6 +7,8 @@ import TrendingAthletes from "./_components/TrendingAthletes";
 import RecruiterActivityFeed from "./_components/RecruiterActivityFeed";
 import TuilesTableauDeBord, { type Tuile, type ValeurTuile } from "./_components/TuilesTableauDeBord";
 import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
+import { estRecruteurUniversitaire } from "@/lib/auth/recruteurUniversitaire";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
 import { CLES_FILTRES, FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
 import { estRelanceAFaire, estVisiteAVenir, FILTRE_PIPELINE_URL } from "@/lib/pipeline/filterPipelineCards";
@@ -137,6 +139,7 @@ function RecruteurTableauDeBordDesktop() {
      clé de cache) — le chiffre est le « N athlètes trouvés » de l'arrivée. */
   const tierEnCours = subscription.loading;
   const { data: cibles, aUnCegepRattache } = useCiblesSurMonCegep();
+  const { data: moiTableau } = useCurrentUser();
   const { data: nouveaux } = useAthleteSearch({
     search: "",
     sport: FILTRES_DEFAUT.sport,
@@ -167,7 +170,7 @@ function RecruteurTableauDeBordDesktop() {
      d'engagement, rouge dans l'entonnoir) ; blanc = information ; gris = 0 ou
      « — » (géré par TuilesTableauDeBord). */
   const ROUGE = "#E63946", BLANC = "#FFFFFF";
-  const tuiles: Tuile[] = [
+  const tuilesToutes: Tuile[] = [
     {
       cle: "relances", libelle: "Relances à faire", accent: ROUGE,
       aide: "Dues aujourd'hui ou en retard",
@@ -199,6 +202,8 @@ function RecruteurTableauDeBordDesktop() {
       valeur: nouveaux ? { etat: "voir", disponible: nouveaux.length > 0 } : { etat: "chargement" },
     },
   ];
+  // Recruteur universitaire (lot D3b) : la tuile « te ciblent » est propre au cégep — retirée.
+  const tuiles = estRecruteurUniversitaire(moiTableau?.profile) ? tuilesToutes.filter((x) => x.cle !== "ciblent") : tuilesToutes;
 
   const headerName = header?.headerName ?? "";
   const headerSchool = header?.headerSchool ?? "";

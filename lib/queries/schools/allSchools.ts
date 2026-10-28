@@ -47,6 +47,7 @@ async function fetchAllSchools(): Promise<SchoolRow[]> {
     const { data, error } = await supabase
       .from("schools")
       .select("id,name,city,type")
+      .neq("type", "UNIVERSITE") // lot D3b : aucune liste ouverte n'offre d'université (masquées en base, D1a)
       .order("name")
       .range(from, from + PAGE - 1);
     if (error) { console.error("[allSchools] fetchAllSchools", error); break; }

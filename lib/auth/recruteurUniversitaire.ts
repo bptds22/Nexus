@@ -1,19 +1,37 @@
-/* Recruteur universitaire (chantier cégep, lot D2b — décisions BP 2026-10-28) : les règles web de son
-   inscription, regroupées ici pour être testées. La base reste l'autorité (lot D2a) : claim_signup_role
-   refuse le contexte « universitaire » sous OFF, finish_recruiter_onboarding refuse une université sous OFF.
+/* Recruteur universitaire (chantier cégep, lots D2b et D3b — décisions BP 2026-10-28) : les règles web de
+   son inscription et de son portail, regroupées ici pour être testées. La base reste l'autorité :
+   claim_signup_role et finish_recruiter_onboarding refusent l'université sous OFF (D2a), et il ne reçoit
+   que des cégépiens (D3a, masquage en base du secondaire, du civil et des fiches sans école).
 
    Le formulaire universitaire ne montre que les universités (RPC universites_inscription) et les équipes de
    l'université choisie (RPC equipes_universite_inscription) : les policies, elles, ne lui montrent que SA
-   propre université, une fois inscrit. Le masquage du secondaire pour lui est le lot D3. */
+   propre université, une fois inscrit.
+
+   Portail (D3b, décisions Q1-Q3) : pas de « Ma page » (vitrine universitaire plus tard), « Mon université »
+   = Recruteurs + Réassignation, matchs filtrés « Collégial » par défaut. */
+
+/** Le compte est-il un recruteur universitaire (users.context) ? */
+export function estRecruteurUniversitaire(profil: { context?: string | null } | null | undefined): boolean {
+  return profil?.context === "universitaire";
+}
+
+/** Pages du portail recruteur propres au cégep, fermées au recruteur universitaire (Q2, Q3). */
+const PAGES_CEGEP_SEULEMENT = ["/recruteur/ma-page", "/recruteur/cegep/stats", "/recruteur/cegep/recrues", "/recruteur/cegep/entraineurs"];
+
+/** La page (pathname déjà sans « / » final) est-elle fermée au recruteur universitaire ? */
+export function pageFermeeUniversitaire(chemin: string): boolean {
+  if (chemin === "/recruteur/cegep") return true;
+  return PAGES_CEGEP_SEULEMENT.some((p) => chemin === p || chemin.startsWith(p + "/"));
+}
 
 /** Contexte du recruteur demandé par l'URL (callback OAuth) : universitaire seulement sous ON. */
 export function contexteRecruteurDemande(param: string | null | undefined, lancementUniversitaire: boolean): "universitaire" | "collegial" {
   return param === "universitaire" && lancementUniversitaire ? "universitaire" : "collegial";
 }
 
-/** Page d'arrivée d'un recruteur inscrit : le portail collégial, ou l'attente du recruteur universitaire. */
-export function destinationRecruteur(context: string | null | undefined): string {
-  return context === "universitaire" ? "/universitaire/en-validation" : "/recruteur/tableau-de-bord";
+/** Page d'arrivée d'un recruteur inscrit : son portail (adapté au recruteur universitaire depuis D3b). */
+export function destinationRecruteur(_context: string | null | undefined): string {
+  return "/recruteur/tableau-de-bord";
 }
 
 export const MESSAGE_UNIVERSITES_FERMEES = "Les universités ne sont pas encore ouvertes sur Nexus. Ça arrive bientôt.";

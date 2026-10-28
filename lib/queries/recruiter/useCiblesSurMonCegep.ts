@@ -56,7 +56,8 @@ interface RpcRow {
 export function useCiblesSurMonCegep(actif = true) {
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
-  const aUnCegepRattache = !!currentUser?.profile.school_id;
+  // Recruteur universitaire (lot D3b) : les cibles sont celles d'un CÉGEP — rien à lire pour lui.
+  const aUnCegepRattache = !!currentUser?.profile.school_id && currentUser?.profile.context !== "universitaire";
 
   const query = useQuery<CibleSurMonCegep[]>({
     queryKey: ["recruteur", "cibles-mon-cegep", userId],
