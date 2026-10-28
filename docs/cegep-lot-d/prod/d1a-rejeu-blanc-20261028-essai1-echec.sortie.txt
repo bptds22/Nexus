@@ -1,0 +1,71 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 02:22:29.129754+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version 
+------------------
+ 20261028000000
+(1 row)
+
+SELECT 1
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 7
+ recruteur_toutes_equipes_ms_avant 
+-----------------------------------
+                             133.9
+(1 row)
+
+ phase |             role             |              univ / équipe univ / écoles / équipes               
+-------+------------------------------+------------------------------------------------------------------
+ AVANT | anon (site public, visiteur) | ERREUR 42501 permission denied for function is_group_participant
+ AVANT | athlète                      | 1 / 0 / 1408 / 10349
+ AVANT | parent                       | 1 / 0 / 1408 / 10349
+ AVANT | coach                        | 1 / 0 / 1408 / 10349
+ AVANT | recruteur collégial          | 1 / 1 / 1408 / 10349
+ AVANT | partenaire                   | 1 / 0 / 1408 / 10349
+ AVANT | admin                        | 1 / 1 / 1408 / 10349
+(7 rows)
+
+SELECT 1
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d1a-rejeu-blanc-20261028.sql:221: NOTICE:  NEXUS: lot D1a cégep — universités et 
+équipes universitaires masquées (admin seulement)
+At line:11 char:1
++ & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f 2>&1 | Tee- ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...dmin seulement):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+SET
+SELECT 7
+ phase |             role             |              univ / équipe univ / écoles / équipes               | hors_univ_vs_avant 
+-------+------------------------------+------------------------------------------------------------------+--------------------
+ APRÈS | anon (site public, visiteur) | ERREUR 42501 permission denied for function is_group_participant | =
+ APRÈS | athlète                      | 0 / 0 / 1408 / 10349                                             | =
+ APRÈS | parent                       | 0 / 0 / 1408 / 10349                                             | =
+ APRÈS | coach                        | 0 / 0 / 1408 / 10349                                             | =
+ APRÈS | recruteur collégial          | 0 / 0 / 1408 / 10349                                             | =
+ APRÈS | partenaire                   | 0 / 0 / 1408 / 10349                                             | =
+ APRÈS | admin                        | 1 / 1 / 1408 / 10349                                             | =
+(7 rows)
+
+ recruteur_toutes_equipes_ms_apres 
+-----------------------------------
+                             134.3
+(1 row)
+
+psql:docs/cegep-lot-d/prod/d1a-rejeu-blanc-20261028.sql:248: ERROR:  NEXUS: un essai a échoué
+CONTEXT:  PL/pgSQL function inline_code_block line 4 at RAISE

@@ -32,7 +32,7 @@ begin
   select max(version) into v from supabase_migrations.schema_migrations;
   if v >= '@@VERSION@@' then raise exception 'NEXUS: version @@VERSION@@ pas après la dernière (%) — régénérer', v; end if;
   if exists (select 1 from public.admin_operations where operation in ('MIGRATION_CEGEP_LOT_D1A_MASQUAGE', 'ROLLBACK_CEGEP_LOT_D1A_MASQUAGE')) then
-    raise exception 'NEXUS: le lot D0 a déjà laissé une trace dans admin_operations';
+    raise exception 'NEXUS: le lot D1a a déjà laissé une trace dans admin_operations';
   end if;
   if to_regprocedure('public.verrou_universites()') is null then
     raise exception 'NEXUS: préalable D0 absent';
@@ -64,6 +64,18 @@ begin
   insert into public.teams (id, school_id, sport_id, name, season, age_group)
     select univ_team, univ, sport, 'Équipe témoin D1a', '2026-2027', 'Universitaire' from _t;
 end $$;
+create function pg_temp.compte_equipes(p_temoin boolean) returns text language plpgsql as $$
+declare n bigint;
+begin
+  if p_temoin then
+    select count(*) into n from public.teams where id = '00000000-0000-4000-8000-00000000d1a2';
+  else
+    select count(*) into n from public.teams where id <> '00000000-0000-4000-8000-00000000d1a2';
+  end if;
+  return n::text;
+exception when insufficient_privilege then
+  return 'refusé';
+end $$;
 -- Rend ce que le rôle VOIT : « écoles univ. / équipe univ. témoin / écoles hors univ. / équipes hors univ. ».
 create function pg_temp.vu(p_role text, p_uid uuid) returns text language plpgsql as $$
 declare v text;
@@ -77,11 +89,11 @@ begin
       perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
       perform set_config('role', 'authenticated', true);
     end if;
-    select (select count(*) from public.schools where type = 'UNIVERSITE') || ' / ' ||
-           (select count(*) from public.teams where id = '00000000-0000-4000-8000-00000000d1a2') || ' / ' ||
-           (select count(*) from public.schools where type <> 'UNIVERSITE') || ' / ' ||
-           (select count(*) from public.teams where id <> '00000000-0000-4000-8000-00000000d1a2')
-      into v;
+    -- Les équipes à part : un rôle qui ne peut pas lire teams du tout (anon en prod) rend « refusé ».
+    v := (select count(*) from public.schools where type = 'UNIVERSITE') || ' / ' ||
+         pg_temp.compte_equipes(true) || ' / ' ||
+         (select count(*) from public.schools where type <> 'UNIVERSITE') || ' / ' ||
+         pg_temp.compte_equipes(false);
     raise exception using errcode = 'NX000', message = v;
   exception
     when sqlstate 'NX000' then return sqlerrm;
@@ -148,7 +160,8 @@ begin
   if exists (select 1 from _avant where vu like 'ERREUR%') or exists (select 1 from _apres where vu like 'ERREUR%') then
     raise exception 'NEXUS: un essai a échoué';
   end if;
-  if exists (select 1 from _apres where role <> 'admin' and split_part(vu, ' / ', 1) || split_part(vu, ' / ', 2) <> '00') then
+  if exists (select 1 from _apres where role <> 'admin'
+              and (split_part(vu, ' / ', 1) <> '0' or split_part(vu, ' / ', 2) not in ('0', 'refusé'))) then
     raise exception 'NEXUS: un rôle non admin voit encore l''université ou son équipe';
   end if;
   if (select split_part(vu, ' / ', 1) || '/' || split_part(vu, ' / ', 2) from _apres where role = 'admin') <> '1/1' then
