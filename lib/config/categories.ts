@@ -12,7 +12,7 @@
  * ni ailleurs. Une nouvelle catégorie s'ajoute ICI, à sa place dans l'ordre par âge.
  *
  * Règles :
- *   · rangée par âge, groupe par groupe : secondaire, civil, soccer civil, Ouvert, Collégial ;
+ *   · rangée par âge, groupe par groupe : secondaire, civil, soccer civil, Ouvert, Collégial, Universitaire ;
  *   · AUCUN regroupement : « Midget », « Midget AAA » et « M18 AAA » restent trois catégories,
  *     comme « M18 » (secondaire) et « M18 AAA » (civil). Seules les variantes d'ÉCRITURE d'une
  *     même catégorie se rejoignent (casse, espaces, accents ; « cegep » s'affiche « Collégial ») ;
@@ -59,9 +59,10 @@ export const CATEGORIES_CANONIQUES: readonly string[] = [
   "U19",
   "U21",
   "Senior",
-  // Sans âge, puis le collégial.
+  // Sans âge, puis le collégial et l'universitaire (lot D3b).
   "Ouvert",
   "Collégial",
+  "Universitaire",
 ];
 
 /** Clé de comparaison : casse, accents et espaces ignorés. */
@@ -136,13 +137,13 @@ export function correspondCategorie(brut: string | null | undefined, choisi: str
 
 export type Tranche = "-18" | "18+";
 
-const DIX_HUIT_PLUS: ReadonlySet<string> = new Set(["Junior Majeur", "U19", "U21", "Senior", "Collégial"]);
+const DIX_HUIT_PLUS: ReadonlySet<string> = new Set(["Junior Majeur", "U19", "U21", "Senior", "Collégial", "Universitaire"]);
 const SANS_AGE: ReadonlySet<string> = new Set(["Ouvert"]);
 
 const MOTS_MOINS_18 = new Set([
   "novice", "mini", "moustique", "atome", "pee-wee", "peewee", "bantam", "midget", "benjamin", "cadet", "juvenile",
 ]);
-const MOTS_18_PLUS = new Set(["junior", "senior", "collegial"]);
+const MOTS_18_PLUS = new Set(["junior", "senior", "collegial", "universitaire"]);
 
 /** Tranche d'une catégorie brute (`teams.age_group`, `games.category`), ou null si on ne sait pas. */
 export function trancheCategorie(brut: string | null | undefined): Tranche | null {

@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   contexteRecruteurDemande, destinationRecruteur, messageFinRecruteur, MESSAGE_UNIVERSITES_FERMEES,
+  estRecruteurUniversitaire, pageFermeeUniversitaire,
 } from "@/lib/auth/recruteurUniversitaire";
 import { CLE_LANCEMENT_UNIVERSITAIRE, lireLancementUniversitaire } from "@/lib/config/lancementUniversitaire";
 
@@ -22,10 +23,22 @@ test("contexte demandé : universitaire seulement sous ON, sinon collégial", ()
   assert.equal(contexteRecruteurDemande("ADMIN", true), "collegial");
 });
 
-test("destination : attente pour l'universitaire, portail pour le collégial", () => {
-  assert.equal(destinationRecruteur("universitaire"), "/universitaire/en-validation");
+test("destination : le portail, pour l'universitaire comme pour le collégial (D3b)", () => {
+  assert.equal(destinationRecruteur("universitaire"), "/recruteur/tableau-de-bord");
   assert.equal(destinationRecruteur("collegial"), "/recruteur/tableau-de-bord");
   assert.equal(destinationRecruteur(null), "/recruteur/tableau-de-bord");
+});
+
+test("portail universitaire : pages propres au cégep fermées, le reste ouvert", () => {
+  assert.equal(estRecruteurUniversitaire({ context: "universitaire" }), true);
+  assert.equal(estRecruteurUniversitaire({ context: "collegial" }), false);
+  assert.equal(estRecruteurUniversitaire(null), false);
+  for (const p of ["/recruteur/ma-page", "/recruteur/cegep", "/recruteur/cegep/stats", "/recruteur/cegep/recrues", "/recruteur/cegep/entraineurs/x"]) {
+    assert.equal(pageFermeeUniversitaire(p), true, p);
+  }
+  for (const p of ["/recruteur/cegep/recruteurs", "/recruteur/cegep/reassignation", "/recruteur/recherche", "/recruteur/tableau-de-bord", "/recruteur/ma-pages"]) {
+    assert.equal(pageFermeeUniversitaire(p), false, p);
+  }
 });
 
 test("refus de la fin d'inscription : un message par code, selon la branche", () => {

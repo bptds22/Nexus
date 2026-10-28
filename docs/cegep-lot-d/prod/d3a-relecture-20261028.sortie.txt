@@ -1,0 +1,13 @@
+﻿-[ RECORD 1 ]-----------+------
+d3a_inscrit             | 1
+trace                   | 1
+interrupteur            | false
+temoin                  | 0
+policies_lecture        | 6
+policies_ecriture       | 3
+fonctions_filtre        | 19
+unite_voit_interrupteur | t
+recruteurs_univ         | 0
+fiches                  | 218
+favoris                 | 21
+

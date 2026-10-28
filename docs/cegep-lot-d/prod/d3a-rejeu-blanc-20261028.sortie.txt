@@ -1,0 +1,136 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 14:34:00.975828+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version 
+------------------
+ 20261028030000
+(1 row)
+
+SELECT 218
+GRANT
+SELECT 1
+DO
+ cegepiens | autres_fiches 
+-----------+---------------
+         1 |           217
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 10
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 8
+ phase |            lecteur            | fiches équipes badges éval. vues journal 
+-------+-------------------------------+------------------------------------------
+ AVANT | recruteur universitaire (ON)  | 1/200 0/20 0/39 0/14 0/0 0/0
+ AVANT | recruteur universitaire (OFF) | 1/200 0/20 0/39 0/14 0/0 0/0
+ AVANT | recruteur collégial           | 0/200 0/28 0/39 0/14 0/159 0/596
+ AVANT | recruteur collégial (ON)      | 0/200 0/28 0/39 0/14 0/159 0/596
+ AVANT | partenaire                    | 0/0 0/0 0/0 0/0 0/0 0/0
+ AVANT | coach                         | 0/0 0/0 0/0 0/0 0/0 0/0
+ AVANT | athlète                       | 0/1 0/0 0/0 0/0 0/1 0/0
+ AVANT | admin                         | 1/217 0/130 0/39 0/14 0/316 5/1253
+(8 rows)
+
+ banc 
+------
+ 
+(1 row)
+
+SELECT 1
+SELECT 1
+DO
+SET
+SELECT 8
+ phase |            lecteur            | fiches équipes badges éval. vues journal | vs_avant 
+-------+-------------------------------+------------------------------------------+----------
+ APRÈS | recruteur universitaire (ON)  | 1/0 0/0 0/0 0/0 0/0 0/0                  | CHANGE
+ APRÈS | recruteur universitaire (OFF) | 0/0 0/0 0/0 0/0 0/0 0/0                  | CHANGE
+ APRÈS | recruteur collégial           | 0/200 0/28 0/39 0/14 0/159 0/596         | =
+ APRÈS | recruteur collégial (ON)      | 0/200 0/28 0/39 0/14 0/159 0/596         | =
+ APRÈS | partenaire                    | 0/0 0/0 0/0 0/0 0/0 0/0                  | =
+ APRÈS | coach                         | 0/0 0/0 0/0 0/0 0/0 0/0                  | =
+ APRÈS | athlète                       | 0/1 0/0 0/0 0/0 0/1 0/0                  | =
+ APRÈS | admin                         | 1/217 0/130 0/39 0/14 0/316 5/1253       | =
+(8 rows)
+
+ banc 
+------
+ 
+(1 row)
+
+ n  |               objet               | univ_avant | univ_apres | collegial_avant | collegial_apres | partenaire_avant | partenaire_apres 
+----+-----------------------------------+------------+------------+-----------------+-----------------+------------------+------------------
+  1 | recruiter_search_athletes()       | ok 1/192   | ok 1/0     | ok 0/192        | ok 0/192        | refusé           | refusé
+  2 | recruiter_athlete_cards(toutes)   | ok 1/200   | ok 1/0     | ok 0/200        | ok 0/200        | refusé           | refusé
+  3 | recruiter_athlete_profile(autre)  | ok 0/1     | ok 0/0     | ok 0/1          | ok 0/1          | refusé           | refusé
+  4 | athletes_nom_proche(autre)        | ok 0/0     | ok 0/0     | ok 0/0          | ok 0/0          | ok 0/0           | ok 0/0
+  5 | athlete_nexus_par_courriel(autre) | ok 0/0     | ok 0/0     | ok 0/0          | ok 0/0          | ok 0/0           | ok 0/0
+  6 | athletes_targeting_my_cegep()     | ok 0/0     | ok 0/0     | ok 0/0          | ok 0/0          | ok 0/0           | ok 0/0
+  7 | matchs_profils_nexus(500 matchs)  | refusé     | refusé     | refusé          | refusé          | refusé           | refusé
+  8 | matchs_recherche(31 jours)        | refusé     | refusé     | refusé          | refusé          | ok 0/0           | ok 0/0
+  9 | rapprochements_unite()            | ok 0/0     | ok 0/0     | ok 0/0          | ok 0/0          | ok 0/0           | ok 0/0
+ 10 | is_athlete_contactable(autre)     | ok 0/0     | ok 0/0     | ok 0/0          | ok 0/0          | ok 0/0           | ok 0/0
+(10 rows)
+
+SELECT 4
+                essai                |                            resultat                             
+-------------------------------------+-----------------------------------------------------------------
+ favori → fiche non cégépienne       | refusé 42501 new row violates row-level security policy "non_ce
+ processus → fiche non cégépienne    | refusé 42501 new row violates row-level security policy for tab
+ conversation → fiche non cégépienne | refusé 23514 Période de black-out — la messagerie est suspendue
+ favori → cégépien (contrôle)        | accepté 1
+(4 rows)
+
+ recherche_ms_avant | recherche_ms_apres | fiches_ms_avant | fiches_ms_apres 
+--------------------+--------------------+-----------------+-----------------
+               24.4 |               25.2 |             9.0 |             9.4
+(1 row)
+
+SELECT 19
+ fonctions_avec_filtre | fonctions 
+-----------------------+-----------
+                    19 |        19
+(1 row)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d3a-rejeu-blanc-20261028.sql:3017: NOTICE:  NEXUS: VERDICT D3a — recruteur 
+universitaire : cégépiens seulement ; tout autre lecteur inchangé
+At line:1 char:950
++ ... grations;"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...ecteur inchangé:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+SET
+SELECT 8
+psql:docs/cegep-lot-d/prod/d3a-rejeu-blanc-20261028.sql:3032: NOTICE:  NEXUS: rollback D3a vérifié (lectures 
+identiques à AVANT, policies, règles et filtres retirés)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

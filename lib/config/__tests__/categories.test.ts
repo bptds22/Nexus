@@ -12,7 +12,7 @@ import {
 } from "@/lib/config/categories";
 import { libelleOptionPromotion, libellePromotion, porteePromotion } from "@/lib/config/gradYears";
 
-test("liste canonique : groupes dans l'ordre secondaire, civil, soccer civil, Ouvert, Collégial", () => {
+test("liste canonique : groupes dans l'ordre secondaire, civil, soccer civil, Ouvert, Collégial, Universitaire", () => {
   const rang = (c: string) => CATEGORIES_CANONIQUES.indexOf(c);
   assert.ok(rang("Atome") < rang("Juvénile"));
   assert.ok(rang("Juvénile") < rang("M18"));
@@ -21,7 +21,8 @@ test("liste canonique : groupes dans l'ordre secondaire, civil, soccer civil, Ou
   assert.ok(rang("Junior Majeur") < rang("U9"));
   assert.ok(rang("U21") < rang("Senior"));
   assert.ok(rang("Senior") < rang("Ouvert"));
-  assert.equal(CATEGORIES_CANONIQUES.at(-1), "Collégial");
+  assert.equal(CATEGORIES_CANONIQUES.at(-2), "Collégial");
+  assert.equal(CATEGORIES_CANONIQUES.at(-1), "Universitaire");
   assert.equal(new Set(CATEGORIES_CANONIQUES).size, CATEGORIES_CANONIQUES.length, "aucun doublon");
 });
 
@@ -64,4 +65,13 @@ test("promotion : « Cégep AAAA » pour un cégep d'ancrage, sinon « Secondair
 test("lot 7 civil : Novice, Mini, Pee-Wee, Bantam rangés parmi les catégories civiles", () => {
   assert.deepEqual(categoriesTriees(["Bantam AAA", "Bantam", "Pee-Wee", "Mini", "Novice", "Atome"]),
     ["Atome", "Novice", "Mini", "Pee-Wee", "Bantam", "Bantam AAA"]);
+});
+
+test("Universitaire (lot D3b) : catégorie canonique, 18 ans et plus, après Collégial", async () => {
+  const { trancheCategorie } = await import("@/lib/config/categories");
+  assert.equal(libelleCategorie("universitaire"), "Universitaire");
+  assert.equal(libelleCategorie(" UNIVERSITAIRE "), "Universitaire");
+  assert.equal(trancheCategorie("Universitaire"), "18+");
+  assert.ok(comparerCategories("Collégial", "Universitaire") < 0);
+  assert.deepEqual(categoriesTriees(["Universitaire", "Collégial", "Benjamin"]), ["Benjamin", "Collégial", "Universitaire"]);
 });

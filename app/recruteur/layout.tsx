@@ -12,7 +12,7 @@ import PendingAdminClaimBanner from "@/components/auth/PendingAdminClaimBanner";
 import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
 import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
 import { AnimatedRoute } from "./_components/AnimatedRoute";
-import { destinationRecruteur } from "@/lib/auth/recruteurUniversitaire";
+import { pageFermeeUniversitaire } from "@/lib/auth/recruteurUniversitaire";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -91,9 +91,10 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Recruteur universitaire (lot D2b) : pas de portail avant le lot D3 → page d'attente.
-        if (data.context === "universitaire") {
-          router.replace(destinationRecruteur(data.context));
+        // Recruteur universitaire (lot D3b) : pages propres au cégep (Ma page, Mon CÉGEP, stats, recrues)
+        // → tableau de bord. La base ne lui rend que des cégépiens (lot D3a).
+        if (data.context === "universitaire" && pageFermeeUniversitaire(normalizedPath)) {
+          router.replace("/recruteur/tableau-de-bord");
           return;
         }
 

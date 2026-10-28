@@ -17,6 +17,7 @@ import { libelleOptionPromotion } from "@/lib/config/gradYears";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSubscription } from "@/lib/hooks/useSubscription";
+import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { usePositionsBySport } from "@/lib/queries/recruiter/usePositionsBySport";
 import { useListesUnite } from "@/lib/queries/recruiter/useListesUnite";
@@ -560,6 +561,10 @@ function CalendrierContent() {
   const isFree = tier === "free";
 
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_FILTERS);
+  // Recruteur universitaire (lot D3b) : ses cibles sont des cégépiens — Type « Collégial », promotions « Cégep ».
+  const { data: moiCalendrier } = useCurrentUser();
+  const universitaire = moiCalendrier?.profile.context === "universitaire";
+  const portee = universitaire ? "dec" : "secondaire";
   const [sort, setSort] = useState<CalendarSort>("date");
   const [view, setView] = useState<"list" | "cal">("list");
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -796,12 +801,12 @@ function CalendrierContent() {
               <MultiFilterSelect
                 values={filters.promotions}
                 placeholder="Toutes les promotions"
-                renderLabel={(v) => (v.length === 1 ? libelleOptionPromotion(v[0], "secondaire") : `${v.length} promotions`)}
+                renderLabel={(v) => (v.length === 1 ? libelleOptionPromotion(v[0], portee) : `${v.length} promotions`)}
                 onAdd={(v) => set("promotions", toggleIn(filters.promotions, v))}
                 onClear={() => set("promotions", [])}
               >
                 {PROMOTIONS.map((p) => (
-                  <option key={p} value={p}>{filters.promotions.includes(p) ? `✓ ${libelleOptionPromotion(p, "secondaire")}` : libelleOptionPromotion(p, "secondaire")}</option>
+                  <option key={p} value={p}>{filters.promotions.includes(p) ? `✓ ${libelleOptionPromotion(p, portee)}` : libelleOptionPromotion(p, portee)}</option>
                 ))}
               </MultiFilterSelect>
 
@@ -869,10 +874,10 @@ function CalendrierContent() {
                 </FilterSelect>
 
                 {/* Lot B4 : Type à 3 valeurs, sans « Collégial » pour le recruteur collégial (il ne
-                    reçoit jamais de cégépien, lot A). */}
+                    reçoit jamais de cégépien, lot A). Le recruteur universitaire (D3b) l'a. */}
                 <FilterSelect value={filters.orgType} active={!!filters.orgType} ariaLabel="Type" onChange={(v) => set("orgType", v)}>
                   <option value="">Tous les types</option>
-                  {organisationsAffichees(false).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {organisationsAffichees(universitaire).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </FilterSelect>
 
                 {/* Lot B4 : Catégorie de l'équipe, liste canonique rangée par âge (valeurs présentes). */}

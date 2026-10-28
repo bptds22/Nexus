@@ -24,6 +24,7 @@ import { joindreNoms } from "@/lib/queries/recruiter/useFavorisUnite";
 import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { useEstRecruteurUniversitaire } from "@/lib/queries/shared/useEstRecruteurUniversitaire";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
@@ -513,6 +514,8 @@ function RechercheContent() {
   // Migration TanStack (iter 5.3b) — états fetch-related délégués aux hooks.
   // Cache TanStack → navigation tab→Recherche instantanée avec mêmes filtres.
   const { data: currentUser } = useCurrentUser();
+  // Recruteur universitaire (lot D3b) : cégépiens seulement (en base) ; pas de filtres propres au cégep.
+  const universitaire = useEstRecruteurUniversitaire();
   /* Favoris de l'UNITÉ pour un Pro (lot B2, étape 2) : le cœur d'un collègue
      s'affiche ici aussi ; les siens seulement pour un gratuit. Le cap du
      forfait gratuit lit la même liste — pour lui, ce sont ses lignes. */
@@ -638,11 +641,14 @@ function RechercheContent() {
      liste ne rendait rien. Le vocabulaire, lui, reste celui de toute la page :
      une option à 0 se grise, elle ne disparaît pas. */
   /* Lot B4 cégep : le recruteur COLLÉGIAL ne voit pas l'option Type « Collégial » ici — il ne
-     reçoit jamais de cégépien (masquage du lot A, en base). Un recruteur universitaire (lot D)
-     la verra : retirer alors ce filtre selon le type d'école du compte. */
+     reçoit jamais de cégépien (masquage du lot A, en base). Le recruteur universitaire (lot D3b) ne
+     reçoit QUE des cégépiens (lot D3a) : l'option Collégial lui reste, seule. */
   const orgOptions = useMemo(
-    () => sansCollegial(organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter, categorie: categorieFilter })),
-    [taxonomyRows, leagueFilter, divisionFilter, categorieFilter],
+    () => {
+      const o = organisationOptions(taxonomyRows, { league: leagueFilter, division: divisionFilter, categorie: categorieFilter });
+      return universitaire ? o : sansCollegial(o);
+    },
+    [taxonomyRows, leagueFilter, divisionFilter, categorieFilter, universitaire],
   );
   const leagueOptionList = useMemo(
     () => leagueOptions(taxonomyRows, { org: orgType, division: divisionFilter, categorie: categorieFilter }),
@@ -872,7 +878,7 @@ function RechercheContent() {
           <select value={promotion} onChange={(e) => setPromotion(e.target.value)} className={`nx-filter-select${promotion ? " nx-filter-active" : ""}`}>
             <option value="">Toutes les promotions</option>
             {/* Lot B4 : jamais l'année seule ; le recruteur collégial ne reçoit pas de cégépien. */}
-            {PROMOTIONS.map((p) => <option key={p} value={p}>{libelleOptionPromotion(p, "secondaire")}</option>)}
+            {PROMOTIONS.map((p) => <option key={p} value={p}>{libelleOptionPromotion(p, universitaire ? "dec" : "secondaire")}</option>)}
           </select>
 
           <div className="w-px h-6 bg-[#2D3748] mx-1 hidden sm:block" />

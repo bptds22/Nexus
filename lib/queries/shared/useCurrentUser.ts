@@ -33,6 +33,9 @@ export interface CurrentUserProfile {
    *  remplacer par role='ADMIN' / is_admin() — ce sont d'autres prédicats, et
    *  l'interface proposerait alors ce que la RLS refuse. */
   is_platform_admin: boolean | null;
+  /** users.context — « universitaire » pour le recruteur universitaire (lot D3b cégep) : son portail
+   *  masque ce qui est propre au cégep. La base, elle, ne lui rend que des cégépiens (lot D3a). */
+  context: string | null;
 }
 
 export interface CurrentUserData {
@@ -51,7 +54,7 @@ export function useCurrentUser() {
 
       const { data: profile, error: profileError } = await supabase
         .from("users")
-        .select("id, first_name, last_name, school_id, division, sport, sport_id, onboarding_complete, is_platform_admin")
+        .select("id, first_name, last_name, school_id, division, sport, sport_id, onboarding_complete, is_platform_admin, context")
         .eq("id", user.id)
         .single();
       if (profileError) throw profileError;

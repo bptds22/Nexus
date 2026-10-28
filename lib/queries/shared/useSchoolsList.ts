@@ -25,6 +25,7 @@ export function useSchoolsList() {
         const { data, error } = await supabase
           .from("schools")
           .select("id, name")
+          .neq("type", "UNIVERSITE") // lot D3b : aucune liste ouverte n'offre d'université (masquées en base, D1a)
           .order("name")
           .range(from, from + PAGE - 1);
         if (error) throw error;
