@@ -56,12 +56,6 @@ export const TYPES_MATCH: { v: TypeMatch; label: string }[] = [
 /** Collégial DÉCOCHÉ par défaut (décision BP 2). */
 export const TYPES_PAR_DEFAUT: TypeMatch[] = ["SECONDAIRE", "CIVIL"];
 
-/** Types cochés par défaut : Collégial seul pour le recruteur universitaire (lot D3b, Q1 — tous les
- *  matchs restent offerts), sinon Secondaire + Civil. */
-export function typesParDefautPour(universitaire: boolean): TypeMatch[] {
-  return universitaire ? ["COLLEGIAL"] : [...TYPES_PAR_DEFAUT];
-}
-
 /** Plage de 31 jours au plus (BP 2026-10-09 ; 7 avant). Même borne que la
  *  garde de matchs_recherche — mesure prod : 374 ms pour la période de 31 jours
  *  à venir la plus chargée (3 804 matchs, ~418 terrains). */

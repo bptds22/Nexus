@@ -1,14 +1,14 @@
 /* Recruteur universitaire (chantier cégep, lots D2b et D3b — décisions BP 2026-10-28) : les règles web de
    son inscription et de son portail, regroupées ici pour être testées. La base reste l'autorité :
-   claim_signup_role et finish_recruiter_onboarding refusent l'université sous OFF (D2a), et il ne reçoit
-   que des cégépiens (D3a, masquage en base du secondaire, du civil et des fiches sans école).
+   claim_signup_role et finish_recruiter_onboarding refusent l'université sous OFF (D2a). Il voit tous les
+   athlètes, comme un recruteur collégial, plus les cégépiens sous ON (Q8 annulée, D3c).
 
    Le formulaire universitaire ne montre que les universités (RPC universites_inscription) et les équipes de
    l'université choisie (RPC equipes_universite_inscription) : les policies, elles, ne lui montrent que SA
    propre université, une fois inscrit.
 
    Portail (D3b, décisions Q1-Q3) : pas de « Ma page » (vitrine universitaire plus tard), « Mon université »
-   = Recruteurs + Réassignation, matchs filtrés « Collégial » par défaut. */
+   = Recruteurs + Réassignation ; carte des matchs : même défaut que le recruteur collégial (Q1 revue). */
 
 /** Le compte est-il un recruteur universitaire (users.context) ? */
 export function estRecruteurUniversitaire(profil: { context?: string | null } | null | undefined): boolean {

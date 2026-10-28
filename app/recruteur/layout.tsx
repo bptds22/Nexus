@@ -92,7 +92,7 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
         }
 
         // Recruteur universitaire (lot D3b) : pages propres au cégep (Ma page, Mon CÉGEP, stats, recrues)
-        // → tableau de bord. La base ne lui rend que des cégépiens (lot D3a).
+        // → tableau de bord. Il voit tous les athlètes, comme le collégial, plus les cégépiens (sous ON).
         if (data.context === "universitaire" && pageFermeeUniversitaire(normalizedPath)) {
           router.replace("/recruteur/tableau-de-bord");
           return;
