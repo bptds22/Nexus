@@ -19,6 +19,7 @@ const LOTS = {
   d2a: ["20261028030000", "cegep_lot_d2a_recruteur_universitaire"],
   d3a: ["20261028040000", "cegep_lot_d3a_universitaire_cegepiens_seulement"],
   d3c: ["20261028050000", "cegep_lot_d3c_universitaire_voit_tout"],
+  d3d: ["20261028060000", "cegep_lot_d3d_nom_ecole_recruteurs"],
 };
 if (!LOTS[lot]) throw new Error("lot inconnu : " + lot);
 const [VERSION, NOM] = LOTS[lot];
