@@ -1,0 +1,90 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 13:46:37.040049+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version 
+------------------
+ 20261028020000
+(1 row)
+
+SELECT 1
+DO
+SELECT 1
+DO
+SET
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 6
+                         cas                         |                                                                                                            claim | univ. | équipes | finish | vu u/sienne/ses éq./autres                                                                                                            
+-----------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ A. OFF, universitaire, son université               | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus | refusé P0001 WRONG_ROLE_OR_CONTEXT | ok 0/0/0/0
+ B. ON, universitaire, son université + son équipe   | ok universitaire | ok 12 | ok 4 | ok true | ok 1/1/4/0
+ C. ON, universitaire, un cégep                      | ok universitaire | ok 12 | ok 4 | refusé P0001 INVALID_UNIVERSITE | ok 0/0/0/0
+ D. ON, universitaire, équipe d'une autre université | ok universitaire | ok 12 | ok 4 | refusé P0001 INVALID_TEAM | ok 0/0/0/0
+ E. OFF, collégial (régression), un cégep            | ok collegial | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus | ok true | ok 0/0/0/0
+ F. ON, collégial, une université                    | ok collegial | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus | refusé P0001 INVALID_CEGEP | ok 0/0/0/0
+(6 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 7
+        role         | OFF : univ / équipes univ / écoles / équipes |             ON             
+---------------------+----------------------------------------------+----------------------------
+ anon (site public)  | 0 / refusé / 1408 / refusé                   | 0 / refusé / 1408 / refusé
+ athlète             | 0 / 0 / 1408 / 10349                         | 0 / 0 / 1408 / 10349
+ parent              | 0 / 0 / 1408 / 10349                         | 0 / 0 / 1408 / 10349
+ coach               | 0 / 0 / 1408 / 10349                         | 0 / 0 / 1408 / 10349
+ recruteur collégial | 0 / 0 / 1408 / 10349                         | 0 / 0 / 1408 / 10349
+ partenaire          | 0 / 0 / 1408 / 10349                         | 0 / 0 / 1408 / 10349
+ admin               | 12 / 84 / 1408 / 10349                       | 12 / 84 / 1408 / 10349
+(7 rows)
+
+CREATE FUNCTION
+SELECT 3
+                          essai                          |                                      resultat                                       
+---------------------------------------------------------+-------------------------------------------------------------------------------------
+ recruteur collégial → school_id université (ON)         | refusé 42501 NEXUS: Seul un recruteur universitaire peut être rattaché à une univer
+ recruteur collégial → contexte universitaire (ON)       | refusé 42501 NEXUS: Un recruteur universitaire est rattaché à une université.
+ recruteur collégial → primary_team_id équipe univ. (ON) | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus. Ça arriv
+(3 rows)
+
+CREATE FUNCTION
+ recruteur_toutes_equipes_ms_apres 
+-----------------------------------
+                             136.6
+(1 row)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d2a-apply-20261028.sql:1033: NOTICE:  NEXUS: VERDICT D2a — OFF tout fermé ; ON 
+inscription universitaire complète, il ne voit que son université ; collégial inchangé
+At line:1 char:1080
++ ... grations;"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...légial inchangé:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261028030000   | 2026-10-28 13:46:40.173149+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot D2a cégep en prod (inscription du recruteur universitaire, interrupteur OFF).

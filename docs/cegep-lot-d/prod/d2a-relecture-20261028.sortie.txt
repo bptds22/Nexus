@@ -1,0 +1,13 @@
+﻿-[ RECORD 1 ]----------+------
+d2a_inscrit            | 1
+trace                  | 1
+interrupteur           | false
+temoin                 | 0
+listes                 | t
+policies_d2a           | 2
+claim_d2a              | t
+comptes_universitaires | 0
+univ                   | 12
+ecoles                 | 1420
+equipes                | 10433
+
