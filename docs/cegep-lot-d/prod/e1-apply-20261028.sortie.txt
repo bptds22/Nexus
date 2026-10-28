@@ -1,0 +1,79 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 21:10:07.501208+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | interrupteur_on 
+------------------+-----------------
+ 20261028120000   | f
+(1 row)
+
+SELECT 1
+ALTER TABLE
+UPDATE 1
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 7
+SELECT 1
+DO
+SET
+SELECT 7
+       appelant        | avant (interrupteur tel quel) |      après      |     ?     
+-----------------------+-------------------------------+-----------------+-----------
+ cégépien              | 0/0/0                         | 0/0/0           | identique
+ athlète du secondaire | 0/0/0                         | 0/0/0           | identique
+ coach                 | 0/0/0                         | 0/0/0           | identique
+ recruteur collégial   | 0/0/0                         | 0/0/0           | identique
+ partenaire            | 0/0/0                         | 0/0/0           | identique
+ anon                  | 0/refusé/refusé               | 0/refusé/refusé | identique
+ admin                 | 59/429/5897                   | 59/429/5897     | identique
+(7 rows)
+
+CREATE FUNCTION
+SELECT 15
+ o  | interrupteur |        appelant         |        geste        |   attendu    |     obtenu      | ?  
+----+--------------+-------------------------+---------------------+--------------+-----------------+----
+  1 | OFF          | cégépien                | lire                | 0/0/0        | 0/0/0           | ok
+  2 | OFF          | cégépien                | cibler l'université | refusé 42501 | refusé 42501    | ok
+  3 | ON           | cégépien                | lire                | 59/429/5897  | 59/429/5897     | ok
+  4 | ON           | cégépien                | cibler l'université | ciblée       | ciblée          | ok
+  5 | ON           | cégépien                | cibler un cégep     | ciblé        | ciblé           | ok
+  6 | ON           | athlète du secondaire   | lire                | 0/0/0        | 0/0/0           | ok
+  7 | ON           | athlète du secondaire   | cibler l'université | refusé 42501 | refusé 42501    | ok
+  8 | ON           | athlète du secondaire   | cibler un cégep     | ciblé        | ciblé           | ok
+  9 | ON           | coach                   | lire                | 0/0/0        | 0/0/0           | ok
+ 10 | ON           | recruteur collégial     | lire                | 0/0/0        | 0/0/0           | ok
+ 11 | ON           | partenaire              | lire                | 0/0/0        | 0/0/0           | ok
+ 12 | ON           | anon                    | lire                | 0/%/refusé   | 0/refusé/refusé | ok
+ 13 | ON           | recruteur universitaire | qui me ciblent      | 1 cégépien   | 1 cégépien      | ok
+ 14 | OFF          | recruteur universitaire | qui me ciblent      | 0 cégépien   | 0 cégépien      | ok
+ 15 | OFF          | admin                   | lire                | 59/429/5897  | 59/429/5897     | ok
+(15 rows)
+
+DO
+psql:docs/cegep-lot-d/prod/e1-apply-20261028.sql:298: NOTICE:  NEXUS: VERDICT E1 — sous OFF rien ne change ; sous ON le cégépien seul lit et cible les universités, le recruteur universitaire voit qui le cible
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261028130000   | 2026-10-28 21:10:09.819293+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot E1 cégep en prod (cibles universitaires sous ON, interrupteur OFF).

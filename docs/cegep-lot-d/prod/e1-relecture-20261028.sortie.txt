@@ -1,0 +1,10 @@
+﻿Pager usage is off.
+    version     | op | fonction | policy_equipes | declencheur | interrupteur 
+----------------+----+----------+----------------+-------------+--------------
+ 20261028130000 |  1 | t        |              1 |           1 | false
+(1 row)
+
+BEGIN
+DO
+NOTICE:  NEXUS: relecture E1 sous OFF (universités/programmes lus) : cégépien 0/0 ; secondaire 0/0 ; recruteur collégial 0/0 ; 
+ROLLBACK

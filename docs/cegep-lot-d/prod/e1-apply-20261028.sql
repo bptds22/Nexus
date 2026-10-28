@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════════════════
--- Lot E1 cégep (le cégépien voit et cible les universités sous ON) — APPLY RÉEL EN PROD (sur GO BP seulement, après le rejeu à blanc), version 20261028100000.
+-- Lot E1 cégep (le cégépien voit et cible les universités sous ON) — APPLY RÉEL EN PROD (sur GO BP seulement, après le rejeu à blanc), version 20261028130000.
 -- Fichier GÉNÉRÉ par scripts/cegep-lot-d/generer.mjs <date> <rejeu-blanc|apply> e1 (migration et rollback
 -- embarqués, LF, md5 gardés). Lancer SANS -1, en postgres.
 --
@@ -24,11 +24,11 @@ do $$
 declare v text;
 begin
   if current_user <> 'postgres' then raise exception 'NEXUS: lancer en postgres, pas en %', current_user; end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261028100000') then
-    raise exception 'NEXUS: version 20261028100000 déjà inscrite';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261028130000') then
+    raise exception 'NEXUS: version 20261028130000 déjà inscrite';
   end if;
   select max(version) into v from supabase_migrations.schema_migrations;
-  if v >= '20261028100000' then raise exception 'NEXUS: version 20261028100000 pas après la dernière (%) — régénérer', v; end if;
+  if v >= '20261028130000' then raise exception 'NEXUS: version 20261028130000 pas après la dernière (%) — régénérer', v; end if;
   if exists (select 1 from public.admin_operations where operation in ('MIGRATION_CEGEP_LOT_E1', 'ROLLBACK_CEGEP_LOT_E1')) then
     raise exception 'NEXUS: le lot E1 a déjà laissé une trace dans admin_operations';
   end if;
@@ -102,7 +102,7 @@ create temp table _avant on commit drop as select * from pg_temp.balayage();
 
 -- ── La migration, texte gardé par son md5 ────────────────────────────────────
 create temp table _e1 on commit drop as
-select '20261028100000'::text as version,
+select '20261028130000'::text as version,
        $nexus_mig$-- Lot E1 cégep — le cégépien voit et cible les universités, sous lancement_universitaire ON (retour du test de bout en
 -- bout de BP, 2026-10-28 : A1, C1, C3 ; décision Q6 : tout sous l'interrupteur universitaire).
 -- Sous OFF, rien ne change : les universités restent masquées à tous sauf l'admin (D1a), et personne ne peut les cibler.
@@ -315,7 +315,7 @@ select 'MIGRATION_CEGEP_LOT_E1',
   from _e1;
 do $$
 begin
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261028100000') then
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261028130000') then
     raise exception 'NEXUS: inscription schema_migrations absente';
   end if;
 end $$;
