@@ -1,0 +1,1076 @@
+{
+  "universite": "Université Concordia",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.concordia.ca/academics/undergraduate.html"
+  ],
+  "attendu": {
+    "baccalaureat": 110,
+    "certificat": 18,
+    "comment": "Le répertoire officiel (concordia.ca/academics/undergraduate.html) n'affiche pas de total ; décompte fait sur ses 166 fiches (balises cachées degree/credential de chaque fiche). Unité retenue = la fiche du répertoire : une ligne par programme listé (ex. « Psychology (BA, BSc) » = 1 ligne ; Major/Honours/Specialization non dédoublés). Baccalauréats : 111 fiches portant un grade Bachelor, moins le doublon « Études françaises (French Studies) » = 110. Certificats : 20 fiches portant Certificate (16 « (Cert) » + 4 « (BA, Cert) »), moins le doublon Études françaises et le certificat TESL (admission suspendue) = 18 ; les 3 fiches mixtes conservées (BA, Cert) donnent une ligne baccalauréat ET une ligne certificat nommée d'après la page programme (« Certificate in ... »). Exclus : 12 microprogrammes, mineures seules, 5 Indigenous Bridging Programs."
+  },
+  "programmes": [
+    {
+      "nom": "Accountancy (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/accountancy.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Accountancy (Cert)",
+      "cycle": "certificat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/accountancy-cert.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Acting for the Theatre (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/acting-theatre.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Actuarial Mathematics (BA, BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/actuarial-mathematics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Actuarial Mathematics/Finance (BA, BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/actuarial-mathematics-finance.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Adult Education (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/adult-education.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Aerospace Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/aerospace-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Anthropology (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/anthropology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Anthropology and Sociology (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/anthropology-and-sociology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Art Education – Visual Arts (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/art-education.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Art History (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/art-history.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Art History and Film Studies (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/art-history-filmstudiesbfa.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Art History and Studio Art (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/art-history-studio-art.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Arts and Science (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/arts-science.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Athletic Therapy (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/athletic-therapy.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Biochemistry (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/biochemistry.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Biology (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/biology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Black and African Diaspora Studies in the Canadian Context (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/black-african-diaspora-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Building Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/building-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Business Analytics (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/business-analytics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Business Studies (Cert)",
+      "cycle": "certificat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/business-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Business Technology Management (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/business-technology-management.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Cell and Molecular Biology (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/cell-molecular-biology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Ceramics (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/ceramics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Chemical Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/chemical-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Chemistry (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/chemistry.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Child Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/child-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Civil Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/civil-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Classics (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/classics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Communication and Cultural Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/communication-cultural-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Communication Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/communication-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Community and Organizational Leadership (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/community-organizational-leadership.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Community, Public Affairs and Policy Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/community-public-affairs-policy-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Computation Arts (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/computation-arts.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Computation Arts - Computer Science (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/comp-arts-computer-science.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Computer Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/computer-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Computer Science (BCompSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/computer-science.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Computer Science - Computation Arts (BCompSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/computer-science-comp-arts.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Contemporary Dance (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/contemporary-dance.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Creative Writing (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/creative-writing.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Cybersecurity (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/cybersecurity.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Cybersecurity Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/cybersecurity-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Data Science (BA/BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/arts-science-data-science.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Data Science (BCompSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/computer-science-data-science.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Design (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/design.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Early Childhood and Elementary Education (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/early-childhood-elementary-education.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Ecology (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/ecology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Economics (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/economics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Economics (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/economics-jmsb.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Electrical Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/electrical-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Electroacoustic Studies (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/electroacoustic-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "English and Creative Writing (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/english-and-creativewriting.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "English and History (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/english-and-history.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "English Literature (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/english-literature.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Environmental and Sustainability Science (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/environmental-science.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Environmental Geography (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/environmental-geography.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Exercise Science (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/exercise-science.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Family Life Education (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/family-life-education.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Fibres and Material Practices (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/fibres-material-practices.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Film and Moving Image Studies (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/film-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Film Animation (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/film-animation.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Film Production (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/film-production.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Finance (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/finance.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "First Peoples Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/first-peoples-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Foundations for Business (Cert)",
+      "cycle": "certificat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/foundations-for-Business.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "French Studies (Études françaises) (BA, Cert)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/french-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Certificate in Langue française",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/french-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Geospatial Technologies (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/geospatial-technologies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Health and Life Sciences (BCompSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/health-life-sciences.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "History (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/history.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Human Environment (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/human-environment.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Human Relations (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/human-relations.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Human Resource Management (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/human-resource-management.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Immigration Studies (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/immigration-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Industrial Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/industrial-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Interdisciplinary Studies in Sexuality (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/sexuality.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Intermedia (Video, Performance and Electronic Arts) (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/intermedia.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "International Business (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/international-business.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Irish Studies (BA, Cert)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/irish-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Certificate in Irish Studies",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/irish-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Italian (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/italian.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Jazz Studies (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/jazz-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Journalism (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/journalism.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Judaic Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/judaic-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Kinesiology and Clinical Exercise Physiology (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/clinical-exercise-physiology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Liberal Arts (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/liberal-arts.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Linguistics (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/linguistics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Management (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/management.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Marketing (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/marketing.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Mathematical and Computational Finance (BA, BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/mathematical-computational-finance.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Mathematics and Statistics (BA, BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/mathematics-statistics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Mechanical Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/mechanical-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Modern Arabic Language and Culture (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/modern-arabic.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Modern Chinese Language and Culture (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/modern-chinese.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Music (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/music.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Neuroscience (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/neuroscience.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Painting and Drawing (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/painting-drawing.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Pastoral Care (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/pastoral-care.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Performance Creation (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/performance-creation.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Philosophy (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/philosophy.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Photography (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/photography.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Physics (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/physics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Political Science (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/political-science.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Print Media (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/print-media.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Psychology (BA, BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/psychology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Pure and Applied Mathematics (BA, BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/pure-and-applied-mathematics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Recreation and Leisure Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/leisure-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Religions and Cultures (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/religion.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Scenography (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/scenography.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Science and Technology (Cert)",
+      "cycle": "certificat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/science-technology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Science Foundations (Cert)",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/science-foundations.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Sculpture (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/sculpture.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Sociology (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/sociology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Software Engineering (BEng)",
+      "cycle": "baccalaureat",
+      "faculte": "Gina Cody School of Engineering and Computer Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/software-engineering.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Southern Asia Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/southern-asia-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Spanish, Hispanic Cultures and Literatures (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/spanish.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Statistics (BA, BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/statistics.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Studio Art (BFA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Fine Arts",
+      "lien": "https://www.concordia.ca/academics/undergraduate/studio-art.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Supply Chain Operations Management (BComm)",
+      "cycle": "baccalaureat",
+      "faculte": "John Molson School of Business",
+      "lien": "https://www.concordia.ca/academics/undergraduate/supply-chain-operations-management.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Systems and Information Biology (BSc)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/systems-information-biology.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Teaching English as a Second Language (TESL) (BEd)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/teaching-english-second-language.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Theological Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/theological-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Therapeutic Recreation (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/therapeutic-recreation.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Traduction (Translation) (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/translation.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Urban Planning (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/urban-planning.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Urban Studies (BA)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/urban-planning-urban-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Women's Studies (BA, Cert)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/womens-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    },
+    {
+      "nom": "Certificate in Women’s Studies",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts & Science",
+      "lien": "https://www.concordia.ca/academics/undergraduate/womens-studies.html",
+      "source": "https://www.concordia.ca/academics/undergraduate.html"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Assurance, Fraud Prevention and Investigative Services",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Biophysics",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Computational Physics (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Computer Science",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Data Intelligence",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Diversity and the Contemporary World",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Economic Policy (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Education",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Entrepreneurship",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Ethics and Values",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Financial Reporting",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Fundamentals of Digital Filmmaking (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Game Design",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "German Studies",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Human Rights Studies",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Indigenous Bridging Program (BComm)",
+      "raison": "programme passerelle (Indigenous Bridging Program), pas un grade distinct"
+    },
+    {
+      "nom": "Indigenous Bridging Program (BEng)",
+      "raison": "programme passerelle (Indigenous Bridging Program), pas un grade distinct"
+    },
+    {
+      "nom": "Indigenous Bridging Program (BSc)",
+      "raison": "programme passerelle (Indigenous Bridging Program), pas un grade distinct"
+    },
+    {
+      "nom": "Indigenous Bridging Program (Journalism BA)",
+      "raison": "programme passerelle (Indigenous Bridging Program), pas un grade distinct"
+    },
+    {
+      "nom": "Indigenous Bridging Program (Psychology BA)",
+      "raison": "programme passerelle (Indigenous Bridging Program), pas un grade distinct"
+    },
+    {
+      "nom": "Indigenous Land-Based Education (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Information Systems Audit and Risk Management",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Innovation Mindset (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Israel Studies",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Jewish Studies (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Law and Society",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Multidisciplinary Studies in Science",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Production Accounting for Film and Television (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Professional Writing",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Quantitative Finance and Insurance",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Real Estate",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Religious, Cultural and Ethnic Literacy (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Science Journalism",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Screenwriting and Film Producing (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Songwriting and Music Production (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Sustainability Principles (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Sustainability Studies",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Teaching English as a Second Language (Cert)",
+      "raison": "admission suspendue (« Admission to the certificate is currently suspended » sur la page programme)"
+    },
+    {
+      "nom": "Theatre",
+      "raison": "mineure seulement (exclu)"
+    },
+    {
+      "nom": "Web Design and User Interface (Microprogram)",
+      "raison": "microprogramme (exclu)"
+    },
+    {
+      "nom": "Études françaises (French Studies) (BA, Cert)",
+      "raison": "doublon : même programme que « French Studies (Études françaises) (BA, Cert) » (contenu identique, listé deux fois dans le répertoire)"
+    }
+  ]
+}

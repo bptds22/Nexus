@@ -1,0 +1,954 @@
+{
+  "universite": "Université du Québec à Montréal",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://etudier.uqam.ca/programmes"
+  ],
+  "attendu": {
+    "baccalaureat": 71,
+    "certificat": 69,
+    "comment": "Comptés sur le répertoire https://etudier.uqam.ca/programmes (tableau complet, Type = Baccalauréat / Certificat, cycle 1) : 71 lignes baccalauréat, 69 lignes certificat ; le site n'affiche pas de total. Écarts : 13 lignes baccalauréat sont des concentrations/profils/cheminements à code distinct, regroupées sous 7 programmes parents (le lien pointe vers la page de l'une des variantes) ; 1 certificat à admission suspendue (4851). Les 23 « concentrations de 1er cycle » (codes F0xx) sont hors périmètre."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat d'enseignement en formation professionnelle et technique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-enseignement-formation-professionnelle-technique",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat d'intervention en activité physique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=7236",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en action culturelle",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-action-culturelle",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en actuariat",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-actuariat",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en administration",
+      "cycle": "baccalaureat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-administration",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en art dramatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-art-dramatique",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en arts visuels et médiatiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-arts-visuels-mediatiques",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en biochimie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-biochimie",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en biologie en apprentissage par problèmes",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-biologie-apprentissage-problemes",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en chimie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-chimie",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en cinéma",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-cinema",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en communication (journalisme)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-communication-journalisme",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en communication humaine et organisationnelle",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-communication-humaine-organisationnelle",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en communication marketing",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme?code=6623",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en communication politique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de science politique et de droit",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-communication-politique-societe",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en communication stratégique et relations publiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-communication-strategique-relations-publiques",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en communication, médias numériques et société",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-communication-medias-numeriques",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en création d'expériences immersives et interactives",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-creation-experiences-immersives-interactives",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en création télévisuelle et multiécran",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-communication-television",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en danse",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-danse",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en design de l'environnement",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-design-environnement",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en design graphique et expériences visuelles",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme?code=6659",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en développement de carrière",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-developpement-carriere",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en droit",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de science politique et de droit",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-droit",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en économique",
+      "cycle": "baccalaureat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-economique",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-education-prescolaire-enseignement-primaire",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'anglais langue seconde",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-enseignement-anglais-langue-seconde",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement du français langue seconde",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-enseignement-francais-langue-seconde",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire et sociale",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-enseignement-adaptation-scolaire-sociale",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-enseignement-secondaire-francais-langue-enseignement",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en études littéraires",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-etudes-litteraires",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en géographie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-geographie",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en gestion des organisations du secteur public",
+      "cycle": "baccalaureat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-gestion-organisations-secteur-public",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en gestion des ressources humaines",
+      "cycle": "baccalaureat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-gestion-ressources-humaines",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en gestion du tourisme et de l'hôtellerie",
+      "cycle": "baccalaureat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-gestion-tourisme-hotellerie",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en gestion et design de la mode",
+      "cycle": "baccalaureat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-gestion-design-mode",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en histoire de l'art",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-histoire-art",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en histoire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-histoire",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en informatique et génie logiciel",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=7416",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en linguistique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-linguistique",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-mathematiques",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en musique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme?code=6760",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en philosophie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-philosophie",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en production médiatique, stratégies et industries culturelles",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-production-mediatique-strategies-industries-culturelles",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en psychologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=6589",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en relations internationales et droit international",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de science politique et de droit",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-relations-internationales-droit-international",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en science politique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de science politique et de droit",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-science-politique",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables",
+      "cycle": "baccalaureat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=6782",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences de la Terre et de l'atmosphère",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-sciences-terre-atmosphere-geologie",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences de l'éducation (B.A.)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme?code=7690",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences des religions",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=6747",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences naturelles appliquées à l'environnement",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=6506",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sexologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=6514",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sociologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/baccalaureat-sociologie",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en systèmes informatiques et électroniques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=6526",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en travail social",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=6998",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en urbanisme",
+      "cycle": "baccalaureat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=8013",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat général en communication",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme?code=6628",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat avancé en développement de logiciels",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/certificat-avance-developpement-logiciels",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat de perfectionnement en français langue seconde",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-perfectionnement-francais",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en administration des services publics",
+      "cycle": "certificat",
+      "faculte": "Faculté de science politique et de droit",
+      "lien": "https://etudier.uqam.ca/programme?code=4686",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en administration",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-administration",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en allemand",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-allemand",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en analyse chimique",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/certificat-analyse-chimique",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en anglais",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-anglais",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en animation culturelle",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-animation-culturelle",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en arts visuels",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme/certificat-arts-visuels",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en changement et développement organisationnel",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4721",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en commerce international",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-commerce-international",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en communication – médias sociaux et organisation",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-communication-medias-sociaux-organisation",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en communication",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-communication",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en comptabilité générale",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-comptabilite-generale",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en création littéraire",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme/certificat-creation-litteraire",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en droit social et du travail",
+      "cycle": "certificat",
+      "faculte": "Faculté de science politique et de droit",
+      "lien": "https://etudier.uqam.ca/programme/certificat-droit-social-travail",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en écologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/certificat-ecologie",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en économique",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-economique",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en éducation à la petite enfance (formation initiale)",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/certificat-education-petite-enfance",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en éducation à la petite enfance : diversité, inclusion et qualité",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme?code=4615",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en enseignement du français langue seconde",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/certificat-enseignement-francais-langue-seconde",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en entrepreneuriat",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-entrepreneuriat",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en espagnol",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-espagnol",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en études critiques des sexualités",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/certificat-etudes-critiques-sexualites",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en études des communautés en ligne",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-etudes-communautes-en-ligne",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en études féministes",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=4685",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en finance",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-finance",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en français et anglais : l'expérience montréalaise",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme/certificat-francais-anglais-experience-montrealaise",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en français langue seconde",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme?code=4655",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en géographie internationale",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/certificat-geographie-internationale",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en géologie appliquée",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme/certificat-geologie-appliquee",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion de l'information et des archives",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/certificat-gestion-information-archives",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion des opérations",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-gestion-operations",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion des propriétés immobilières",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4771",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-gestion-ressources-humaines",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion des services municipaux",
+      "cycle": "certificat",
+      "faculte": "Faculté de science politique et de droit",
+      "lien": "https://etudier.uqam.ca/programme?code=4687",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion du tourisme",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme/certificat-gestion-tourisme",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion intégrée de la santé et sécurité du travail",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4956",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en histoire de l'art",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme?code=4786",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en histoire",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme/certificat-histoire",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en immigration et relations interethniques",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=4975",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en immobilier",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4844",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en informatique et en développement de logiciels",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=4702",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en intervention éducative en milieu familial et communautaire",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme?code=4031",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en intervention psychosociale",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme?code=4153",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en langue des signes québécoise",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=4722",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en langue et culture arabes",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme?code=4720",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en langues et cultures d'Asie",
+      "cycle": "certificat",
+      "faculte": "Faculté de communication",
+      "lien": "https://etudier.uqam.ca/programme?code=4621",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en marketing numérique",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4688",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en marketing",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4206",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en méthodes quantitatives",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=4179",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en muséologie et diffusion de l'art",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme?code=4784",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en planification financière",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4731",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en planification territoriale et gestion des risques",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=4026",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en psychologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=4673",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en réseaux et systèmes de télécommunications",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=4888",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en ressources énergétiques durables",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=4049",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en scénarisation cinématographique",
+      "cycle": "certificat",
+      "faculte": "Faculté des arts",
+      "lien": "https://etudier.uqam.ca/programme?code=4327",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en sciences comptables",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4738",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en sciences de l'atmosphère",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=4526",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en sciences de l'environnement",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=4139",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en sciences des religions",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=4847",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en sciences sociales",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences humaines",
+      "lien": "https://etudier.uqam.ca/programme?code=4269",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en soutien pédagogique dans les services de garde éducatifs",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme?code=4046",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat en technologies de l'information",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4802",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat pour formateurs en milieu de travail",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme/certificat-formateurs-milieu-travail",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat spécialisé en comptabilité",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4517",
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Certificat spécialisé en gestion",
+      "cycle": "certificat",
+      "faculte": "École des sciences de la gestion",
+      "lien": "https://etudier.uqam.ca/programme?code=4657",
+      "source": "https://etudier.uqam.ca/programmes"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Baccalauréat d'enseignement en formation professionnelle et technique, concentration formation technique au collégial (7415)",
+      "raison": "Concentration : regroupé sous « Baccalauréat d'enseignement en formation professionnelle et technique » (code 7414)"
+    },
+    {
+      "nom": "Baccalauréat d'intervention en activité physique, profil kinésiologie (7328)",
+      "raison": "Profil : regroupé sous « Baccalauréat d'intervention en activité physique » (code 7236)"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire, cheminement intégré Diplôme d'études collégiales/Baccalauréat (6778)",
+      "raison": "Cheminement (temps partiel / DEC-BAC intégré) : regroupé sous « Baccalauréat en éducation préscolaire et en enseignement primaire » (code 6776)"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et enseignement primaire (cheminement à temps partiel) (6777)",
+      "raison": "Cheminement (temps partiel / DEC-BAC intégré) : regroupé sous « Baccalauréat en éducation préscolaire et en enseignement primaire » (code 6776)"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire, concentration culture et citoyenneté québécoise (6669)",
+      "raison": "Concentration : regroupé sous « Baccalauréat en enseignement secondaire » (code 7651)"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire, concentration mathématiques (7654)",
+      "raison": "Concentration : regroupé sous « Baccalauréat en enseignement secondaire » (code 7651)"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire, concentration science et technologie (6701)",
+      "raison": "Concentration : regroupé sous « Baccalauréat en enseignement secondaire » (code 7651)"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire, concentration univers social (7665)",
+      "raison": "Concentration : regroupé sous « Baccalauréat en enseignement secondaire » (code 7651)"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques, concentration en statistique (7421)",
+      "raison": "Concentration : regroupé sous « Baccalauréat en mathématiques » (code 7721)"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques, concentration informatique (6682)",
+      "raison": "Concentration : regroupé sous « Baccalauréat en mathématiques » (code 7721)"
+    },
+    {
+      "nom": "Baccalauréat en sciences de la Terre et de l'atmosphère, concentration sciences de l'atmosphère : météo et climat (7459)",
+      "raison": "Concentration : regroupé sous « Baccalauréat en sciences de la Terre et de l'atmosphère » (code 7442)"
+    },
+    {
+      "nom": "Certificat en enseignement de l'anglais langue seconde (4851)",
+      "raison": "Admission suspendue (page programme : « Les admissions à ce programme sont actuellement suspendues »)"
+    },
+    {
+      "nom": "Cheminement DEC/Baccalauréat en gestion du tourisme et de l'hôtellerie, concentration gestion des organisations et des destinations touristiques (7588)",
+      "raison": "Cheminement DEC/BAC avec concentration : regroupé sous « Baccalauréat en gestion du tourisme et de l'hôtellerie » (code 7317)"
+    },
+    {
+      "nom": "Cheminement DEC/Baccalauréat en gestion du tourisme et de l'hôtellerie, concentration gestion hôtelière et de restauration (7589)",
+      "raison": "Cheminement DEC/BAC avec concentration : regroupé sous « Baccalauréat en gestion du tourisme et de l'hôtellerie » (code 7317)"
+    }
+  ]
+}

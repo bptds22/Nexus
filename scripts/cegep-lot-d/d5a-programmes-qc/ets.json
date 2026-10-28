@@ -1,0 +1,115 @@
+{
+  "universite": "École de technologie supérieure",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.etsmtl.ca/programmes-formations/baccalaureats",
+    "https://www.etsmtl.ca/programmes-formations/certificats",
+    "https://www.etsmtl.ca/api/search/programme-index?siteId=1"
+  ],
+  "attendu": {
+    "baccalaureat": 11,
+    "certificat": 1,
+    "comment": "Comptés sur le répertoire officiel (pages Baccalauréats et Certificats, alimentées par l'API JSON du site /api/search/programme-index, cycle « 1er cycle ») : 11 baccalauréats dont 1 « à venir » (génie de l'environnement, exclu) et 1 seul certificat de 1er cycle. Le site n'affiche pas de total."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat en design d'expérience utilisateur (UX)",
+      "cycle": "baccalaureat",
+      "faculte": "Département de design",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-design-ux",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en génie aérospatial",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie aérospatial",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-genie-aerospatial",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en génie de la construction",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie de la construction",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-genie-construction",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en génie de la production automatisée",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie des systèmes",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-genie-production-automatisee",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en génie des opérations et de la logistique",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie des systèmes",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-genie-operations-logistique",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en génie des technologies de l'information",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie logiciel et des technologies de l'information",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-genie-des-ti",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie électrique",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-genie-electrique",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en génie logiciel",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie logiciel et des technologies de l'information",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-genie-logiciel",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie mécanique",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-genie-mecanique",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Baccalauréat en informatique distribuée",
+      "cycle": "baccalaureat",
+      "faculte": "Département de génie logiciel et des technologies de l'information",
+      "lien": "https://www.etsmtl.ca/programmes-formations/baccalaureat-informatique-distribuee",
+      "source": "https://www.etsmtl.ca/programmes-formations/baccalaureats"
+    },
+    {
+      "nom": "Certificat en gestion de la construction",
+      "cycle": "certificat",
+      "faculte": "Département de génie de la construction",
+      "lien": "https://www.etsmtl.ca/programmes-formations/certificat-gestion-construction",
+      "source": "https://www.etsmtl.ca/programmes-formations/certificats"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Année préparatoire",
+      "raison": "Hors périmètre (type : Cheminement universitaire en technologie (CUT))"
+    },
+    {
+      "nom": "Baccalauréat en génie de l'environnement",
+      "raison": "Annoncé « à venir » (code « À venir »), pas encore offert — à vérifier"
+    },
+    {
+      "nom": "Cheminement universitaire en technologie",
+      "raison": "Hors périmètre (type : Cheminement universitaire en technologie (CUT))"
+    },
+    {
+      "nom": "Concentration en technologies de la santé",
+      "raison": "Hors périmètre (type : Concentration en technologies de la santé)"
+    },
+    {
+      "nom": "Programme court en planification et gestion de la maintenance",
+      "raison": "Hors périmètre (type : Programme court)"
+    }
+  ]
+}

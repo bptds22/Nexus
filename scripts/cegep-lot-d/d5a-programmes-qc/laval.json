@@ -1,0 +1,1367 @@
+{
+  "universite": "Université Laval",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.ulaval.ca/etudes/programmes",
+    "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466",
+    "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+  ],
+  "attendu": {
+    "baccalaureat": 109,
+    "certificat": 82,
+    "comment": "Répertoire officiel ulaval.ca/etudes/programmes : le filtre « Baccalauréats et doctorats de premier cycle » annonce 112 résultats, dont 3 doctorats de premier cycle (médecine, médecine dentaire, pharmacie) exclus, soit 109 baccalauréats ; le filtre « Certificats » annonce 82 résultats. Aucune entrée « (majeure) » n'apparaît sous ces filtres ; aucune page de programme ne mentionne d'admission suspendue (recherche plein texte sur les 194 fiches)."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat en actuariat",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-actuariat",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-administration-des-affaires",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires - expertise comptable",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-administration-des-affaires-expertise-comptable",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires - gestion des ressources humaines",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-administration-des-affaires-gestion-des-ressources-humaines",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en agroéconomie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-agroeconomie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en agronomie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-agronomie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en aménagement et environnement forestiers",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-amenagement-et-environnement-forestiers",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en anthropologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-anthropologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en archéologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-archeologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en architecture",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'aménagement, d'architecture, d'art et de design",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-architecture",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en art et science de l'animation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'aménagement, d'architecture, d'art et de design",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-art-et-science-de-lanimation",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en arts visuels et médiatiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'aménagement, d'architecture, d'art et de design",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-arts-visuels-et-mediatiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en biochimie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-biochimie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en bio-informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-bio-informatique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en biologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-biologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en chimie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-chimie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en chimie - biopharmaceutique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-chimie-biopharmaceutique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en chimie - cosméceutique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-chimie-cosmeceutique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en cinéma et culture numérique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-cinema-et-culture-numerique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en communication publique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-communication-publique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat coopératif en génie du bois",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-cooperatif-en-genie-du-bois",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat coopératif en génie des matériaux et de la métallurgie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-cooperatif-en-genie-des-materiaux-et-de-la-metallurgie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat coopératif en génie des mines et de la minéralurgie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-cooperatif-en-genie-des-mines-et-de-la-mineralurgie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat coopératif en opérations forestières",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-cooperatif-en-operations-forestieres",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en criminologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-criminologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en design de communication visuelle",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'aménagement, d'architecture, d'art et de design",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-design-de-communication-visuelle",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en design de produits",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'aménagement, d'architecture, d'art et de design",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-design-de-produits",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en développement durable du territoire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-developpement-durable-du-territoire",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en droit",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de droit",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-droit",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en économique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-economique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en éducation au préscolaire et en enseignement au primaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-education-au-prescolaire-et-en-enseignement-au-primaire",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'anglais, langue seconde",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-de-langlais-langue-seconde",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement des arts",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'aménagement, d'architecture, d'art et de design",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-des-arts",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'éducation physique et à la santé",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-de-leducation-physique-et-a-la-sante",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement du français, langue seconde",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-du-francais-langue-seconde",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de la musique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-de-la-musique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire - culture et citoyenneté québécoise",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-au-secondaire-culture-et-citoyennete-quebecoise",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire - français, langue première",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-au-secondaire-francais-langue-premiere",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire - mathématiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-au-secondaire-mathematiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire - sciences et technologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-au-secondaire-sciences-et-technologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire - univers social (histoire et géographie)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-enseignement-au-secondaire-univers-social-histoire-et-geographie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en ergothérapie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-ergotherapie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en études anciennes",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-etudes-anciennes",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en études et pratiques littéraires",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-etudes-et-pratiques-litteraires",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en finance quantitative",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-finance-quantitative",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie agroenvironnemental",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-agroenvironnemental",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie alimentaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-alimentaire",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie chimique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-chimique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie civil",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-civil",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie des eaux",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-des-eaux",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-electrique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie géologique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-geologique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie géomatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-geomatique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie industriel",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-industriel",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-informatique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie logiciel",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-logiciel",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-mecanique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en génie physique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-genie-physique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en géographie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-geographie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en géologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-geologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en histoire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-histoire",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en histoire de l'art",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-histoire-de-lart",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-informatique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en affaires publiques et relations internationales",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-affaires-publiques-et-relations-internationales",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en économie et mathématiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-economie-et-mathematiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en économie et politique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-economie-et-politique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en environnements naturels et aménagés",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-environnements-naturels-et-amenages",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en études internationales et langues modernes",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-etudes-internationales-et-langues-modernes",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en informatique et gestion",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-informatique-et-gestion",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en mathématiques et informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-mathematiques-et-informatique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en philosophie et science politique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de philosophie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-philosophie-et-science-politique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en sciences historiques et études patrimoniales",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-sciences-historiques-et-etudes-patrimoniales",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat intégré en sciences des religions",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-integre-en-sciences-des-religions",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en intervention sportive",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-intervention-sportive",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en kinésiologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-kinesiologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en littératures et linguistique anglaises",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-litteratures-et-linguistique-anglaises",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-mathematiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en microbiologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-microbiologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat multidisciplinaire",
+      "cycle": "baccalaureat",
+      "faculte": "Bureau du registraire",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-multidisciplinaire",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en musique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-musique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en musique - composition",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-musique-composition",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en musique - interprétation classique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-musique-interpretation-classique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en musique - interprétation jazz et musique populaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-musique-interpretation-jazz-et-musique-populaire",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en musique - musicologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-musique-musicologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en musique - production musicale et sonore",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-musique-production-musicale-et-sonore",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en nutrition",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-nutrition",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en orientation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-orientation",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en philosophie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de philosophie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-philosophie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en physiothérapie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-physiotherapie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en physique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-physique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en psychoéducation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-psychoeducation",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en psychologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-psychologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en relations industrielles",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-relations-industrielles",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sciences biomédicales",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sciences-biomedicales",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sciences de la consommation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sciences-de-la-consommation",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sciences géomatiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sciences-geomatiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (formation DEC-BAC)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences infirmières",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sciences-infirmieres-formation-dec-bac",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (formation initiale)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences infirmières",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sciences-infirmieres-formation-initiale",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sciences du langage",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sciences-du-langage",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en science politique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-science-politique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sciences et technologie des aliments",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sciences-et-technologie-des-aliments",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sexologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sexologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en sociologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-sociologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en statistique et science des données",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-statistique-et-science-des-donnees",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en théâtre et arts vivants",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-theatre-et-arts-vivants",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en théologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-theologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en théologie - grade canonique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-theologie-grade-canonique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en traduction",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-traduction",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Baccalauréat en travail social",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/baccalaureat-en-travail-social",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1466%5D=1466"
+    },
+    {
+      "nom": "Certificat en administration des affaires",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-administration-des-affaires",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en analyse financière",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-analyse-financiere",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en analyse des systèmes d'affaires",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-analyse-des-systemes-daffaires",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en anthropologie sociale et culturelle",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-anthropologie-sociale-et-culturelle",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat d'aptitude à l'enseignement spécialisé d'une langue seconde",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-daptitude-a-lenseignement-specialise-dune-langue-seconde",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en archéologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-archeologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en archivistique",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-archivistique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en arts plastiques",
+      "cycle": "certificat",
+      "faculte": "Faculté d'aménagement, d'architecture, d'art et de design",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-arts-plastiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en art et science de l'animation",
+      "cycle": "certificat",
+      "faculte": "Faculté d'aménagement, d'architecture, d'art et de design",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-art-et-science-de-lanimation",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en communication publique",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-communication-publique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en comptabilité et gestion",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-comptabilite-et-gestion",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en criminologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-criminologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en dépendances",
+      "cycle": "certificat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-dependances",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en développement durable",
+      "cycle": "certificat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-developpement-durable",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat sur la diversité culturelle",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-sur-la-diversite-culturelle",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en droit",
+      "cycle": "certificat",
+      "faculte": "Faculté de droit",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-droit",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en économique",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-economique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en entrepreneuriat et gestion de PME",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-entrepreneuriat-et-gestion-de-pme",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en ethnologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-ethnologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en études anciennes - études classiques",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-etudes-anciennes-etudes-classiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en études autochtones",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-etudes-autochtones",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en études bibliques",
+      "cycle": "certificat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-etudes-bibliques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en études cinématographiques",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-etudes-cinematographiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en études littéraires",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-etudes-litteraires",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en études pastorales",
+      "cycle": "certificat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-etudes-pastorales",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en études russes",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-etudes-russes",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat sur les féminismes, les genres et les sociétés",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-sur-les-feminismes-les-genres-et-les-societes",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en finance",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-finance",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en français langue seconde : milieu universitaire et de travail",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-francais-langue-seconde-milieu-universitaire-et-de-travail",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en français langue seconde : langue standard",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-francais-langue-seconde-langue-standard",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en francophonie nord-américaine",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-francophonie-nord-americaine",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en géographie",
+      "cycle": "certificat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-geographie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en géomatique",
+      "cycle": "certificat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-geomatique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en gérontologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-gerontologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en gestion de la chaîne d'approvisionnement",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-gestion-de-la-chaine-dapprovisionnement",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en gestion du changement et des équipes de travail",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-gestion-du-changement-et-des-equipes-de-travail",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en gestion de projets",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-gestion-de-projets",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en gestion de la relation consommateur",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-gestion-de-la-relation-consommateur",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-gestion-des-ressources-humaines",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en gestion des risques",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-gestion-des-risques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en gestion urbaine et immobilière",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-gestion-urbaine-et-immobiliere",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en histoire",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-histoire",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en histoire de l'art",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-histoire-de-lart",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en horticulture et en gestion d'espaces verts",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-horticulture-et-en-gestion-despaces-verts",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en informatique",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-informatique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en journalisme",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-journalisme",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en langage et santé",
+      "cycle": "certificat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-langage-et-sante",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en langue allemande et cultures germaniques",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-langue-allemande-et-cultures-germaniques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en langue et cultures du monde arabe",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-langue-et-cultures-du-monde-arabe",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en langue espagnole",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-langue-espagnole",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en linguistique",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-linguistique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en littératures et linguistique anglaises",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-litteratures-et-linguistique-anglaises",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en management",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-management",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en management - management pour gestionnaires",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-management-management-pour-gestionnaires",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en marketing",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-marketing",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en musique - culture musicale",
+      "cycle": "certificat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-musique-culture-musicale",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat sur les oeuvres marquantes de la culture occidentale",
+      "cycle": "certificat",
+      "faculte": "Faculté de philosophie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-sur-les-oeuvres-marquantes-de-la-culture-occidentale",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en orientation",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-orientation",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en philosophie",
+      "cycle": "certificat",
+      "faculte": "Faculté de philosophie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-philosophie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en philosophie pour les enfants",
+      "cycle": "certificat",
+      "faculte": "Faculté de philosophie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-philosophie-pour-les-enfants",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en philosophie préparatoire aux études théologiques",
+      "cycle": "certificat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-philosophie-preparatoire-aux-etudes-theologiques",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en planification financière",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-planification-financiere",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en productions animales",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-productions-animales",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en psychologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-psychologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en psychologie du développement humain",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-psychologie-du-developpement-humain",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en réalisation audionumérique",
+      "cycle": "certificat",
+      "faculte": "Faculté de musique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-realisation-audionumerique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en relations industrielles",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-relations-industrielles",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en révision professionnelle",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-revision-professionnelle",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en santé, sécurité et mieux-être au travail",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'administration",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-sante-securite-et-mieux-etre-au-travail",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en santé sexuelle",
+      "cycle": "certificat",
+      "faculte": "Faculté de médecine",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-sante-sexuelle",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en sciences de l'éducation",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-sciences-de-leducation",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en science politique",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-science-politique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en sciences des religions",
+      "cycle": "certificat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-sciences-des-religions",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en sciences et technologie des aliments",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'agriculture et de l'alimentation",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-sciences-et-technologie-des-aliments",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en sociologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-sociologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en spiritualités chrétiennes",
+      "cycle": "certificat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-spiritualites-chretiennes",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en statistique",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences et de génie",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-statistique",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en théâtre",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et des sciences humaines",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-theatre",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en théologie",
+      "cycle": "certificat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-theologie",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en théologie orthodoxe",
+      "cycle": "certificat",
+      "faculte": "Faculté de théologie et de sciences religieuses",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-theologie-orthodoxe",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en tourisme durable",
+      "cycle": "certificat",
+      "faculte": "Faculté de foresterie, de géographie et de géomatique",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-tourisme-durable",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    },
+    {
+      "nom": "Certificat en travail social",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences sociales",
+      "lien": "https://www.ulaval.ca/etudes/programmes/certificat-en-travail-social",
+      "source": "https://www.ulaval.ca/etudes/programmes?niveaux_de_formation%5B1490%5D=1490"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Doctorat en médecine",
+      "raison": "Doctorat de premier cycle (hors périmètre : seulement baccalauréats et certificats) ; listé dans le filtre « Baccalauréats et doctorats de premier cycle »"
+    },
+    {
+      "nom": "Doctorat en médecine dentaire",
+      "raison": "Doctorat de premier cycle (hors périmètre : seulement baccalauréats et certificats) ; listé dans le filtre « Baccalauréats et doctorats de premier cycle »"
+    },
+    {
+      "nom": "Doctorat de premier cycle en pharmacie",
+      "raison": "Doctorat de premier cycle (hors périmètre : seulement baccalauréats et certificats) ; listé dans le filtre « Baccalauréats et doctorats de premier cycle »"
+    }
+  ]
+}

@@ -1,0 +1,532 @@
+{
+  "universite": "Université du Québec en Outaouais",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://etudier.uqo.ca/programmes",
+    "https://uqo.ca/programmes"
+  ],
+  "attendu": {
+    "baccalaureat": 42,
+    "certificat": 36,
+    "comment": "Répertoire officiel etudier.uqo.ca/programmes (uqo.ca/programmes y redirige) ; données JSON embarquées dans la page (jsonLstRes, 447 lignes). Catégorie BACC : 78 lignes = 42 codes d'admission distincts (un code par campus / régime coopératif / concentration / cheminement) ; CERT : 81 lignes = 36 codes. Le répertoire n'affiche pas de total. Après regroupement des variantes (campus, coop, concentrations du bacc. en sciences sociales, profils adaptation scolaire, cheminements DEC-BAC) : 21 baccalauréats ; 36 certificats. 3 « Grade » (bacc. par cumul) mis en exclus à vérifier. Aucune page de programme ne mentionne d'admission suspendue/fermée (81 pages vérifiées). faculte = null : le répertoire ne donne qu'un « secteur » (ex. Sciences sociales), pas le département."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat en kinésiologie appliquée aux activités physiques adaptées",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/6521",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en écologie et environnement",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/6534",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en cybersécurité",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/6784",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement des arts",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7117",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en administration",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7127",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7180",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'éducation physique et à la santé",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7208",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en relations industrielles et en ressources humaines",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7214",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7456",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7543",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en génie informatique",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7643",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7649",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en psychologie",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7751",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7766",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en travail social",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7798",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en psychoéducation",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7815",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en informatique",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7833",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en arts et en design",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7917",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7950",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/7991",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en droit",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/8308",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion et évaluation immobilières",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4030",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en muséologie et patrimoines",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4038",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en droit général",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4041",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en développement international",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4043",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat d'initiation à la traduction professionnelle",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4083",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en informatique de gestion",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4108",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en histoire",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4116",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en administration",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4122",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en sciences comptables",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4138",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en travail social",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4155",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en histoire de l'art",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4164",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en comptabilité générale",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4227",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en santé et sécurité au travail",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4253",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en psychologie",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4350",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en droit de l'entreprise et du travail",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4436",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat d'initiation à la rédaction professionnelle",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4442",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en économie et société",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4444",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en psychologie du travail et des organisations",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4479",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en relations industrielles et en ressources humaines",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4568",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en approches éducatives",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4620",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en communication sociale et publique",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4644",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en information et médias numériques",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4645",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gouvernance et cybersécurité",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4665",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en réseaux informatiques et cybersécurité",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4666",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en gestion des technologies d'affaires",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4674",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en études de genre",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4682",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en sciences infirmières",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4693",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en développement des territoires",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4707",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en géographie et environnement",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4714",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en arts visuels",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4743",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en bande dessinée",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4744",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en design graphique",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4745",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en accompagnement à l’enseignement secondaire",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4750",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en technologies de l'information",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4802",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en science politique",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4912",
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Certificat en sociologie",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://etudier.uqo.ca/programmes/4917",
+      "source": "https://etudier.uqo.ca/programmes"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Baccalauréat en administration - régime coopératif (6625)",
+      "raison": "Variante (régime coopératif) regroupée sous « Baccalauréat en administration » (code de lien 7127)"
+    },
+    {
+      "nom": "Baccalauréat en relations industrielles et en ressources humaines - régime coopératif (6626)",
+      "raison": "Variante (régime coopératif) regroupée sous « Baccalauréat en relations industrielles et en ressources humaines » (code de lien 7214)"
+    },
+    {
+      "nom": "Baccalauréat en informatique - régime coopératif (6627)",
+      "raison": "Variante (régime coopératif) regroupée sous « Baccalauréat en informatique » (code de lien 7833)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration communication) (6671)",
+      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration développement international) (6672)",
+      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration en économique) (6673)",
+      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration histoire) (6674)",
+      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration science politique) (6675)",
+      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration sociologie) (6676)",
+      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en administration - régime coopératif (66J5)",
+      "raison": "Variante (régime coopératif, campus de Saint-Jérôme) regroupée sous « Baccalauréat en administration » (code de lien 7127)"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire (cheminement DEC-BAC intégré) (6718)",
+      "raison": "Variante (cheminement DEC-BAC intégré) regroupée sous « Baccalauréat en éducation préscolaire et en enseignement primaire » (code de lien 7991)"
+    },
+    {
+      "nom": "Baccalauréat en cybersécurité - régime coopératif (6785)",
+      "raison": "Variante (régime coopératif) regroupée sous « Baccalauréat en cybersécurité » (code de lien 6784)"
+    },
+    {
+      "nom": "Baccalauréat en administration (712S)",
+      "raison": "Variante (campus de Saint-Jérôme) regroupée sous « Baccalauréat en administration » (code de lien 7127)"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire (profil secondaire et jeunes adultes) (7213)",
+      "raison": "Variante (profil secondaire et jeunes adultes) regroupée sous « Baccalauréat en enseignement en adaptation scolaire » (code de lien 7180)"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (cheminement DEC-BAC) (7455)",
+      "raison": "Variante (cheminement DEC-BAC) regroupée sous « Baccalauréat en sciences infirmières » (code de lien 7456)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration en économique (7623)",
+      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration développement international (7631)",
+      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration science politique (7645)",
+      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration sociologie (7646)",
+      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration histoire (7648)",
+      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables (776J)",
+      "raison": "Variante (campus de Saint-Jérôme) regroupée sous « Baccalauréat en sciences comptables » (code de lien 7766)"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire (profil primaire) (7180)",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en enseignement en adaptation scolaire » (le répertoire UQO n'a pas de fiche parent unique)"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (formation initiale) (7456)",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en sciences infirmières » (le répertoire UQO n'a pas de fiche parent unique)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration communication (7649)",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en sciences sociales » (le répertoire UQO n'a pas de fiche parent unique)"
+    },
+    {
+      "nom": "Baccalauréat par cumul de certificats ou mineures (7995)",
+      "raison": "à vérifier — classé « Grade » (baccalauréat par cumul) et non « Baccalauréat » au répertoire ; https://etudier.uqo.ca/programmes/7995"
+    },
+    {
+      "nom": "Baccalauréat par cumul de certificats ou mineures (7999)",
+      "raison": "à vérifier — classé « Grade » (baccalauréat par cumul) et non « Baccalauréat » au répertoire ; https://etudier.uqo.ca/programmes/7999"
+    },
+    {
+      "nom": "Baccalauréat par cumul en innovation numérique (8481)",
+      "raison": "à vérifier — classé « Grade » (baccalauréat par cumul) et non « Baccalauréat » au répertoire ; https://etudier.uqo.ca/programmes/8481"
+    },
+    {
+      "nom": "Majeures (16), mineures (36), programmes courts (5), auditeur/libre de 1er cycle",
+      "raison": "Hors périmètre"
+    },
+    {
+      "nom": "Baccalauréat en administration - régime coopératif (6625, 66J5)",
+      "raison": "Note : page officielle annonce la suspension des admissions au trimestre d'hiver à partir de l'hiver 2028 — programme toujours ouvert, gardé via le parent 7127"
+    }
+  ]
+}

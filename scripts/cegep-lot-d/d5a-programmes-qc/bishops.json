@@ -1,0 +1,580 @@
+{
+  "universite": "Université Bishop's",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.ubishops.ca/academic-programs/",
+    "https://www.ubishops.ca/wp-json/wp/v2/program?per_page=100"
+  ],
+  "attendu": {
+    "baccalaureat": 64,
+    "certificat": 13,
+    "comment": "Le répertoire (ubishops.ca/academic-programs, moteur WordPress) annonce « 82 results » dont 77 « Undergraduate » et 5 « Graduate » (vérifié via l'API officielle wp-json/wp/v2/program, X-WP-Total = 82). Le grade de chaque fiche est lu sur la page programme (champ « Degree: ») : 64 fiches Bachelor (B.A., B.Sc., B.B.A., B.Ed.) et 13 fiches « Certificate » ; 77 = 64 + 13, attendu = compté. Unité retenue = la fiche du répertoire : Bishop's y liste séparément des concentrations/profils (ex. Arts Administration – Drama Concentration, B.Ed. Secondary – Mathematics Profile, Biology – Health Sciences Concentration) ; conformément à la règle « garder l'unité du répertoire », chacune est une ligne. Les options Major/Minor/Honours/Co-op d'une fiche ne sont pas dédoublées. Nom = « <grade affiché> – <titre de la fiche> » pour distinguer les homonymes (ex. Mathematics B.A. vs B.Sc., Computer Science B.Sc. vs Certificate)."
+  },
+  "programmes": [
+    {
+      "nom": "Bachelor of Business Administration (B.B.A.) – Accounting",
+      "cycle": "baccalaureat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/accounting/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Arts Administration – Drama Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/arts-administration-drama-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Arts Administration – Film Studies Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/arts-administration-film-studies-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Arts Administration – Fine Arts Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/arts-administration-fine-arts-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Arts Administration – Music Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/arts-administration-music-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Arts Administration – Public History and Heritage Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/arts-administration-public-history-and-heritage-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Arts Management",
+      "cycle": "certificat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/arts-management/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) – Biochemistry and Molecular Biology Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/biochemistry/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) or Bachelor of Arts (B.A.) – Biology – Biodiversity and Ecology Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/biology-biodiversity-and-ecology-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Biology – Health Sciences Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/biology-health-sciences-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) – Biology – Health Sciences and Pre-Medicine Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/biology-health-sciences-and-pre-medicine-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Business Administration",
+      "cycle": "certificat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/business-administration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Business Administration (B.B.A.) – Business Technology and Analytics",
+      "cycle": "baccalaureat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/business-technology-and-analytics/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Classical Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/classical-studies/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Computer Science",
+      "cycle": "certificat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/computer-science-3/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) – Computer Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/computer-science/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Divisional Major in Humanities",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/divisional-major-in-humanities/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) – Divisional Major in Natural Sciences",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/divisional-major-in-natural-sciences/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Divisional Major in Social Sciences",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/divisional-major-in-social-sciences/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Drama",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/drama/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Drama – Concentration in Musical Theatre",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/drama-concentration-in-musical-theatre/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – English – Film and Media Studies Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/english-film-and-media-studies-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – English – Literature Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/english-literature-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Business Administration (B.B.A.) – Entrepreneurship",
+      "cycle": "baccalaureat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/entrepreneurship/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) – Environmental Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/environmental-science/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Environmental Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/environmental-studies/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Environmental Studies and Geography",
+      "cycle": "certificat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/environmental-studies-and-geography/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Business Administration (B.B.A.) – Finance",
+      "cycle": "baccalaureat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/finance/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Fine Arts Major",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/fine-arts-studio-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – French as a Second Language",
+      "cycle": "certificat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/french-as-a-second-language-certificate/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – French as a Second Language",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/french-as-a-second-language/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Gender, Diversity, and Equity Studies",
+      "cycle": "certificat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/gender-diversity-and-equity-studies/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Geography & Climate Change",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/geography-climate-change/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Hispanic Studies",
+      "cycle": "certificat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/hispanic-studies-2/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Hispanic Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/hispanic-studies/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – History and Global Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/history-and-global-studies/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Human Psychology",
+      "cycle": "certificat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/human-psychology/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Business Administration (B.B.A.) – Human Resources",
+      "cycle": "baccalaureat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/human-resources/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Information Technology (BAIT)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/information-technology-bait/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – International Political Economy",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/international-political-economy/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – International Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/international-studies/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Liberal Arts",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/liberal-arts/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Major Business",
+      "cycle": "baccalaureat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/major-business/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Business Administration (B.B.A.) – Management",
+      "cycle": "baccalaureat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/management/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Business Administration (B.B.A.) – Marketing",
+      "cycle": "baccalaureat",
+      "faculte": "Williams School of Business",
+      "lien": "https://www.ubishops.ca/program/marketing/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) – Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/mathematics-bsc/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/mathematics/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Modern Languages",
+      "cycle": "certificat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/modern-languages-certificate/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Modern Languages",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/modern-languages/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Music Performance",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/music-performance/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Music and Culture",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/music-and-culture/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Music – Concentration in Musical Theatre",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/music-musical-theatre/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Philosophy",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/philosophy/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) – Physics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Natural Sciences & Mathematics",
+      "lien": "https://www.ubishops.ca/program/physics/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Political Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/political-studies/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Pre-Law",
+      "cycle": "certificat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/pre-law/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Proficiency in English as a Second Language",
+      "cycle": "certificat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/proficiency-in-english-as-a-second-language/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Psychology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/psychology/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Science (B.Sc.) – Psychology Neuroscience",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/psychology-neuroscience/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Psychology – Humanistic Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/psychology-humanistic-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Psychology – Pre-Clinical Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/psychology-pre-clinical-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Sociology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/sociology/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Sociology – Criminology, Law & Social Policy",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/sociology-criminology-law-social-policy/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Sports Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/sports-studies/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Studio Arts",
+      "cycle": "certificat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/studio-arts/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Certificate – Sustainable Agriculture and Food Systems",
+      "cycle": "certificat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/sustainable-agriculture-and-food-systems-certificate/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Sustainable Agriculture and Food Systems",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Social Sciences",
+      "lien": "https://www.ubishops.ca/program/sustainable-agriculture-and-food-systems/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching English as a Second Language",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-english-as-a-second-language/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching and Learning at the Elementary Level",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-and-learning-at-the-elementary-level/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching and Learning at the Secondary Level – English Profile",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-and-learning-at-the-secondary-level-english-profile/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching and Learning at the Secondary Level – Mathematics Profile",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-and-learning-at-the-secondary-level-mathematics-profile/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching and Learning at the Secondary Level – Science and Technology Profile",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-and-learning-at-the-secondary-level-science-and-technology-profile/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching and Learning at the Secondary Level – Social Sciences Profile",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-and-learning-at-the-secondary-level-social-sciences-profile/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching and Learning of the Creative Arts – Drama Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-and-learning-of-the-creative-arts-drama-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching and Learning of the Creative Arts – Fine Arts Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-and-learning-of-the-creative-arts-fine-arts-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Education (B.Ed.) – Teaching and Learning of the Creative Arts – Music Concentration",
+      "cycle": "baccalaureat",
+      "faculte": "School of Education",
+      "lien": "https://www.ubishops.ca/program/teaching-and-learning-of-the-creative-arts-music-concentration/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    },
+    {
+      "nom": "Bachelor of Arts (B.A.) – Études de la langue française et des cultures francophones",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Humanities",
+      "lien": "https://www.ubishops.ca/program/etudes-de-la-langue-francaise-et-des-cultures-francophones/",
+      "source": "https://www.ubishops.ca/academic-programs/"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Doctor of Psychology (PsyD), Clinical Psychology Profile",
+      "raison": "programme de cycle supérieur (filtre « Graduate » du répertoire)"
+    },
+    {
+      "nom": "Educational Studies",
+      "raison": "programme de cycle supérieur (filtre « Graduate » du répertoire)"
+    },
+    {
+      "nom": "Educational Studies and Leadership",
+      "raison": "programme de cycle supérieur (filtre « Graduate » du répertoire)"
+    },
+    {
+      "nom": "Computer Science (fiche graduate, slug computer-science-msc)",
+      "raison": "programme de cycle supérieur (filtre « Graduate » du répertoire)"
+    },
+    {
+      "nom": "Physics (fiche graduate, slug physics-2)",
+      "raison": "programme de cycle supérieur (filtre « Graduate » du répertoire)"
+    },
+    {
+      "nom": "Mineures (Minor) et Honours",
+      "raison": "variantes listées comme « Program Options » sur les fiches, non comptées séparément"
+    }
+  ]
+}

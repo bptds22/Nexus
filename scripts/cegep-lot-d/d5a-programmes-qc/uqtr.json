@@ -1,0 +1,932 @@
+{
+  "universite": "Université du Québec à Trois-Rivières",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT",
+    "https://www.uqtr.ca/programmes",
+    "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_niveau_diplome=BACC&owa_elements=100",
+    "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_niveau_diplome=CERT&owa_elements=100"
+  ],
+  "attendu": {
+    "baccalaureat": 94,
+    "certificat": 64,
+    "comment": "Répertoire officiel triw084 (uqtr.ca/programmes y redirige). Filtre « Baccalauréats et doctorats » = 94 fiches (une par code : campus, concentration, profil, cheminement DEC-BAC, bidiplôme, cumul, + 2 doctorats de 1er cycle). Filtre « Certificats et microprogrammes » = 111 fiches dont 64 commencent par « Certificat » (variantes de lieu incluses). Après regroupement en programmes parents : 40 baccalauréats, 43 certificats. Statut d'admission = filtre officiel « Admission en cours » + pages programmes (« Admission fermée »). Faculté = filtre « Département » du répertoire (libellés abrégés tels qu'affichés)."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat en administration des affaires",
+      "cycle": "baccalaureat",
+      "faculte": "École de gestion",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7264",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences de l'éducation",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7990",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en arts visuels",
+      "cycle": "baccalaureat",
+      "faculte": "Philosophie et des arts",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7211",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en biochimie et biotechnologie",
+      "cycle": "baccalaureat",
+      "faculte": "Biochimie, chimie, physique sc.",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7608",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en biologie médicale",
+      "cycle": "baccalaureat",
+      "faculte": "Biologie médicale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7808",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en chimie",
+      "cycle": "baccalaureat",
+      "faculte": "Biochimie, chimie, physique sc.",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7726",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en communication",
+      "cycle": "baccalaureat",
+      "faculte": "Lettres et communication sociale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7887",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences de l'éducation",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7651",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'éducation physique et à la santé",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences de l'activité physique",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7138",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en enseignement des arts",
+      "cycle": "baccalaureat",
+      "faculte": "Philosophie et des arts",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7173",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en enseignement des langues secondes",
+      "cycle": "baccalaureat",
+      "faculte": "Langues modernes et traduction",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7090",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire et sociale",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences de l'éducation",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6788",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en études françaises",
+      "cycle": "baccalaureat",
+      "faculte": "Lettres et communication sociale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7889",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique",
+      "cycle": "baccalaureat",
+      "faculte": "École d'ingénierie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7944",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en génie industriel",
+      "cycle": "baccalaureat",
+      "faculte": "École d'ingénierie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7945",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en génie informatique",
+      "cycle": "baccalaureat",
+      "faculte": "École d'ingénierie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6581",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique",
+      "cycle": "baccalaureat",
+      "faculte": "École d'ingénierie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7947",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en génie mécatronique",
+      "cycle": "baccalaureat",
+      "faculte": "École d'ingénierie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6729",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en géographie environnementale",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences de l'environnement",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7697",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en histoire",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences humaines",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7758",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Mathématiques et informatique",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7833",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en kinésiologie",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences de l'activité physique",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7337",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en loisir, culture et tourisme",
+      "cycle": "baccalaureat",
+      "faculte": "Études en loisir, culture et tourisme",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7699",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques",
+      "cycle": "baccalaureat",
+      "faculte": "Mathématiques et informatique",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7721",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en nutrition",
+      "cycle": "baccalaureat",
+      "faculte": "Biologie médicale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6717",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en philosophie",
+      "cycle": "baccalaureat",
+      "faculte": "Philosophie et des arts",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7796",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en physiothérapie",
+      "cycle": "baccalaureat",
+      "faculte": "Anatomie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6651",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en physique",
+      "cycle": "baccalaureat",
+      "faculte": "Biochimie, chimie, physique sc.",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7724",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en pratique sage-femme",
+      "cycle": "baccalaureat",
+      "faculte": "Sage-femme",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7083",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en psychoéducation",
+      "cycle": "baccalaureat",
+      "faculte": "Psychoéducation et travail social",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7815",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en psychologie",
+      "cycle": "baccalaureat",
+      "faculte": "Psychologie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7802",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en science forensique",
+      "cycle": "baccalaureat",
+      "faculte": "Biochimie, chimie, physique sc.",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6617",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en sciences",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7691",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en sciences biologiques et écologiques",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences de l'environnement",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7675",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables",
+      "cycle": "baccalaureat",
+      "faculte": "École de gestion / Sciences comptables",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7766",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en sciences de la santé (ergothérapie)",
+      "cycle": "baccalaureat",
+      "faculte": "Ergothérapie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7096",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en sciences de l'éducation",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences de l'éducation",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7690",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières",
+      "cycle": "baccalaureat",
+      "faculte": "Sciences infirmières",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7855",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en traduction",
+      "cycle": "baccalaureat",
+      "faculte": "Langues modernes et traduction",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7781",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en travail social",
+      "cycle": "baccalaureat",
+      "faculte": "Psychoéducation et travail social",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7798",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat de pratique infirmière de première assistance en chirurgie",
+      "cycle": "certificat",
+      "faculte": "Sciences infirmières",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4710",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en éducation préscolaire et en enseignement primaire",
+      "cycle": "certificat",
+      "faculte": "Sciences de l'éducation",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4088",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en accompagnement à l'enseignement secondaire",
+      "cycle": "certificat",
+      "faculte": "Sciences de l'éducation",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4750",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en administration",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4122",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en anglais",
+      "cycle": "certificat",
+      "faculte": "Langues modernes et traduction",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4129",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en arts et nouveaux médias",
+      "cycle": "certificat",
+      "faculte": "Philosophie et des arts",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4304",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en arts plastiques",
+      "cycle": "certificat",
+      "faculte": "Philosophie et des arts",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4172",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en biologie médicale",
+      "cycle": "certificat",
+      "faculte": "Biologie médicale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4196",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en communication et médias numériques",
+      "cycle": "certificat",
+      "faculte": "Lettres et communication sociale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4779",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en communication, leadership et affaires publiques",
+      "cycle": "certificat",
+      "faculte": "Lettres et communication sociale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4476",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en comptabilité générale",
+      "cycle": "certificat",
+      "faculte": "École de gestion / Sciences comptables",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4227",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en éducation préscolaire pour les enfants de 4 et 5 ans",
+      "cycle": "certificat",
+      "faculte": "Sciences de l'éducation",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4689",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en études et expressions autochtones",
+      "cycle": "certificat",
+      "faculte": "Lettres et communication sociale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4773",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en géomatique",
+      "cycle": "certificat",
+      "faculte": "Sciences de l'environnement",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4806",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en gérontologie",
+      "cycle": "certificat",
+      "faculte": "Psychologie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4193",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4283",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en gestion des technologies d'affaires",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4077",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en histoire",
+      "cycle": "certificat",
+      "faculte": "Sciences humaines",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4616",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en histoire de l'art",
+      "cycle": "certificat",
+      "faculte": "Philosophie et des arts",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4164",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en informatique",
+      "cycle": "certificat",
+      "faculte": "Mathématiques et informatique",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4202",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en interprétation théâtrale",
+      "cycle": "certificat",
+      "faculte": "Lettres et communication sociale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4073",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en intervention psychoéducative",
+      "cycle": "certificat",
+      "faculte": "Psychoéducation et travail social",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4624",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en langues, cultures et civilisations",
+      "cycle": "certificat",
+      "faculte": "Langues modernes et traduction",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4705",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en lettres",
+      "cycle": "certificat",
+      "faculte": "Lettres et communication sociale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4094",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en logistique",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4639",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en marketing",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4206",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en philosophie",
+      "cycle": "certificat",
+      "faculte": "Philosophie et des arts",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4384",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en planification financière",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4028",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en psychologie",
+      "cycle": "certificat",
+      "faculte": "Psychologie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4350",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en rédaction et communication",
+      "cycle": "certificat",
+      "faculte": "Lettres et communication sociale",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=9066",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en santé et sécurité au travail",
+      "cycle": "certificat",
+      "faculte": "École d'ingénierie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4253",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en santé mentale",
+      "cycle": "certificat",
+      "faculte": "Sciences infirmières",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4311",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en sciences comptables",
+      "cycle": "certificat",
+      "faculte": "École de gestion / Sciences comptables",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4138",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en sciences de la parole et du langage",
+      "cycle": "certificat",
+      "faculte": "Orthophonie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4772",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en sciences de l'environnement",
+      "cycle": "certificat",
+      "faculte": "Sciences de l'environnement",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4234",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en sexologie",
+      "cycle": "certificat",
+      "faculte": "Psychologie",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4696",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en soins infirmiers cliniques",
+      "cycle": "certificat",
+      "faculte": "Sciences infirmières",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4229",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en soins infirmiers de santé publique",
+      "cycle": "certificat",
+      "faculte": "Sciences infirmières",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4411",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en soutien pédagogique dans les services de garde éducatifs à l'enfance",
+      "cycle": "certificat",
+      "faculte": "Sciences de l'éducation",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4944",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en traduction",
+      "cycle": "certificat",
+      "faculte": "Langues modernes et traduction",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4142",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en traduction en espagnol",
+      "cycle": "certificat",
+      "faculte": "Langues modernes et traduction",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4642",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat en traduction vers l'anglais",
+      "cycle": "certificat",
+      "faculte": "Langues modernes et traduction",
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4643",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Certificat personnalisé",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4001",
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Baccalauréat en administration des affaires (cheminement DEC-BAC en marketing Edouard-Montpetit) - 2508",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en administration des affaires »"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires - concentration gestion des ressources humaines (Drummondville) - 6577",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en administration des affaires »"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires - concentration gestion des ressources humaines (Joliette) - 6578",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en administration des affaires »"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires - concentration gestion des ressources humaines (Trois-Rivières) - 6576",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en administration des affaires »"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires (cheminement DEC-BAC en innovation, entrepreneuriat et développement des affaires) - 6765",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en administration des affaires » ; cette variante : admission fermée"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires (Drummondville) - 7384",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en administration des affaires »"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires (cheminement DEC-BAC en marketing) - 7174",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en administration des affaires »"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires (cheminement DEC-BAC en logistique) - 7175",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en administration des affaires »"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires - 7264",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en administration des affaires »"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire (Drummondville) - 2529",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en éducation préscolaire et en enseignement primaire »"
+    },
+    {
+      "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire (L'Assomption) - 6569",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en éducation préscolaire et en enseignement primaire »"
+    },
+    {
+      "nom": "Baccalauréat en arts visuels (nouveaux médias) - 7212",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en arts visuels »"
+    },
+    {
+      "nom": "Baccalauréat en arts visuels (arts plastiques) - 7211",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en arts visuels »"
+    },
+    {
+      "nom": "Baccalauréat en biochimie et biotechnologie (bidip. ICES) - 6723",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en biochimie et biotechnologie »"
+    },
+    {
+      "nom": "Baccalauréat en biochimie et biotech.(bidip. ICES - accueil) - 6724",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en biochimie et biotechnologie »"
+    },
+    {
+      "nom": "Baccalauréat en biologie médicale (concentration microbiologie) - 6681",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en biologie médicale »"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire : profil mathématiques - 7654",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en enseignement au secondaire »"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire : profil univers social - 7655",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en enseignement au secondaire »"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire : profil science et technologie - 7653",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en enseignement au secondaire »"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire : profil univers social et développement personnel - 7656",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en enseignement au secondaire » ; cette variante : admission fermée"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire (culture et citoyenneté québécoise) - 6709",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en enseignement au secondaire »"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire : profil français - 7651",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en enseignement au secondaire »"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire et sociale (L'Assomption) - 6789",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en enseignement en adaptation scolaire et sociale »"
+    },
+    {
+      "nom": "Baccalauréat en études françaises (langue et études littéraires) - 7893",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en études françaises »"
+    },
+    {
+      "nom": "Baccalauréat en études françaises (langue et linguistique) - 7892",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en études françaises »"
+    },
+    {
+      "nom": "Baccalauréat en études françaises (études littéraires) - 7889",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en études françaises »"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique (cheminement coopératif) (Drummondville) - 6647",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en génie mécanique »"
+    },
+    {
+      "nom": "Baccalauréat en informatique (cheminement DEC-BAC) - 7533",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en informatique »"
+    },
+    {
+      "nom": "Baccalauréat en psychoéducation (Québec) - 7615",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en psychoéducation »"
+    },
+    {
+      "nom": "Baccalauréat en psychologie (Terrebonne) - 6580",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en psychologie »"
+    },
+    {
+      "nom": "Baccalauréat en science forensique (concentration traces chimiques) - 6544",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en science forensique »"
+    },
+    {
+      "nom": "Baccalauréat en science forensique (concentration traces numériques) - 6615",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en science forensique »"
+    },
+    {
+      "nom": "Baccalauréat en science forensique (concentration traces physiques) - 6616",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en science forensique »"
+    },
+    {
+      "nom": "Baccalauréat en science forensique (concentration traces biologiques) - 6617",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en science forensique »"
+    },
+    {
+      "nom": "Baccalauréat en sciences biologiques et écologiques (DEC-BAC) - 6689",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences biologiques et écologiques »"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables (Longueuil) - 2515",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences comptables »"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables (Terrebonne) - 7385",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences comptables »"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables (cheminement DEC-BAC) - 6766",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences comptables » ; cette variante : admission fermée"
+    },
+    {
+      "nom": "Baccalauréat en sciences comptables (cheminement DEC-BAC Édouard-Montpetit) - 9101",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences comptables » ; cette variante : admission fermée"
+    },
+    {
+      "nom": "Baccalauréat en sciences de la santé (ergothérapie) (Drummondville) - 6552",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences de la santé (ergothérapie) »"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (perfectionnement) (Drummondville) - 7556",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (perfectionnement) (Joliette) - 6683",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières : volet universitaire DEC-BAC - 6854",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (formation initiale) - 7929",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences infirmières » ; cette variante : admission fermée"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (cheminement DEC-BAC Drummondville) - 2535",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (cheminement DEC-BAC) (Joliette) - 2536",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières (perfectionnement) - 7855",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en sciences infirmières »"
+    },
+    {
+      "nom": "Baccalauréat en travail social (cheminement DEC-BAC) (Drummondville) - 8097",
+      "raison": "Variante (campus / concentration / profil / cheminement) regroupée sous « Baccalauréat en travail social »"
+    },
+    {
+      "nom": "Baccalauréat en travail social (Drummondville) - 7798",
+      "raison": "Code utilisé comme lien du programme parent « Baccalauréat en travail social »"
+    },
+    {
+      "nom": "Baccalauréat en éducation par cumul de certificats - 7998",
+      "raison": "Admission fermée ; « Non offert pour l'instant » sur la page officielle ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7998"
+    },
+    {
+      "nom": "Baccalauréat en sécurité publique (concentration en enquête) - 6635",
+      "raison": "Admission fermée sur la page officielle (relevé 2026-10-28) — Baccalauréat en sécurité publique, concentration en enquête ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6635"
+    },
+    {
+      "nom": "Baccalauréat en sécurité publique (concentration en gestion) - 6636",
+      "raison": "Admission fermée sur la page officielle (relevé 2026-10-28) — Baccalauréat en sécurité publique, concentration en gestion ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6636"
+    },
+    {
+      "nom": "Baccalauréat ès arts par cumul de certificats - 7995",
+      "raison": "Baccalauréat par cumul de certificats ; admission non « en cours » au répertoire — à vérifier ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7995"
+    },
+    {
+      "nom": "Baccalauréat ès sciences par cumul de certificats - 7996",
+      "raison": "Baccalauréat par cumul de certificats ; admission non « en cours » au répertoire — à vérifier ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7996"
+    },
+    {
+      "nom": "Bacc. en administration des affaires par cumul de certificats - 7999",
+      "raison": "Baccalauréat par cumul de certificats ; admission non « en cours » au répertoire — à vérifier ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7999"
+    },
+    {
+      "nom": "Baccalauréat par cumul en administration des affaires (sciences comptables) - 8480",
+      "raison": "Baccalauréat par cumul ; admission non « en cours » au répertoire — à vérifier ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=8480"
+    },
+    {
+      "nom": "Doctorat de premier cycle en chiropratique - 7025",
+      "raison": "Doctorat de premier cycle — exclu par règle ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7025"
+    },
+    {
+      "nom": "Doctorat de premier cycle en médecine podiatrique - 7017",
+      "raison": "Doctorat de premier cycle — exclu par règle ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=7017"
+    },
+    {
+      "nom": "Double baccalauréat en physique et en informatique - 6925",
+      "raison": "à vérifier — double baccalauréat (combinaison de deux baccalauréats déjà listés : physique, informatique) ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6925"
+    },
+    {
+      "nom": "Double baccalauréat : mathématiques et enseignement au secondaire-maths - 6721",
+      "raison": "à vérifier — double baccalauréat (mathématiques + enseignement au secondaire, déjà listés) ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6721"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques (double baccalauréat informatique) - 6722",
+      "raison": "à vérifier — double baccalauréat mathématiques-informatique (variante de Baccalauréat en mathématiques, déjà listé) ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6722"
+    },
+    {
+      "nom": "Certificat en éducation préscolaire et en enseignement primaire (Drummondville) - 4880",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en éducation préscolaire et en enseignement primaire »"
+    },
+    {
+      "nom": "Certificat en éducation préscolaire et en enseignement primaire (L'Assomption) - 4881",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en éducation préscolaire et en enseignement primaire »"
+    },
+    {
+      "nom": "Certificat en administration (à distance) - 4726",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en administration »"
+    },
+    {
+      "nom": "Certificat en administration (Drummondville) - 4623",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en administration »"
+    },
+    {
+      "nom": "Certificat en administration (Joliette) - 4630",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en administration »"
+    },
+    {
+      "nom": "Certificat en comptabilité générale (Longueuil) - 2525",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en comptabilité générale »"
+    },
+    {
+      "nom": "Certificat en comptabilité générale (Terrebonne) - 4928",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en comptabilité générale »"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines (à distance) - 4735",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en gestion des ressources humaines »"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines (Drummondville) - 4597",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en gestion des ressources humaines »"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines (Joliette) - 4595",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en gestion des ressources humaines »"
+    },
+    {
+      "nom": "Certificat en intervention psychoéducative (Québec) - 4625",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en intervention psychoéducative »"
+    },
+    {
+      "nom": "Certificat en marketing (Drummondville) - 4637",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en marketing »"
+    },
+    {
+      "nom": "Certificat en planification financière (à distance) - 4736",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en planification financière »"
+    },
+    {
+      "nom": "Certificat en planification financière (Drummondville) - 4029",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat en planification financière »"
+    },
+    {
+      "nom": "Certificat personnalisé (Patriotes) - 2550",
+      "raison": "Variante de lieu / à distance regroupée sous « Certificat personnalisé »"
+    },
+    {
+      "nom": "Certificat en soutien pédagogique dans les CPE et autres services de garde - 4044",
+      "raison": "Admission non « en cours » au répertoire (programme apparemment remplacé par le 4944) — exclu ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4044"
+    },
+    {
+      "nom": "Certificat en enquête policière - 4698",
+      "raison": "Admission non « en cours » au répertoire (filtre « Admission en cours » du répertoire officiel) — exclu ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4698"
+    },
+    {
+      "nom": "Certificat en gestion de la sécurité publique - 4527",
+      "raison": "Admission non « en cours » au répertoire — exclu ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4527"
+    },
+    {
+      "nom": "Certificat en gestion de la sécurité publique (profil gestion policière) - 4528",
+      "raison": "Admission non « en cours » au répertoire (profil gestion policière) — exclu ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4528"
+    },
+    {
+      "nom": "Certificat en intervention policière - 4798",
+      "raison": "Admission non « en cours » au répertoire — exclu ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4798"
+    },
+    {
+      "nom": "Certificat personnalisé en pratique sage-femme au Québec - 4520",
+      "raison": "Admission non « en cours » au répertoire ; certificat personnalisé réservé (pratique sage-femme) — exclu ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4520"
+    },
+    {
+      "nom": "Microprogrammes, programmes courts, années préparatoires, auditeur/libre, actualisation de formation (catégorie « Certificats et microprogrammes » du répertoire)",
+      "raison": "Hors périmètre"
+    }
+  ]
+}

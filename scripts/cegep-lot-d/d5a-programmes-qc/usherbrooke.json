@@ -1,0 +1,731 @@
+{
+  "universite": "Université de Sherbrooke",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle",
+    "https://www.usherbrooke.ca/admission/programmes-cours/1er-cycle/trouver-un-programme"
+  ],
+  "attendu": {
+    "baccalaureat": 53,
+    "certificat": 50,
+    "comment": "Facette « Niveaux » du répertoire officiel filtré 1er cycle (179 résultats) : Baccalauréat (53), Certificat (50), Microprogramme de 1er cycle (74), Mineure (2). Les 53 « Baccalauréat » incluent Doctorat en médecine, Maîtrise en ergothérapie, Maîtrise en physiothérapie et le Bacc. en études anglaises et interculturelles (admissions suspendues), tous exclus : 53 - 4 = 49 retenus. Certificats : 50 - 1 suspendu (français langue seconde) = 49 retenus. Faculté = facette « Facultés et centres » du même répertoire (2 programmes rattachés à deux unités). Liste tirée de l'endpoint officiel du répertoire (searchPrograms, 12 pages de 15) dans le navigateur ; chaque page programme ouverte pour détecter les suspensions."
+  },
+  "programmes": [
+    {
+      "nom": "Baccalauréat 4 ans en sciences",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/284/baccalaureat-4-ans-en-sciences/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat 4 ans en sciences humaines",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/285/baccalaureat-4-ans-en-sciences-humaines/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en adaptation scolaire et sociale",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/246/baccalaureat-en-adaptation-scolaire-et-sociale/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en administration des affaires",
+      "cycle": "baccalaureat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/203/baccalaureat-en-administration-des-affaires/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en biochimie de la santé",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine et des sciences de la santé / Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/204/baccalaureat-en-biochimie-de-la-sante/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en biologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/205/baccalaureat-en-biologie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en biologie moléculaire et cellulaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/267/baccalaureat-en-biologie-moleculaire-et-cellulaire/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en chimie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/206/baccalaureat-en-chimie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en chimie pharmaceutique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/268/baccalaureat-en-chimie-pharmaceutique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en communication appliquée",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/234/baccalaureat-en-communication-appliquee/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en droit",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de droit",
+      "lien": "https://www.usherbrooke.ca/admission/programme/290/baccalaureat-en-droit/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en écologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/269/baccalaureat-en-ecologie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en économique",
+      "cycle": "baccalaureat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/208/baccalaureat-en-economique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au préscolaire et au primaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/237/baccalaureat-en-enseignement-au-prescolaire-et-au-primaire/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en enseignement au secondaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/292/baccalaureat-en-enseignement-au-secondaire/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en enseignement de l'anglais langue seconde",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/248/baccalaureat-en-enseignement-de-langlais-langue-seconde/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en éducation physique et à la santé",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'activité physique",
+      "lien": "https://www.usherbrooke.ca/admission/programme/247/baccalaureat-en-enseignement-en-education-physique-et-a-la-sante/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en enseignement professionnel",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/250/baccalaureat-en-enseignement-professionnel/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en études de l'environnement",
+      "cycle": "baccalaureat",
+      "faculte": "Centre universitaire de formation en environnement et développement durable",
+      "lien": "https://www.usherbrooke.ca/admission/programme/281/baccalaureat-en-etudes-de-lenvironnement/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en études littéraires et culturelles",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/262/baccalaureat-en-etudes-litteraires-et-culturelles/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en études politiques appliquées",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/278/baccalaureat-en-etudes-politiques-appliquees/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en génie biotechnologique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de génie",
+      "lien": "https://www.usherbrooke.ca/admission/programme/272/baccalaureat-en-genie-biotechnologique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en génie chimique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de génie",
+      "lien": "https://www.usherbrooke.ca/admission/programme/212/baccalaureat-en-genie-chimique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en génie civil",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de génie",
+      "lien": "https://www.usherbrooke.ca/admission/programme/213/baccalaureat-en-genie-civil/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en génie du bâtiment",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de génie",
+      "lien": "https://www.usherbrooke.ca/admission/programme/258/baccalaureat-en-genie-du-batiment/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en génie électrique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de génie",
+      "lien": "https://www.usherbrooke.ca/admission/programme/214/baccalaureat-en-genie-electrique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en génie informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de génie",
+      "lien": "https://www.usherbrooke.ca/admission/programme/236/baccalaureat-en-genie-informatique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en génie mécanique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de génie",
+      "lien": "https://www.usherbrooke.ca/admission/programme/215/baccalaureat-en-genie-mecanique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en génie robotique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de génie",
+      "lien": "https://www.usherbrooke.ca/admission/programme/259/baccalaureat-en-genie-robotique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en géomatique appliquée à l'environnement",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/271/baccalaureat-en-geomatique-appliquee-a-lenvironnement/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en histoire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/218/baccalaureat-en-histoire/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/220/baccalaureat-en-informatique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en informatique de gestion",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/221/baccalaureat-en-informatique-de-gestion/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en informatique et sciences de l'image",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/277/baccalaureat-en-informatique-et-sciences-de-limage/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en kinésiologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'activité physique",
+      "lien": "https://www.usherbrooke.ca/admission/programme/260/baccalaureat-en-kinesiologie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/222/baccalaureat-en-mathematiques/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en microbiologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/270/baccalaureat-en-microbiologie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en musique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/235/baccalaureat-en-musique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en orientation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/233/baccalaureat-en-orientation/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en pharmacologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine et des sciences de la santé",
+      "lien": "https://www.usherbrooke.ca/admission/programme/264/baccalaureat-en-pharmacologie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en philosophie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/223/baccalaureat-en-philosophie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en physique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/224/baccalaureat-en-physique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en psychoéducation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/226/baccalaureat-en-psychoeducation/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en psychologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/225/baccalaureat-en-psychologie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en sciences de l'information quantique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/283/baccalaureat-en-sciences-de-linformation-quantique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en sciences infirmières",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté de médecine et des sciences de la santé",
+      "lien": "https://www.usherbrooke.ca/admission/programme/293/baccalaureat-en-sciences-infirmieres/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en service social",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/228/baccalaureat-en-service-social/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat en traduction professionnelle",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/256/baccalaureat-en-traduction-professionnelle/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Baccalauréat multidisciplinaire",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/230/baccalaureat-multidisciplinaire/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat de professionnalisation en enseignement",
+      "cycle": "certificat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/185/certificat-de-professionnalisation-en-enseignement/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en administration des affaires",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/129/certificat-en-administration-des-affaires/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en anglais langue seconde",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/163/certificat-en-anglais-langue-seconde/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en arts visuels",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/106/certificat-en-arts-visuels/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en biologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/169/certificat-en-biologie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en chimie",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/168/certificat-en-chimie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en communication appliquée",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/165/certificat-en-communication-appliquee/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en comptabilité",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/141/certificat-en-comptabilite/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en coopération internationale",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/183/certificat-en-cooperation-internationale/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en création littéraire",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/189/certificat-en-creation-litteraire/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en culture et humanités juridiques",
+      "cycle": "certificat",
+      "faculte": "Faculté de droit",
+      "lien": "https://www.usherbrooke.ca/admission/programme/190/certificat-en-culture-et-humanites-juridiques/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en économie",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/172/certificat-en-economie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en entrepreneuriat",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/181/certificat-en-entrepreneuriat/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en études de l’environnement",
+      "cycle": "certificat",
+      "faculte": "Centre universitaire de formation en environnement et développement durable",
+      "lien": "https://www.usherbrooke.ca/admission/programme/177/certificat-en-etudes-de-lenvironnement/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en études du religieux contemporain",
+      "cycle": "certificat",
+      "faculte": "Centre d'études du religieux contemporain / Faculté de droit",
+      "lien": "https://www.usherbrooke.ca/admission/programme/175/certificat-en-etudes-du-religieux-contemporain/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en études féministes et des genres",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/1EH/certificat-en-etudes-feministes-et-des-genres/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en études littéraires et culturelles",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/186/certificat-en-etudes-litteraires-et-culturelles/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en études musicales",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/148/certificat-en-etudes-musicales/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en études politiques",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/135/certificat-en-etudes-politiques/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en fiscalité",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/180/certificat-en-fiscalite/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en formation des adultes",
+      "cycle": "certificat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/137/certificat-en-formation-des-adultes/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en géographie",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/188/certificat-en-geographie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en géomatique et télédétection",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/187/certificat-en-geomatique-et-teledetection/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en gestion des organisations",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/151/certificat-en-gestion-des-organisations/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en gestion des ressources humaines",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/113/certificat-en-gestion-des-ressources-humaines/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en gestion des technologies d'affaires",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/143/certificat-en-gestion-des-technologies-daffaires/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en gestion du marketing",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/114/certificat-en-gestion-du-marketing/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en gestion financière",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/142/certificat-en-gestion-financiere/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en histoire",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/149/certificat-en-histoire/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en histoire du livre et de l'édition",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/157/certificat-en-histoire-du-livre-et-de-ledition/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en intervention en dépendances",
+      "cycle": "certificat",
+      "faculte": "Faculté de médecine et des sciences de la santé",
+      "lien": "https://www.usherbrooke.ca/admission/programme/122/certificat-en-intervention-en-dependances/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en langues modernes",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/115/certificat-en-langues-modernes/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en littérature canadienne / Certificate in Canadian Literature",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/1EG/certificat-en-litterature-canadienne-certificate-in-canadian-literature/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en management",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/144/certificat-en-management/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en mathématiques",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/170/certificat-en-mathematiques/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en orientation",
+      "cycle": "certificat",
+      "faculte": "Faculté d'éducation",
+      "lien": "https://www.usherbrooke.ca/admission/programme/167/certificat-en-orientation/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en philosophie",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/156/certificat-en-philosophie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en physique",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/171/certificat-en-physique/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en psychologie",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/153/certificat-en-psychologie/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en relations internationales",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/140/certificat-en-relations-internationales/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en santé et sécurité du travail",
+      "cycle": "certificat",
+      "faculte": "École de gestion",
+      "lien": "https://www.usherbrooke.ca/admission/programme/120/certificat-en-sante-et-securite-du-travail/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en sciences",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/1ED/certificat-en-sciences/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en sciences de l'activité physique appliquées à l'entrainement sportif",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences de l'activité physique",
+      "lien": "https://www.usherbrooke.ca/admission/programme/166/certificat-en-sciences-de-lactivite-physique-appliquees-a-lentrainement-sportif/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en sciences du langage",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/176/certificat-en-sciences-du-langage/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en technologies de l'information",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/160/certificat-en-technologies-de-linformation/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en traduction",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/132/certificat-en-traduction/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat en travail social",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/174/certificat-en-travail-social/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat multidisciplinaire",
+      "cycle": "certificat",
+      "faculte": "Faculté des lettres et sciences humaines",
+      "lien": "https://www.usherbrooke.ca/admission/programme/123/certificat-multidisciplinaire/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    },
+    {
+      "nom": "Certificat préparatoire aux programmes de 1er cycle",
+      "cycle": "certificat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://www.usherbrooke.ca/admission/programme/1CR/certificat-preparatoire-aux-programmes-de-1er-cycle/",
+      "source": "https://www.usherbrooke.ca/admission/programmes?cycle=1er%2Bcycle"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Baccalauréat en études anglaises et interculturelles B.A. in English and Intercultural Studies",
+      "raison": "Admissions présentement suspendues (mention « LES ADMISSIONS POUR CE PROGRAMME SONT PRÉSENTEMENT SUSPENDUES » sur la page officielle, relevé 2026-10-28) ; classé Baccalauréat au répertoire. https://www.usherbrooke.ca/admission/programme/261/baccalaureat-en-etudes-anglaises-et-interculturelles-ba-in-english-and-intercultural-studies/"
+    },
+    {
+      "nom": "Certificat en français langue seconde",
+      "raison": "Admissions présentement suspendues (mention sur la page officielle, relevé 2026-10-28) ; classé Certificat au répertoire. https://www.usherbrooke.ca/admission/programme/184/certificat-en-francais-langue-seconde/"
+    },
+    {
+      "nom": "Doctorat en médecine",
+      "raison": "Doctorat de 1er cycle (classé « Baccalauréat » / 1er cycle au répertoire, 200 crédits, grade M.D.) — exclu par règle. https://www.usherbrooke.ca/admission/programme/238/doctorat-en-medecine/"
+    },
+    {
+      "nom": "Maîtrise en ergothérapie",
+      "raison": "Programme intégré bac-maîtrise classé « Baccalauréat » / 1er cycle au répertoire, mais le programme et le grade sont une maîtrise — exclu ; à vérifier si le produit veut le compter. https://www.usherbrooke.ca/admission/programme/279/maitrise-en-ergotherapie/"
+    },
+    {
+      "nom": "Maîtrise en physiothérapie",
+      "raison": "Programme intégré bac-maîtrise classé « Baccalauréat » / 1er cycle au répertoire, mais le programme et le grade sont une maîtrise — exclu ; à vérifier si le produit veut le compter. https://www.usherbrooke.ca/admission/programme/280/maitrise-en-physiotherapie/"
+    },
+    {
+      "nom": "Microprogrammes de 1er cycle (74 au répertoire)",
+      "raison": "Hors périmètre (microprogrammes)"
+    },
+    {
+      "nom": "Mineures de 1er cycle (2 au répertoire)",
+      "raison": "Hors périmètre (mineures)"
+    }
+  ]
+}
