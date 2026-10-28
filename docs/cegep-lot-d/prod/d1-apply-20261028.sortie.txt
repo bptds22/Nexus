@@ -1,0 +1,189 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user 
+-------------------------------+--------------
+ 2026-10-28 13:29:36.085065+00 | postgres
+(1 row)
+
+CREATE TABLE
+INSERT 0 12
+CREATE TABLE
+INSERT 0 84
+DO
+CREATE FUNCTION
+SELECT 6
+ moment |          objet           |   n   |               md5                
+--------+--------------------------+-------+----------------------------------
+ AVANT  | athletes                 |   218 | c9a6af4098e263351ad7f1b1e91355dc
+ AVANT  | games (côtés hors univ.) | 72129 | 09b4530a6c514591c3223c46bf191552
+ AVANT  | schools (hors univ.)     |  1408 | 56c744cb42bd5b196fc3da0b4a802303
+ AVANT  | team_athletes            |   130 | e88a267f84c857c5f921dbce79f7a635
+ AVANT  | teams (hors univ.)       | 10349 | 2381c3f550afee11cec9df19c8a6d72d
+ AVANT  | users                    |   419 | e492fce678dfbb4cd5efad5d28ab8f21
+(6 rows)
+
+SELECT 1
+          quoi           | domicile | visiteur 
+-------------------------+----------+----------
+ côtés de match à relier |        0 |        0
+(1 row)
+
+SET
+SELECT 6
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 36
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+ banc 
+------
+ 
+(1 row)
+
+INSERT 0 12
+INSERT 0 84
+UPDATE 0
+UPDATE 0
+              universite               |      programme       |     ville      | equipes |                                                                               detail                                                                               
+---------------------------------------+----------------------+----------------+---------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ École de technologie supérieure       | Piranhas             | Montréal       |       4 | Flag football F, Hockey M D2, Rugby M, Volleyball F
+ Université Bishop's                   | Gaiters              | Sherbrooke     |       8 | Basketball F, Basketball M, Football M, Hockey F, Rugby F, Rugby M, Soccer F, Soccer intérieur F
+ Université Concordia                  | Stingers             | Montréal       |      11 | Basketball F, Basketball M, Flag football F, Football M, Hockey F, Rugby F, Rugby M, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M
+ Université de Montréal                | Carabins             | Montréal       |      11 | Flag football F, Football M, Hockey F, Rugby F, Rugby M, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F, Volleyball M
+ Université de Sherbrooke              | Vert & Or            | Sherbrooke     |      10 | Flag football F, Football M, Hockey M D2, Rugby F, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F, Volleyball M
+ Université du Québec à Chicoutimi     | Inuk                 | Saguenay       |       2 | Hockey M D2, Volleyball F
+ Université du Québec à Montréal       | Citadins             | Montréal       |       8 | Basketball F, Basketball M, Flag football F, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F
+ Université du Québec à Rimouski       | Nordet               | Rimouski       |       0 | ·
+ Université du Québec à Trois-Rivières | Patriotes            | Trois-Rivières |       6 | Flag football F, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F
+ Université du Québec en Outaouais     | Torrents             | Gatineau       |       1 | Hockey M D2
+ Université Laval                      | Rouge et Or          | Québec         |      12 | Basketball F, Basketball M, Flag football F, Football M, Hockey F, Rugby F, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F, Volleyball M
+ Université McGill                     | Redbirds et Martlets | Montréal       |      11 | Basketball F, Basketball M, Flag football F, Football M, Hockey F, Rugby M, Soccer F, Soccer M, Soccer intérieur F, Soccer intérieur M, Volleyball F
+(12 rows)
+
+SELECT 6
+ moment |          objet           |   n   |               md5                | vs_avant 
+--------+--------------------------+-------+----------------------------------+----------
+ APRÈS  | athletes                 |   218 | c9a6af4098e263351ad7f1b1e91355dc | =
+ APRÈS  | games (côtés hors univ.) | 72129 | 09b4530a6c514591c3223c46bf191552 | =
+ APRÈS  | schools (hors univ.)     |  1408 | 56c744cb42bd5b196fc3da0b4a802303 | =
+ APRÈS  | team_athletes            |   130 | e88a267f84c857c5f921dbce79f7a635 | =
+ APRÈS  | teams (hors univ.)       | 10349 | 2381c3f550afee11cec9df19c8a6d72d | =
+ APRÈS  | users                    |   419 | e492fce678dfbb4cd5efad5d28ab8f21 | =
+(6 rows)
+
+CREATE FUNCTION
+SELECT 2
+                  essai                   |                                 resultat                                  
+------------------------------------------+---------------------------------------------------------------------------
+ fiche athlète → Université Laval         | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une un
+ fiche athlète → une équipe universitaire | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une éq
+(2 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 6
+        role         | écoles univ / équipes univ 
+---------------------+----------------------------
+ anon (site public)  | 0 / refusé
+ athlète             | 0 / 0
+ coach               | 0 / 0
+ recruteur collégial | 0 / 0
+ partenaire          | 0 / 0
+ admin               | 12 / 84
+(6 rows)
+
+ banc 
+------
+ 
+(1 row)
+
+CREATE FUNCTION
+SELECT 8
+SELECT 216
+ n  |                       objet                       |   athlete    |    parent    |    coach     | recruteur_collegial |  partenaire  |     anon     | alerte 
+----+---------------------------------------------------+--------------+--------------+--------------+---------------------+--------------+--------------+--------
+  1 | admin_cegeps_sans_programme()                     | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  2 | athletes_nom_proche(…, université)                | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  3 | cartes_par_ids(300 cartes)                        | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 4              | ok 0 0       | refusé 42501 | —
+  4 | coachs_nommables_equipe(équipe univ.)             | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  5 | depistage_profils_match(prochain match)           | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | refusé 42501 | refusé 42501 | —
+  6 | get_my_children()                                 | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | ok 0 0       | —
+  7 | ids_universites() — /rpc public                   | absente      | absente      | absente      | absente             | absente      | absente      | —
+  8 | invitation_equipe_coach(dernière)                 | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  9 | list_interested_recruiters()                      | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 10 | list_team_commits(équipe univ.)                   | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | ok 0 0       | —
+ 11 | lookup_civil_unclaimed_by_email('a')              | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 12 | matchs_recherche(31 jours)                        | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 590            | ok 0 590     | refusé 42501 | —
+ 13 | matchs_recherche(équipes univ.)                   | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 14 | matchs_recherche(texte « laval »)                 | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 272            | ok 0 272     | refusé 42501 | —
+ 15 | matchs_suggestions(« laval »)                     | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 30             | ok 0 30      | refusé 42501 | —
+ 16 | matchs_suggestions(« université »)                | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 17 | matchs_suggestions(« rouge et or »)               | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 18 | matchs_suggestions(« carabins »)                  | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 19 | partenaire_depistage_cartes(univ., équipes univ.) | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 20 | partenaire_mes_athletes()                         | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 21 | partenaire_prospects_terminees()                  | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 22 | partenaire_rapprochements()                       | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 23 | partenaire_rapprochements_refuses()               | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 24 | partner_athlete_profile(une fiche)                | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 25 | partner_newsroom_events()                         | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 26 | processus_cartes(université)                      | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 27 | processus_cartes(son cégep)                       | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 12             | ok 0 0       | refusé 42501 | —
+ 28 | rapprochements_refuses_unite()                    | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 29 | rapprochements_unite()                            | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 30 | recruiter_athlete_cards(200 fiches)               | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 30             | refusé 42501 | refusé 42501 | —
+ 31 | recruiter_athlete_profile(une fiche)              | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | refusé 42501 | refusé 42501 | —
+ 32 | recruiter_search_athletes()                       | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 28             | refusé 42501 | refusé 42501 | —
+ 33 | recruiter_search_athletes(« laval »)              | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 7              | refusé 42501 | refusé 42501 | —
+ 34 | team_record_hint(équipe univ.)                    | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | ok 0 0       | —
+ 35 | vue top_athletes_view                             | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 15      | refusé 42501 | —
+ 36 | vue trending_athletes_view                        | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 15      | refusé 42501 | —
+(36 rows)
+
+        role         |                           essai                           |                                      resultat                                       
+---------------------+-----------------------------------------------------------+-------------------------------------------------------------------------------------
+ athlète             | fiche : committed_school_id → université                  | refusé P0001 NEXUS: ces informations ne se modifient pas depuis ton profil (committ
+ coach               | compte : primary_team_id → équipe univ.                   | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus. Ça arriv
+ coach               | create_team_join_token(équipe univ.)                      | refusé 42501
+ coach               | team_coaches : se rattacher à une équipe univ.            | refusé P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cége
+ recruteur collégial | carte prospect : school_id → université                   | refusé 22023 NEXUS: l'établissement suit l'équipe — change l'équipe
+ recruteur collégial | carte prospect : team_id → équipe univ.                   | refusé 22023 NEXUS: l'équipe doit être du sport de l'athlète
+ recruteur collégial | changer_rattachement_recruteur(université)                | refusé 42501 NEXUS: pour changer de cégep ou de sport, écris à info@nexussports.ca
+ partenaire          | partenaire_prospect_enregistrer(université, équipe univ.) | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus. Ça arriv
+(8 rows)
+
+ appels_qui_fuient | appels_en_erreur | appels | ecritures_acceptees 
+-------------------+------------------+--------+---------------------
+                 0 |                0 |    216 |                   0
+(1 row)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d1-apply-20261028.sql:545: NOTICE:  NEXUS: VERDICT D1 — 12 universités, 84 
+équipes, rien d'autre ne bouge, invisibles hors admin, verrou tenu
+At line:1 char:1067
++ ... VERSITE';"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...in, verrou tenu:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+INSERT 0 1
+ universites | equipes |         avant_commit         
+-------------+---------+------------------------------
+          12 |      84 | 2026-10-28 13:29:46.10697+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot D1 cégep en prod (12 universités et leurs équipes).

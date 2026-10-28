@@ -1,0 +1,112 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 13:21:44.940042+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version 
+------------------
+ 20261028010000
+(1 row)
+
+SELECT 1
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 7
+ phase |        role         | ids_universites() par /rpc | univ / équipe univ / écoles / équipes 
+-------+---------------------+----------------------------+---------------------------------------
+ AVANT | anon (site public)  | reçoit l'id témoin         | 0 / refusé / 1408 / refusé
+ AVANT | athlète             | reçoit l'id témoin         | 0 / 0 / 1408 / 10349
+ AVANT | parent              | reçoit l'id témoin         | 0 / 0 / 1408 / 10349
+ AVANT | coach               | reçoit l'id témoin         | 0 / 0 / 1408 / 10349
+ AVANT | recruteur collégial | reçoit l'id témoin         | 0 / 0 / 1408 / 10349
+ AVANT | partenaire          | reçoit l'id témoin         | 0 / 0 / 1408 / 10349
+ AVANT | admin               | reçoit l'id témoin         | 1 / 1 / 1408 / 10349
+(7 rows)
+
+SELECT 1
+DO
+SET
+SELECT 7
+ phase |        role         | ids_universites() par /rpc | univ / équipe univ / écoles / équipes | hors_univ_vs_avant 
+-------+---------------------+----------------------------+---------------------------------------+--------------------
+ APRÈS | anon (site public)  | absente                    | 0 / refusé / 1408 / refusé            | =
+ APRÈS | athlète             | absente                    | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | parent              | absente                    | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | coach               | absente                    | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | recruteur collégial | absente                    | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | partenaire          | absente                    | 0 / 0 / 1408 / 10349                  | =
+ APRÈS | admin               | absente                    | 1 / 1 / 1408 / 10349                  | =
+(7 rows)
+
+CREATE FUNCTION
+SELECT 4
+                            quoi                            |       resultat       
+------------------------------------------------------------+----------------------
+ fonctions *universite* dans public                         | aucune
+ GraphQL (anon)                                             | rien d'universitaire
+ GraphQL (athlète)                                          | rien d'universitaire
+ nexus_prive.ids_universites : exécutable par authenticated | true
+(4 rows)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 12
+UPDATE 2
+SELECT 12
+            colonne             | trigger |                              non_admin                               |                                admin                                 
+--------------------------------+---------+----------------------------------------------------------------------+----------------------------------------------------------------------
+ athletes.committed_school_id   |       1 | REFUSÉ (verrou)                                                      | accepté 1
+ users.primary_team_id          |       1 | REFUSÉ (verrou)                                                      | accepté 1
+ cartes_prospect.school_id      |       1 | autre refus 22023 NEXUS: l'établissement suit l'équipe — change l'éq | autre refus 22023 NEXUS: l'établissement suit l'équipe — change l'éq
+ cartes_prospect.team_id        |       1 | REFUSÉ (verrou)                                                      | accepté 1
+ partenaire_prospects.school_id |       1 | REFUSÉ (verrou)                                                      | accepté 1
+ partenaire_prospects.team_id   |       1 | REFUSÉ (verrou)                                                      | accepté 1
+ commitment_requests.school_id  |       1 | accepté 0                                                            | accepté 0
+ invitations.school_id          |       1 | accepté 0                                                            | accepté 0
+ team_invitations.team_id       |       1 | REFUSÉ (verrou)                                                      | accepté 1
+ team_join_tokens.team_id       |       1 | REFUSÉ (verrou)                                                      | accepté 1
+ team_coaches.team_id           |       1 | autre refus P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas êtr | autre refus P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas êtr
+ school_coaches.school_id       |       1 | autre refus P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas êtr | autre refus P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas êtr
+(12 rows)
+
+CREATE FUNCTION
+ recruteur_toutes_equipes_ms_apres 
+-----------------------------------
+                             134.8
+(1 row)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d1a2-rejeu-blanc-20261028.sql:376: NOTICE:  NEXUS: VERDICT D1a2 — 
+ids_universites hors API, policies justes pour chaque rôle, verrou par référence tenu
+At line:1 char:984
++ ... tres=$act"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep... référence tenu:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+SET
+SELECT 7
+psql:docs/cegep-lot-d/prod/d1a2-rejeu-blanc-20261028.sql:390: NOTICE:  NEXUS: rollback D1a2 vérifié (matrice et appel 
+/rpc identiques à AVANT, schéma et verrou retirés)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

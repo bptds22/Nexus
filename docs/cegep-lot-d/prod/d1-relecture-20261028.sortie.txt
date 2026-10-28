@@ -1,0 +1,31 @@
+﻿Null display is "·".
+BEGIN
+SET
+ universites | universites_qc | equipes_univ | ecoles_ordinaires | equipes_ordinaires | matchs_univ | trace 
+-------------+----------------+--------------+-------------------+--------------------+-------------+-------
+          12 |             12 |           84 |              1408 |              10349 |           0 |     1
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 7
+        role         | univ / équipes univ / écoles hors univ / équipes hors univ 
+---------------------+------------------------------------------------------------
+ anon (site public)  | 0 / refusé / 1408 / refusé
+ athlète             | 0 / 0 / 1408 / 10349
+ parent              | 0 / 0 / 1408 / 10349
+ coach               | 0 / 0 / 1408 / 10349
+ recruteur collégial | 0 / 0 / 1408 / 10349
+ partenaire          | 0 / 0 / 1408 / 10349
+ admin               | 12 / 84 / 1408 / 10349
+(7 rows)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/d1-relecture-20261028.sql:64: NOTICE:  NEXUS: relecture D1 conforme
+At line:1 char:693
++ ... \psql.exe"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...ure D1 conforme:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ROLLBACK

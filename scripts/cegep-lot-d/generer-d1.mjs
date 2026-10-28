@@ -1,7 +1,7 @@
 // Génère les fichiers prod du lot D1 cégep (12 universités québécoises + leurs équipes RSEQ) :
 //   docs/cegep-lot-d/prod/d1-<rejeu-blanc|apply|rollback>-<date>.sql
 // depuis scripts/cegep-lot-d/d1-universites.json et docs/cegep-lot-d/prod/d1.gabarit.sql. LF.
-// Usage : node scripts/cegep-lot-d/generer-d1.mjs 20261028 [rejeu-blanc|apply|rollback]
+// Usage : node scripts/cegep-lot-d/generer-d1.mjs 20261028 [rejeu-blanc|rejeu-constat|rejeu-blanc-d1a2|apply|rollback]
 import fs from "node:fs";
 import crypto from "node:crypto";
 import path from "node:path";
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 process.chdir(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".."));
 const [date, type = "rejeu-blanc"] = process.argv.slice(2);
 if (!/^\d{8}$/.test(date ?? "")) throw new Error("date AAAAMMJJ attendue");
-if (!["rejeu-blanc", "apply", "rollback"].includes(type)) throw new Error("type inconnu : " + type);
+if (!["rejeu-blanc", "rejeu-constat", "rejeu-blanc-d1a2", "apply", "rollback"].includes(type)) throw new Error("type inconnu : " + type);
 
 const md5 = (t) => crypto.createHash("md5").update(t, "utf8").digest("hex");
 const brut = fs.readFileSync("scripts/cegep-lot-d/d1-universites.json", "utf8").replace(/\r\n/g, "\n");
@@ -123,10 +123,32 @@ commit;
 `, {});
 } else {
   const apply = type === "apply";
+  // rejeu-constat : l'état actuel, sans exiger D1a2 ; le banc montre les fuites sans arrêter le rejeu.
+  // rejeu-blanc-d1a2 : joue d'abord la migration D1a2 (texte gardé par son md5) dans la même transaction.
+  const constat = type === "rejeu-constat", avecD1a2 = type === "rejeu-blanc-d1a2";
   g = fs.readFileSync("docs/cegep-lot-d/prod/d1.gabarit.sql", "utf8").replace(/\r\n/g, "\n");
   g = bloc(bloc(g, apply ? "REJEU" : "APPLY", false), apply ? "APPLY" : "REJEU", true);
+  g = bloc(bloc(g, "GARDE_D1A2", !constat), "BANC_VERDICT", !constat);
+  if (avecD1a2) {
+    const mig = fs.readFileSync("supabase/migrations/20261028020000_cegep_lot_d1a2_definer.sql", "utf8").replace(/\r\n/g, "\n");
+    if (mig.includes("$nexus_mig$")) throw new Error("délimiteur présent dans D1a2");
+    const debut = "select now() as debut, current_user;\n";
+    if (!g.includes(debut)) throw new Error("ancre de début introuvable");
+    g = g.replace(debut, () => debut + `
+-- ── D1a2 joué d'abord dans cette transaction (NON appliqué en prod : défait par le ROLLBACK final) ─────
+create temp table _d1a2 on commit drop as select $nexus_mig$${mig}$nexus_mig$::text as contenu;
+do $d1a2$
+begin
+  if md5((select contenu from _d1a2)) <> '${md5(mig)}' then raise exception 'NEXUS: texte D1a2 altéré'; end if;
+  execute (select contenu from _d1a2);
+end $d1a2$;
+set local search_path = public, extensions;
+`);
+  }
   g = remplir(g, {
-    "@@TITRE@@": apply ? "APPLY RÉEL EN PROD (sur GO BP seulement, après le rejeu à blanc)" : "REJEU À BLANC (finit par ROLLBACK)",
+    "@@TITRE@@": apply ? "APPLY RÉEL EN PROD (sur GO BP seulement, après le rejeu à blanc)"
+      : constat ? "REJEU DE CONSTAT (état actuel, sans D1a2 ; finit par ROLLBACK)"
+      : avecD1a2 ? "REJEU À BLANC AVEC D1a2 JOUÉ D'ABORD (finit par ROLLBACK)" : "REJEU À BLANC (finit par ROLLBACK)",
     "@@SUITE@@": apply ? "Finit par admin_operations CEGEP_LOT_D1_UNIVERSITES et COMMIT." : "Joue aussi le rollback dans la transaction, puis ROLLBACK : rien n'est appliqué.",
   });
 }

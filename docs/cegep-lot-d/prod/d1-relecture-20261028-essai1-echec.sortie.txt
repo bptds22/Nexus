@@ -1,0 +1,16 @@
+﻿Null display is "·".
+BEGIN
+SET
+ universites | universites_qc | equipes_univ | ecoles_ordinaires | equipes_ordinaires | matchs_univ | trace 
+-------------+----------------+--------------+-------------------+--------------------+-------------+-------
+          12 |             12 |           84 |              1408 |              10349 |           0 |     1
+(1 row)
+
+psql.exe : psql:docs/cegep-lot-d/prod/d1-relecture-20261028.sql:22: ERROR:  cannot execute CREATE FUNCTION in a 
+read-only transaction
+At line:1 char:693
++ ... \psql.exe"; & $psql $env:NEXUS_PROD_DB -w -X -v ON_ERROR_STOP=1 -f $f ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...nly transaction:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
