@@ -5,7 +5,8 @@
 -- Fichier GÉNÉRÉ par scripts/cegep-lot-d/generer-d1.mjs <date> <rejeu-blanc|apply|rollback> depuis
 -- scripts/cegep-lot-d/d1-universites.json (empreinte 65b87625bc4083c189bfcde5fae2b428). Lancer SANS -1, en postgres.
 --
--- Opération de DONNÉES (aucun objet de schéma). Préalable : D0 (20261028000000) en prod.
+-- Opération de DONNÉES (aucun objet de schéma). Préalables : D0 (20261028000000) et D1a (20261028010000,
+-- universités masquées hors admin) en prod, correctif web /college promu.
 -- Aucune fiche athlète, aucun compte, aucun classement touché. Les côtés de match NULL qui portent le
 -- rseq_team_id d'une équipe créée sont reliés (la veille n'a pas chargé le secteur Universitaire : 0 attendu).
 -- Joue aussi le rollback dans la transaction, puis ROLLBACK : rien n'est appliqué.
@@ -138,6 +139,10 @@ begin
      or to_regprocedure('public.verrou_universites()') is null then
     raise exception 'NEXUS: préalable D0 (20261028000000) absent';
   end if;
+  if (select count(*) from pg_policies where policyname = 'universites_masquees' and permissive = 'RESTRICTIVE'
+         and cmd = 'SELECT' and tablename in ('schools', 'teams')) <> 2 then
+    raise exception 'NEXUS: préalable D1a (universités masquées) absent — rien ne doit être importé avant';
+  end if;
   if exists (select 1 from public.schools where type = 'UNIVERSITE') then
     raise exception 'NEXUS: des universités existent déjà';
   end if;
@@ -236,6 +241,35 @@ select 'fiche athlète → une équipe universitaire',
   from (select t.id, t.sport_id from public.teams t join _equipes q using (rseq_team_id) order by t.id limit 1) t;
 select * from _verrou;
 
+-- Ce que voient les utilisateurs (policies D1a), essai défait aussitôt : écoles univ. / équipes univ.
+create function pg_temp.vu(p_role text, p_uid uuid) returns text language plpgsql as $$
+declare v text; v_ids uuid[] := (select array_agg(rseq_team_id) from _equipes);  -- lu AVANT de changer de rôle
+begin
+  begin
+    if p_role = 'anon' then
+      perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
+    else
+      perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
+    end if;
+    perform set_config('role', p_role, true);
+    select (select count(*) from public.schools where type = 'UNIVERSITE') || ' / ' ||
+           (select count(*) from public.teams t where t.rseq_team_id = any (v_ids))
+      into v;
+    raise exception using errcode = 'NX000', message = v;
+  exception
+    when sqlstate 'NX000' then return sqlerrm;
+    when others then return 'ERREUR ' || sqlstate;
+  end;
+end $$;
+create temp table _vu on commit drop as
+select 'anon (site public)' as role, pg_temp.vu('anon', null) as vu
+union all select 'athlète', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'ATHLETE'::public.user_role order by u.id limit 1))
+union all select 'coach', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'COACH'::public.user_role order by u.id limit 1))
+union all select 'recruteur collégial', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'RECRUTEUR'::public.user_role order by u.id limit 1))
+union all select 'partenaire', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'PARTNER'::public.user_role order by u.id limit 1))
+union all select 'admin', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'ADMIN'::public.user_role order by u.id limit 1));
+select role, vu as "écoles univ / équipes univ" from _vu;
+
 do $$
 declare n int;
 begin
@@ -258,10 +292,13 @@ begin
   if exists (select 1 from _emp_apres a join _emp_avant b using (objet) where a.n <> b.n or a.md5 <> b.md5) then
     raise exception 'NEXUS: une donnée hors du lot a changé';
   end if;
+  if exists (select 1 from _vu where role <> 'admin' and vu <> '0 / 0') or (select vu from _vu where role = 'admin') <> '12 / 84' then
+    raise exception 'NEXUS: un utilisateur non admin voit une université ou une équipe universitaire';
+  end if;
   if exists (select 1 from _verrou where resultat not like 'REFUSÉ 42501 NEXUS: Une fiche athlète%') then
     raise exception 'NEXUS: le verrou D0 ne refuse pas une fiche athlète vers une université';
   end if;
-  raise notice 'NEXUS: VERDICT D1 — 12 universités, 84 équipes, rien d''autre ne bouge, verrou tenu';
+  raise notice 'NEXUS: VERDICT D1 — 12 universités, 84 équipes, rien d''autre ne bouge, invisibles hors admin, verrou tenu';
 end $$;
 select 'VERDICT' as verdict, 'conforme' as resultat;
 
