@@ -1,0 +1,445 @@
+{
+ "universite": "University of Prince Edward Island",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.upei.ca/programs"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 64,
+  "certificat": 6,
+  "comment": "Official program directory (89 entries): Program Level 'Undergraduate' = 64 entries (incl. DVM and minor-only subjects), 'Certificate' = 6. Unit = directory entry; entries whose Type of Study is Minor only are excluded."
+ },
+ "programmes": [
+  {
+   "nom": "Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/actuarial-science",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Analytics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/analytics",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Applied Arts in Journalism",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/applied-arts-journalism",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Applied Climate Change and Adaptation",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/applied-climate-change-and-adaptation",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Applied Communication, Leadership, and Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/applied-communication-leadership-and-culture",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Bachelor of Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.upei.ca/programs/bachelor-business-administration",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Bachelor of Business in Tourism and Hospitality",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.upei.ca/programs/bachelor-business-tourism-and-hospitality",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Bachelor of Business Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Business",
+   "lien": "https://www.upei.ca/programs/bachelor-business-studies",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.upei.ca/programs/bachelor-education",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Bachelor of Education - Français Langue Seconde",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.upei.ca/programs/baccalaureat-en-education-francais-langue-seconde",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Bachelor of Music Education",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/music-education",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Nursing",
+   "lien": "https://www.upei.ca/programs/nursing",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Bachelor of Science in Sustainable Design Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Sustainable Design Engineering",
+   "lien": "https://www.upei.ca/programs/engineering",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/biology",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Biotechnology (Bachelor of Science in Biotechnology)",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/biotechnology",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Canadian Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/canadian-studies",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/chemistry",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/computer-science",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Diversity and Social Justice Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/diversity-social-justice-studies",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/economics",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/english",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/environmental-studies",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Financial Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/financial-mathematics",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Foods and Nutrition",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/foods-and-nutrition",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/french",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/history",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Indigenous Studies Major",
+   "cycle": "baccalaureat",
+   "faculte": "Indigenous Knowledge, Education, Research, and Applied Studies; Arts",
+   "lien": "https://www.upei.ca/programs/indigenous-studies-major",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Integrated Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/integrated-studies",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/kinesiology",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/mathematics",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Modern Languages",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/modern-languages",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Music (Bachelor of Arts with a Major in Music)",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/music",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Music (Bachelor of Music)",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/bachelor-music",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Paramedicine",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/paramedicine",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/philosophy",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/physics",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/political-science",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts, Science",
+   "lien": "https://www.upei.ca/programs/psychology",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Radiography",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/bachelor-applied-science-radiography",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/religious-studies",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Sociology/Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.upei.ca/programs/sociology-anthropology",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/statistics",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Wildlife Conservation",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.upei.ca/programs/bachelor-wildlife-conservation",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Certificate In Accounting",
+   "cycle": "certificat",
+   "faculte": "Business",
+   "lien": "https://www.upei.ca/programs/certificate-accounting",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Certificate in Adult Education (CAE)",
+   "cycle": "certificat",
+   "faculte": "Education",
+   "lien": "https://www.upei.ca/programs/certificate-adult-education-cae",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Certificate in Business",
+   "cycle": "certificat",
+   "faculte": "Business",
+   "lien": "https://www.upei.ca/programs/certificate-business",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Certificate in Educational Leadership (Nunavut)",
+   "cycle": "certificat",
+   "faculte": "Education",
+   "lien": "https://www.upei.ca/programs/certificate-educational-leadership-nunavut",
+   "source": "https://www.upei.ca/programs"
+  },
+  {
+   "nom": "Public Administration",
+   "cycle": "certificat",
+   "faculte": "Business",
+   "lien": "https://www.upei.ca/programs/public-administration",
+   "source": "https://www.upei.ca/programs"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Acadian Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Asian Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Biotechnology (minor)",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Catholic Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Christian Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Classics",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Fine Arts",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Indigenous Studies Minor",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "International Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Island Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Korean Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Medical and Biological Physics",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Medieval and Renaissance Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Social Studies of Science",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Spanish",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Theatre Studies",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "University Writing",
+   "raison": "Directory entry is a Minor only (counted)"
+  },
+  {
+   "nom": "Doctor of Veterinary Medicine (DVM)",
+   "raison": "First-professional doctorate, listed as undergraduate level (counted)"
+  },
+  {
+   "nom": "Accelerated Bachelor of Business Administration",
+   "raison": "Accelerated route merged into Bachelor of Business Administration (counted)"
+  },
+  {
+   "nom": "Accelerated Bachelor of Science in Nursing",
+   "raison": "Accelerated route merged into Bachelor of Science in Nursing (counted)"
+  },
+  {
+   "nom": "Pre-veterinary Medicine Stream",
+   "raison": "à vérifier: preparatory stream within the BSc toward DVM admission, not a degree program (counted)"
+  },
+  {
+   "nom": "Dietetic Internship (Foods and Nutrition)",
+   "raison": "à vérifier: post-degree internship listed at Certificate level (counted)"
+  },
+  {
+   "nom": "19 graduate programs",
+   "raison": "Graduate (not counted)"
+  }
+ ]
+}

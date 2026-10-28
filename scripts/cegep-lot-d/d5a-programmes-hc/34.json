@@ -1,0 +1,675 @@
+{
+ "universite": "University of Calgary",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 99,
+  "certificat": 0,
+  "comment": "Répertoire officiel « Explore programs » affiché en entier (items_per_page=All) : 99 entrées. Unité = entrée du répertoire (matière/majeure ; une page couvrant BA et BFA/BSc = une ligne). Faculté non affichée dans la liste : null."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/accounting",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/actuarial-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Anthropology (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/anthropology-arts",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Anthropology (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/anthropology-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Archaeology (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/archaeology-arts",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Archaeology (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/archaeology-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Art History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/art-history",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Astrophysics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/astrophysics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/biochemistry",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Bioinformatics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/bioinformatics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Biological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/biological-sciences",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Biomechanics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/biomechanics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Biomedical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/biomedical-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Biomedical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/biomedical-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/business",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Business Analytics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/business-analytics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Business Technology Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/business-technology-management",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Cellular, Molecular and Microbial Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/cellular-molecular-microbial-biology",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/chemical-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/chemistry",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/civil-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Communication and Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/communication-media-studies",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Community Rehabilitation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/community-rehabilitation",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/computer-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Dance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/dance",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/data-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Design in City Innovation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/design-city-innovation",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Drama",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/drama",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/economics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/education",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/electrical-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Energy Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/energy-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Energy Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/energy-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Engineering Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/engineering-physics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/english",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Entrepreneurship and Innovation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/entrepreneurship-innovation",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/environmental-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Exercise and Health Physiology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/exercise-health-physiology",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Film Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/film-studies",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/finance",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/french",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Gender and Sexuality Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/gender-sexuality-studies",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Geography (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/geography-arts",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Geography (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/geography-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Geomatics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/geomatics-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Geoscience",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/geoscience",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Global Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/global-development-studies",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Health and Society",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/health-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/history",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "International Business Strategy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/international-business-strategy",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "International Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/international-indigenous-studies",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "International Relations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/international-relations",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/kinesiology",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Language and Culture",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/language-culture",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Law and Society",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/law-society",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Leadership and Coaching",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/leadership-coaching",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/linguistics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Linguistics and Language",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/linguistics-language",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/marketing",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/mathematics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/mechanical-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Motor and Psychosocial Aspects of Movement",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/motor-psychosocial-aspects-movement",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Multidisciplinary Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/multidisciplinary-studies-bachelor-arts",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Music (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/music-arts",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Music (Bachelor of Music)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/music-music",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Natural Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/natural-sciences",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/neuroscience",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Nursing (year 1)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/nursing-year-one",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Oil and Gas engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/oil-gas-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Operations and Supply Chain Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/operations-supply-chain-management",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Organizational Behaviour and Human Resources",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/organizational-behaviour-human-resources",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/philosophy",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/physics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Plant Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/plant-biology",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/political-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Psychology (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/psychology-arts",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Psychology (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/psychology-science",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Risk Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/risk-management",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/social-work",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/sociology",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Software Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/software-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/statistics",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Sustainable Systems Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/sustainable-systems-engineering",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Urban Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/urban-studies",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Visual Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/visual-studies",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  },
+  {
+   "nom": "Zoology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs/zoology",
+   "source": "https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Architecture",
+   "raison": "Master of Architecture (MArch) — cycles supérieurs"
+  },
+  {
+   "nom": "Engineering (common first year)",
+   "raison": "année commune d'entrée en génie, pas un programme nommé"
+  },
+  {
+   "nom": "Environmental Design",
+   "raison": "Master of Environmental Design (MEDes) — cycles supérieurs"
+  },
+  {
+   "nom": "Landscape Architecture",
+   "raison": "Master of Landscape Architecture (MLA) — cycles supérieurs"
+  },
+  {
+   "nom": "Law",
+   "raison": "Juris Doctor (JD) — diplôme professionnel de deuxième entrée"
+  },
+  {
+   "nom": "Medicine",
+   "raison": "Doctor of Medicine (MD) — doctorat professionnel"
+  },
+  {
+   "nom": "Nursing (Indigenous Community Route)",
+   "raison": "voie (route) du même BScN, fusionnée avec « Nursing (year 1) »"
+  },
+  {
+   "nom": "Nursing (Medicine Hat)",
+   "raison": "variante de campus (Medicine Hat) du même BScN, fusionnée avec « Nursing (year 1) »"
+  },
+  {
+   "nom": "Nursing (Rural Community Route)",
+   "raison": "voie (route) du même BScN, fusionnée avec « Nursing (year 1) »"
+  },
+  {
+   "nom": "Nursing (year 2)",
+   "raison": "admission en 2e année (transfert) du même BScN, fusionnée avec « Nursing (year 1) »"
+  },
+  {
+   "nom": "Planning",
+   "raison": "Master of Planning (MPlan) — cycles supérieurs"
+  },
+  {
+   "nom": "Undeclared (Arts)",
+   "raison": "admission non déclarée en Arts, pas un programme nommé"
+  },
+  {
+   "nom": "Veterinary Medicine",
+   "raison": "Doctor of Veterinary Medicine (DVM) — doctorat professionnel"
+  },
+  {
+   "nom": "Certificats de premier cycle",
+   "raison": "le répertoire officiel « Explore programs » ne liste aucun certificat ; non relevés"
+  }
+ ]
+}

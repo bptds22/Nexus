@@ -1,0 +1,294 @@
+{
+ "universite": "Trinity Western University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.twu.ca/academics/programs",
+  "https://www.twu.ca/academics/programs?field_degree_target_id=856"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 29,
+  "certificat": 7,
+  "comment": "Répertoire officiel « Undergraduate Programs » (vue Drupal, 41 entrées, sans pagination). Unité = entrée du répertoire (sujet) offrant au moins un baccalauréat (BA, BA Honours, BSc, BBA, BEd, BHK, BSN, BSM) ; les variantes de grade d'un même sujet (BA/BSc, Honours) restent sur une ligne. Certificat = entrées du filtre officiel « Certificate » (7), dont « Leadership (BA) » qui offre aussi l'option certificat (nom du répertoire conservé). Entrées seulement Minor/Concentration/Transfer Program listées dans exclus, hors compte attendu."
+ },
+ "programmes": [
+  {
+   "nom": "Applied Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/applied-linguistics",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Art + Design",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media + Culture",
+   "lien": "https://www.twu.ca/academics/school-arts-media-culture/art-design",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Arts Leadership + Entrepreneurship",
+   "cycle": "certificat",
+   "faculte": "School of the Arts, Media + Culture",
+   "lien": "https://www.twu.ca/academics/school-arts-media-culture/arts-leadership-entrepreneurship",
+   "source": "https://www.twu.ca/academics/programs?field_degree_target_id=856"
+  },
+  {
+   "nom": "Arts, Media + Culture",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media + Culture",
+   "lien": "https://www.twu.ca/academics/school-arts-media-culture/arts-media-culture",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Biblical Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/biblical-studies",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Natural & Applied Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-natural-applied-sciences/biology",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Business (BBA)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Business",
+   "lien": "https://www.twu.ca/academics/school-business/business-bba",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Natural & Applied Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-natural-applied-sciences/chemistry",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Computing Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Natural & Applied Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-natural-applied-sciences/computing-science",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Education (BEd)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Education",
+   "lien": "https://www.twu.ca/academics/school-education/education-bed",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Education Assistant",
+   "cycle": "certificat",
+   "faculte": "School of Education",
+   "lien": "https://www.twu.ca/academics/school-education/education-assistant",
+   "source": "https://www.twu.ca/academics/programs?field_degree_target_id=856"
+  },
+  {
+   "nom": "English & Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/english-creative-writing",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Game Development",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media + Culture",
+   "lien": "https://www.twu.ca/academics/school-arts-media-culture/game-development",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "General Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/general-studies",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Geographic Information Systems",
+   "cycle": "certificat",
+   "faculte": "Faculty of Natural & Applied Sciences, Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-natural-applied-sciences/geographic-information-systems",
+   "source": "https://www.twu.ca/academics/programs?field_degree_target_id=856"
+  },
+  {
+   "nom": "Geography & Environment",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Natural & Applied Sciences, Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-natural-applied-sciences/geography-environment",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/history",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Human Kinetics",
+   "cycle": "baccalaureat",
+   "faculte": "School of Human Kinetics",
+   "lien": "https://www.twu.ca/academics/school-human-kinetics/human-kinetics",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Human Services",
+   "cycle": "certificat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/human-services",
+   "source": "https://www.twu.ca/academics/programs?field_degree_target_id=856"
+  },
+  {
+   "nom": "Intercultural Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/intercultural-religious-studies",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "International Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/international-studies",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Leadership (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "Department of Leadership",
+   "lien": "https://www.twu.ca/academics/department-leadership/leadership-ba",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Leadership (BA)",
+   "cycle": "certificat",
+   "faculte": "Department of Leadership",
+   "lien": "https://www.twu.ca/academics/department-leadership/leadership-ba",
+   "source": "https://www.twu.ca/academics/programs?field_degree_target_id=856"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Natural & Applied Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-natural-applied-sciences/mathematics",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Media + Communication",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media + Culture",
+   "lien": "https://www.twu.ca/academics/school-arts-media-culture/media-communication",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Multidisciplinary Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/multidisciplinary-studies",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Arts, Media + Culture",
+   "lien": "https://www.twu.ca/academics/school-arts-media-culture/music",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Nursing (BSN)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Nursing",
+   "lien": "https://www.twu.ca/academics/school-nursing/nursing-bsn",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/philosophy",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Political Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/political-studies",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Pre-Law",
+   "cycle": "certificat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/pre-law",
+   "source": "https://www.twu.ca/academics/programs?field_degree_target_id=856"
+  },
+  {
+   "nom": "Project Management Professional Program",
+   "cycle": "certificat",
+   "faculte": "Department of Leadership",
+   "lien": "https://www.twu.ca/academics/twu-global/project-management-professional-program",
+   "source": "https://www.twu.ca/academics/programs?field_degree_target_id=856"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/psychology",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/sociology",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Sport Management",
+   "cycle": "baccalaureat",
+   "faculte": "School of Human Kinetics",
+   "lien": "https://www.twu.ca/academics/school-human-kinetics/sport-management",
+   "source": "https://www.twu.ca/academics/programs"
+  },
+  {
+   "nom": "Theology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Humanities & Social Sciences",
+   "lien": "https://www.twu.ca/academics/faculty-humanities-social-sciences/theology",
+   "source": "https://www.twu.ca/academics/programs"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Engineering Transfer",
+   "raison": "Entrée du répertoire sans baccalauréat ni certificat (« Transfer Program ») — hors compte"
+  },
+  {
+   "nom": "French",
+   "raison": "Entrée du répertoire sans baccalauréat ni certificat (« Concentration, Minor ») — hors compte"
+  },
+  {
+   "nom": "Gender Studies",
+   "raison": "Entrée du répertoire sans baccalauréat ni certificat (« Minor ») — hors compte"
+  },
+  {
+   "nom": "Pre-Professional Studies",
+   "raison": "Entrée du répertoire sans baccalauréat ni certificat (« Transfer Program ») — hors compte"
+  },
+  {
+   "nom": "Social Studies",
+   "raison": "Entrée du répertoire sans baccalauréat ni certificat (« Concentration ») — hors compte"
+  },
+  {
+   "nom": "Spanish",
+   "raison": "Entrée du répertoire sans baccalauréat ni certificat (« Concentration, Minor ») — hors compte"
+  }
+ ]
+}

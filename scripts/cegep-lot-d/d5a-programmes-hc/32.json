@@ -1,0 +1,981 @@
+{
+ "universite": "University of British Columbia",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://you.ubc.ca/programs/",
+  "https://you.ubc.ca/ubc_programs-sitemap.xml"
+ ],
+ "blocages": [
+  "https://you.ubc.ca/programs/ — liste des programmes chargée en JavaScript (vide à la lecture) ; remplacée par le sitemap officiel des pages programmes (ubc_programs-sitemap.xml, 197 URL, deux campus) et la lecture de chacune des 197 pages (nom, campus, grade)"
+ ],
+ "attendu": {
+  "baccalaureat": 141,
+  "certificat": 0,
+  "comment": "Pas de total affiché. Unité = une entrée du répertoire officiel you.ubc.ca/programs (matière/majeure, par campus), telle que nommée sur sa page ; 141 pages rattachées au campus Vancouver sur 197 (pages bi-campus comptées dans chaque campus). Une page couvrant BA et BSc = une ligne (unité du répertoire). Faculté non affichée sur les pages : null."
+ },
+ "programmes": [
+  {
+   "nom": "Archaeology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/archaeology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Geography: Human Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/human-geography/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/anthropology-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Art History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/art-history/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Asian Language and Culture",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/asian-language-culture/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Atmospheric Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/atmospheric-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/biochemistry/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/biology-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Biophysics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/biophysics/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Biotechnology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/biotechnology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Business and Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/business-computer-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Canadian Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/canadian-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Chemical and Biological Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/chemical-biological-engineering/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/chemistry-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/civil-engineering-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Cognitive Systems (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/cognitive-systems-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Cognitive Systems (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/cognitive-systems-bsc/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/computer-engineering/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/creative-writing-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Earth and Ocean Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/earth-ocean-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/economics-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/electrical-engineering-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/english-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Environmental Engineering (joint UNBC/UBC)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/environmental-engineering-joint-unbc-ubc/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Environmental Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/environmental-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Film Production",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/film-production/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Cinema Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/cinema-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "First Nations and Endangered Languages",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/first-nations-endangered-languages/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "First Nations and Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/first-nations-indigenous-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/french-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Geographical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/geographical-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Geography: Environment and Sustainability",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/geo-environment-sustainability/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Geological Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/geological-engineering/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Geology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/geology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Geophysics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/geophysics/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "German",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/german/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/history-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Integrated Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/integrated-computer-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Integrated Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/integrated-engineering/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Integrated Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/integrated-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Interdisciplinary Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/interdisciplinary-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "International Relations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/international-relations-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Kinesiology: Multidisciplinary Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/kinesiology-multidisciplinary-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Kinesiology: Neuromechanical and Physiological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/kinesiology-neuromechanical-physiological-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Kinesiology: Social and Behavioural Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/kinesiology-social-behavioural-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Latin American Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/latin-american-studies-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/linguistics/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Materials Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/materials-engineering/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mathematical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mathematical-sciences-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mathematics and Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mathematics-economics/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mathematics (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mathematics-vancouver-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mathematics (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mathematics-vancouver-bsc/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mechanical-engineering-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Medieval Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/medieval-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Microbiology and Immunology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/microbiology-immunology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Education: Elementary and Middle Years",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/education-elementary-middle-years/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Midwifery",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/midwifery/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mining Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mining-engineering/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Museum Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/museum-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Music: Advanced Performance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/music-advanced-performance/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Music: Composition",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/music-composition/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Music: General Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/music-general-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Music: Scholarship",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/music-scholarship/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/music/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Education: Indigenous Teacher Education Program (NITEP)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/education-nitep/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/nursing-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Oceanography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/oceanography/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Pharmacology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/pharmacology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/philosophy-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/physics-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Cellular, Anatomical, and Physiological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/cellular-anatomical-physiological-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/political-science-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/psychology-vancouver-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Religion",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/religion/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Romance Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/romance-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Combined Major in Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/science-combined-major/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Education: Secondary",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/education-secondary/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/social-work/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/sociology-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Spanish",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/spanish-hispanic-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/statistics-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Theatre Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/theatre/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Theatre: Acting",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/theatre-acting/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Theatre: Design and Production",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/theatre-design-production/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "United States Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/united-states-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Visual Art (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/visual-art-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Visual Art (BFA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/visual-art-bfa/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Education: West Kootenay Teacher Education Program (WKTEP)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/education-wktep/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Gender, Race, Sexuality, and Social Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/gender-race-sexuality-social-justice/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/chemical-engineering/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Ancient Mediterranean and Near Eastern Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/ancient-mediterranean-near-eastern-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/media-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Combined Majors in Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/statistics-combined-majors/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Education: International Baccalaureate",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/education-ib/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Architecture, Landscape Architecture, and Urbanism",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/architecture-landscape-architecture-and-urbanism/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Commerce",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/commerce/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Medical Laboratory Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/medical-laboratory-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Astronomy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/astronomy/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Asian Area Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/asian-area-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Manufacturing Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/manufacturing-engineering-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/engineering-environmental/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Urban Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/urbanstudies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/neuroscience/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/data-science-vancouver/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Speech Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/speech-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Biomedical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/biomedical-engineering/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Engineering Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/engineering-physics/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Modern European Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/modern-european-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Computer Science (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/computer-science-vancouver-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Computer Science (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/computer-science-vancouver-bsc/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Business and Markets",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/business-and-markets/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Data Analytics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/data-analytics/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Global Resource Systems",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/global-resource-systems/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Applied Animal Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/applied-animal-biology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Dietetics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/dietetics/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Food and Nutritional Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/food-nutritional-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Food Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/food-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Nutritional Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/nutritional-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Indigenous Land Stewardship",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/indigenous-land-stewardship/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Food, Nutrition, and Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/food-nutrition-and-health/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Sustainable Agriculture and Environment",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/sustainable-agriculture-environment/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Dental Hygiene",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/dental-hygiene/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Pharmaceutical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/pharmaceutical-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "International Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/international-economics/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Bioeconomy Sciences and Technology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/bioeconomy-sciences-technology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Forest Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/forest-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Conservation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/conservation/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Urban Forestry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/urban-forestry/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Forest Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/forest-management/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Forest Operations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/forest-operations/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Wood Products",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/wood-products/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Architecture (Vancouver)",
+   "raison": "Master of Architecture : diplôme professionnel/de cycles supérieurs — exclu"
+  },
+  {
+   "nom": "Journalism (Vancouver)",
+   "raison": "Master of Journalism : diplôme professionnel/de cycles supérieurs — exclu"
+  },
+  {
+   "nom": "Law (Vancouver)",
+   "raison": "Juris Doctor : diplôme professionnel de deuxième entrée — exclu"
+  },
+  {
+   "nom": "Pharmacy (Vancouver)",
+   "raison": "Doctor of Pharmacy : diplôme professionnel/de cycles supérieurs — exclu"
+  },
+  {
+   "nom": "Bachelor + Master of Management Dual Degree (Vancouver)",
+   "raison": "double diplôme baccalauréat + Master of Management (mène à une maîtrise) — exclu"
+  },
+  {
+   "nom": "Vantage One: Applied Science (Engineering) (Vancouver)",
+   "raison": "année de première année (Vantage One) pour étudiants internationaux, sans grade propre (« Not applicable ») — voie d'entrée"
+  },
+  {
+   "nom": "Vantage One: Science (Vancouver)",
+   "raison": "année de première année (Vantage One) pour étudiants internationaux, sans grade propre (« Not applicable ») — voie d'entrée"
+  },
+  {
+   "nom": "Medicine (Vancouver)",
+   "raison": "Doctor of Medicine : diplôme professionnel/de cycles supérieurs — exclu"
+  },
+  {
+   "nom": "Vantage One: Arts (Vancouver)",
+   "raison": "année de première année (Vantage One) pour étudiants internationaux, sans grade propre (« Not applicable ») — voie d'entrée"
+  },
+  {
+   "nom": "Dentistry (Vancouver)",
+   "raison": "Doctor of Dental Medicine : diplôme professionnel/de cycles supérieurs — exclu"
+  },
+  {
+   "nom": "Certificats de premier cycle",
+   "raison": "le répertoire officiel you.ubc.ca/programs ne liste aucun certificat ; aucun certificat crédité de premier cycle relevé dans cette source (non vérifié ailleurs)"
+  }
+ ]
+}

@@ -1,0 +1,421 @@
+{
+ "universite": "University of British Columbia Okanagan",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://you.ubc.ca/programs/",
+  "https://you.ubc.ca/ubc_programs-sitemap.xml"
+ ],
+ "blocages": [
+  "https://you.ubc.ca/programs/ — liste des programmes chargée en JavaScript (vide à la lecture) ; remplacée par le sitemap officiel des pages programmes (ubc_programs-sitemap.xml, 197 URL, deux campus) et la lecture de chacune des 197 pages (nom, campus, grade)"
+ ],
+ "attendu": {
+  "baccalaureat": 58,
+  "certificat": 0,
+  "comment": "Pas de total affiché. Unité = une entrée du répertoire officiel you.ubc.ca/programs (matière/majeure, par campus), telle que nommée sur sa page ; 58 pages rattachées au campus Okanagan sur 197 (pages bi-campus comptées dans chaque campus). Une page couvrant BA et BSc = une ligne (unité du répertoire). Faculté non affichée sur les pages : null."
+ },
+ "programmes": [
+  {
+   "nom": "Biochemistry and Molecular Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/biochemistry-molecular-biology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/biology-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/chemistry-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/civil-engineering-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Computer Science (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/computer-science-okanagan-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Computer Science (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/computer-science-okanagan-bsc/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/creative-writing-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Earth and Environmental Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/earth-environmental-sciences/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Ecology, Evolution, and Conservation Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/ecology-evolution-conservation-biology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Economics (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/economics-okanagan-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Economics (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/economics-okanagan-bsc/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/electrical-engineering-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/english-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Environmental Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/environmental-chemistry/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/french-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Freshwater Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/freshwater-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Gender, Women and Sexuality Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/gender-women-sexuality-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "General Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/general-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "General Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/general-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/geography/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/history-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/indigenous-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "International Relations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/international-relations-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mathematics (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mathematics-okanagan-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mathematics (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mathematics-okanagan-bsc/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/mechanical-engineering-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Microbiology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/microbiology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/philosophy-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Philosophy, Politics, and Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/philosophy-politics-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/physics-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Psychology (BA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/psychology-okanagan-ba/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Psychology (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/psychology-okanagan-bsc/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/sociology-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/statistics-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Zoology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/zoology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/anthropology-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Manufacturing Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/manufacturing-engineering-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Nsyilxcn Language Fluency",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/nsyilxcn-language-fluency/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Sustainability",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/sustainability/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Health and Exercise Sciences (Kinesiology)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/health-and-exercise-sciences-kinesiology/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/computer-engineering-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "St’át’imc Language Fluency",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/statimc-language-fluency/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/political-science-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Visual Arts (BFA)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/visual-arts/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/media-studies-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Cultural Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/cultural-studies/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/nursing-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/data-science/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "NłeɁkepmx Language Fluency",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/nle%c9%82kepmx-language-fluency/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Secwépemc Language Fluency",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/secwepemc-language-fluency/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Languages",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/languages/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Commerce",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/commerce-okanagan/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Art History and Visual Culture",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/art-history-visual-culture/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Education: Teaching Children",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/education-teaching-children/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  },
+  {
+   "nom": "Education: Teaching Adolescents",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://you.ubc.ca/programs/education-teaching-adolescents/",
+   "source": "https://you.ubc.ca/ubc_programs-sitemap.xml"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Vantage One: Applied Science (Engineering) (Okanagan)",
+   "raison": "année de première année (Vantage One) pour étudiants internationaux, sans grade propre (« Not applicable ») — voie d'entrée"
+  },
+  {
+   "nom": "Medicine (Okanagan)",
+   "raison": "Doctor of Medicine : diplôme professionnel/de cycles supérieurs — exclu"
+  },
+  {
+   "nom": "Bachelor + Master of Management Dual Degree (Okanagan)",
+   "raison": "double diplôme baccalauréat + Master of Management (mène à une maîtrise) — exclu"
+  },
+  {
+   "nom": "Certificats de premier cycle",
+   "raison": "le répertoire officiel you.ubc.ca/programs ne liste aucun certificat ; aucun certificat crédité de premier cycle relevé dans cette source (non vérifié ailleurs)"
+  }
+ ]
+}

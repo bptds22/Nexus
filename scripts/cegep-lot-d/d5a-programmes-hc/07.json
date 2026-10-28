@@ -1,0 +1,281 @@
+{
+ "universite": "Nipissing University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://future.nipissingu.ca/programs-archive/",
+  "https://future.nipissingu.ca/programs-sitemap.xml",
+  "https://future.nipissingu.ca/programs/"
+ ],
+ "blocages": [
+  "https://future.nipissingu.ca/programs/ : la liste filtrable n'affiche que 21 fiches à la lecture (chargement dynamique), pas un blocage ; complétée par l'archive paginée officielle /programs-archive/ (6 pages) et le sitemap officiel des programmes."
+ ],
+ "attendu": {
+  "baccalaureat": 39,
+  "certificat": 2,
+  "comment": "56 fiches au répertoire officiel (archive /programs-archive/, 6 pages = sitemap des programmes). Hors périmètre et non comptées : 7 programmes de cycles supérieurs, 8 Post-Baccalaureate Diplomas. Baccalauréats : 39 fiches de premier cycle restantes (unité = fiche du répertoire). Certificats : 2 Post-Baccalaureate Certificates, mis en exclus « à vérifier ». Aucun certificat de premier cycle propre listé au répertoire."
+ },
+ "programmes": [
+  {
+   "nom": "Psychology & Behavioural Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/psychology-behavioral-science/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Community Planning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/community-planning/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Commerce – Dual Degree with BA or BSc",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/commerce-dual-degree-with-ba-or-bsc/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/indigenous-studies/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/sociology/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/social-work/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Social Welfare & Social Development",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/social-welfare-social-development/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/psychology/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/political-science/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Physical & Health Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/physical-health-education/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/philosophy/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/nursing/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/mathematics/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Liberal Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/liberal-science/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Liberal Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/liberal-arts/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/history/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/geography/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Fine Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/fine-arts/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/environmental-science/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Environmental Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/environmental-geography/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Environmental Biology & Technology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/environmental-biology-technology/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Environment & Physical Geography",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/environment-physical-geography/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "English Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/english-studies/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Education – Consecutive",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/education-consecutive/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Education – Concurrent",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/education-concurrent/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/data-science/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Criminal Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/criminal-justice/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/computer-science/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Commerce – Distance Learning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/commerce-distance/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Child & Family Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/child-family-studies/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/business/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://future.nipissingu.ca/programs/biology/",
+   "source": "https://future.nipissingu.ca/programs-archive/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Nursing – RPN to BScN Bridging",
+   "raison": "voie passerelle IAA du même BScN, fusionnée avec « Nursing »"
+  },
+  {
+   "nom": "Nursing – RPN to BScN Blended Learning",
+   "raison": "voie passerelle (formule hybride) du même BScN, fusionnée avec « Nursing »"
+  },
+  {
+   "nom": "Commerce – College Partnership",
+   "raison": "voie de partenariat collégial (en ligne) du même B.Comm., fusionnée avec « Commerce – Distance Learning »"
+  },
+  {
+   "nom": "Indigenous Classroom Assistant Diploma Program (ICADP)",
+   "raison": "diplôme, pas un baccalauréat"
+  },
+  {
+   "nom": "Indigenous Teacher Education Program (ITEP)",
+   "raison": "« Degree type: Diploma » ; BEd seulement pour les titulaires d'un grade — à vérifier"
+  },
+  {
+   "nom": "Teacher of Indigenous Language as a Second Language (TILSL)",
+   "raison": "diplôme (BEd seulement pour titulaires d'un grade) — à vérifier"
+  },
+  {
+   "nom": "Indigenous Foundations Program",
+   "raison": "programme d'accès/préparatoire, pas un grade"
+  },
+  {
+   "nom": "Post-Baccalaureate Certificate in General Management",
+   "raison": "à vérifier : certificat post-baccalauréat (réservé aux titulaires d'un grade)"
+  },
+  {
+   "nom": "Post-Baccalaureate Certificate in Human Resource Management",
+   "raison": "à vérifier : certificat post-baccalauréat (réservé aux titulaires d'un grade)"
+  }
+ ]
+}

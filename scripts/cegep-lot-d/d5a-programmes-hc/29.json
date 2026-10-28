@@ -1,0 +1,327 @@
+{
+ "universite": "St. Thomas University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.stu.ca/academics/search/",
+  "https://www.stu.ca/academics/certificate-programs/"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 42,
+  "certificat": 5,
+  "comment": "Official 'All Programs' search: 45 results (6 pages). Baccalaureat: the 42 non-certificate entries (majors/degrees, incl. 6 minor-only subjects and the MSW). Certificat: 3 certificate-only entries (Digital and Media Literacy, Experiential Learning and Community Engagement, English as a Second Language) + the certificate attached to Criminology and Criminal Justice + Gerontology from the official Certificates page. Unit = directory entry."
+ },
+ "programmes": [
+  {
+   "nom": "Communications and Public Policy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/communications-and-public-policy/-communications-and-public-policy.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Digital Media and Creative Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/digital-media-and-creative-arts/-digital-media-and-creative-arts.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/anthropology/anthropology.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Bachelor of Applied Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/academics/bachelor-of-applied-arts/bachelor-of-applied-arts.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Bachelor of Arts (Aviation Stream)",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/academics/aviation-stream/bachelor-of-arts-aviation-stream.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/academics/education/bachelor-of-education.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Bachelor of Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/academics/bachelor-of-social-work/bachelor-of-social-work.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Business and Social Entrepreneurship",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/business-and-social-entrepreneurship/business-and-social-entrepreneurship.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Catholic Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/catholic-studies/catholic-studies.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Criminology and Criminal Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/criminology-and-criminal-justice/criminology-and-criminal-justice.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Disability, Aging, and Human Rights",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/disability-aging-and-human-rights/disability-aging-and-human-rights.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/economics/economics.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "English Language and Literature",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/english-language-and-literature/english-language-and-literature.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Fine Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/fine-arts/fine-arts.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/french/french.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Gerontology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/gerontology/gerontology.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Great Books",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/great-books/great-books.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/history/history.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Human Rights",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/human-rights/human-rights.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Interdisciplinary Major in Humanities",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/interdisciplinary-major-in-humanities/interdisciplinary-major-in-humanities.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Interdisciplinary Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/interdisciplinary-studies/interdisciplinary-studies.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "International Relations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/international-relations/international-relations.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Journalism",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/journalism/journalism.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Law, Politics, and Society",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/law-politics-and-society/law-politics-and-society.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Mi'kmaq and Wolastoqey Social Work Program",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/academics/mikmaq-and-wolastoqey-social-work-program/mikmaq-and-wolastoqey-social-work-program.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Native Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/native-studies/native-studies.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/philosophy/philosophy.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/political-science/political-science.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/psychology/psychology.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/religious-studies/religious-studies.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Romance Languages",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/romance-languages/romance-languages.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/sociology/sociology.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Spanish and Latin American Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/spanish-and-latin-american-studies/spanish-and-latin-american-studies.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Sustainability and Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/sustainability-and-environmental-studies/sustainability-and-environmental-studies.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Women's Studies and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/womens-studies-and-gender-studies/womens-studies-and-gender-studies.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Certificate in Digital and Media Literacy",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/academics/certificate-in-digital-and-media-literacy/certificate-in-digital-and-media-literacy.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Certificate in Experiential Learning and Community Engagement",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/academics/certificate-in-experiential-learning-and-community-engagement/certificate-in-experiential-learning-and-community-engagement.php",
+   "source": "https://www.stu.ca/academics/search/"
+  },
+  {
+   "nom": "Certificate in Criminology and Criminal Justice",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/criminology-and-criminal-justice/criminology-and-criminal-justice.php",
+   "source": "https://www.stu.ca/academics/certificate-programs/"
+  },
+  {
+   "nom": "Certificate in Gerontology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.stu.ca/bachelorofarts/gerontology/gerontology.php",
+   "source": "https://www.stu.ca/academics/certificate-programs/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Aquinas",
+   "raison": "Directory entry offered as Minor only (counted)"
+  },
+  {
+   "nom": "Irish Studies",
+   "raison": "Directory entry offered as Minor only (counted)"
+  },
+  {
+   "nom": "Italian",
+   "raison": "Directory entry offered as Minor only (counted)"
+  },
+  {
+   "nom": "Japanese",
+   "raison": "Directory entry offered as Minor only (counted)"
+  },
+  {
+   "nom": "Latin",
+   "raison": "Directory entry offered as Minor only (counted)"
+  },
+  {
+   "nom": "Mathematics",
+   "raison": "Directory entry offered as Minor only (counted)"
+  },
+  {
+   "nom": "Master of Social Work",
+   "raison": "Graduate (counted in directory total)"
+  },
+  {
+   "nom": "English as a Second Language",
+   "raison": "Directory types it 'Certificate' but the page describes a for-credit ESL programme within the BA, not a certificate (counted)"
+  },
+  {
+   "nom": "Bachelor of Arts (general)",
+   "raison": "Degree umbrella of the listed majors; no separate directory entry (not counted)"
+  }
+ ]
+}

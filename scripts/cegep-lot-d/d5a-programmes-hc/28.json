@@ -1,0 +1,18 @@
+{
+ "universite": "St. Francis Xavier University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [],
+ "blocages": [
+  "https://www.stfx.ca/programs - HTTP 403 Forbidden to WebFetch",
+  "https://www.stfx.ca/sites/default/files/documents/2026-2027%20Academic%20Calendar_Oct16.pdf (official 2026-2027 academic calendar) - HTTP 403 Forbidden",
+  "https://business.stfx.ca/programs (official subdomain) - HTTP 403 Forbidden",
+  "No other official StFX source reachable (search results for StFX program pages all point to stfx.ca); per BP rule no circumvention attempted. Nothing recorded rather than guessing from third-party sites (ApplyBoard, Studee, etc.)."
+ ],
+ "attendu": {
+  "baccalaureat": 0,
+  "certificat": 0,
+  "comment": "Not determinable: every official StFX source (program directory, academic calendar PDF, business.stfx.ca) answered HTTP 403. To be completed from a manual read of https://www.stfx.ca/programs or the 2026-2027 Academic Calendar PDF."
+ },
+ "programmes": [],
+ "exclus": []
+}

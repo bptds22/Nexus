@@ -1,0 +1,2352 @@
+{
+ "universite": "University of Alberta",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml",
+  "https://www.ualberta.ca/en/undergraduate-programs/index.html",
+  "https://www.ualberta.ca/fr/campus-saint-jean/programmes/etudes-du-1er-cycle/index.html"
+ ],
+ "blocages": [
+  "https://www.ualberta.ca/en/undergraduate-programs/index.html — répertoire rendu en JavaScript (liste vide à la lecture) ; remplacé par le sitemap officiel du même répertoire (undergraduate-programs/sitemap.xml, 376 URL) et la lecture de pages programmes",
+  "https://calendar.ualberta.ca/content.php?catoid=69&navoid=20886 (annuaire 2026-2027, liste des programmes) — réponse HTTP 202 vide (contrôle anti-robot) ; non contourné, remplacé par le sitemap du répertoire officiel",
+  "www.ualberta.ca refuse aussi les requêtes non-navigateur (CloudFront 403) — non contourné"
+ ],
+ "attendu": {
+  "baccalaureat": 358,
+  "certificat": 2,
+  "comment": "Aucun total affiché (répertoire JS). Unité = une page programme du répertoire officiel undergraduate-programs (diplôme + programme/majeure), comptée depuis son sitemap : 376 URL − 20 pages non-programmes = 356 pages programmes, + 4 entrées de la page programmes du Campus Saint-Jean absentes du sitemap (certificat en développement durable ; B.Éd. après-diplôme, à Calgary, à distance). Noms = « titre de diplôme – titre de la page » ; environ 75 pages ouvertes et vérifiées (toutes celles du Campus Saint-Jean, accents tels qu'affichés), les autres reconstruites depuis l'URL de la page selon le même format (casse/ponctuation possiblement approximative). Facultés : affichées sur les pages vérifiées, sinon déduites du diplôme. Les certificats intégrés (embedded certificates) de l'annuaire n'ont pu être relevés, l'annuaire étant bloqué : le volet certificat est donc probablement incomplet."
+ },
+ "programmes": [
+  {
+   "nom": "Bachelor of Arts – Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-womens-and-gender-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-economics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Art and Design",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-art-and-design.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-psychology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-linguistics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Film Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-film-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-political-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-philosophy.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-history.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Human Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-human-geography.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Ancient and Medieval Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-ancient-and-medieval-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-media-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Science Technology and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-science-technology-and-society.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-sociology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-music.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-english.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – History of Art Design and Visual Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-history-of-art-design-and-visual-culture.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Planning",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-planning.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-religious-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-mathematics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – East Asian Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-east-asian-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Modern Languages and Cultural Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-modern-languages-and-cultural-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Drama",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-drama.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Classics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-classics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-anthropology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-womens-and-gender-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Modern Languages and Cultural Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-modern-languages-and-cultural-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-religious-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-philosophy.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-linguistics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-psychology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-history.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Drama",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-drama.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-music.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Human Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-human-geography.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – East Asian Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-east-asian-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-political-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-mathematics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-english.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – History of Art Design and Visual Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-history-of-art-design-and-visual-culture.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-anthropology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-sociology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-economics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts with Honors – Classics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-with-honors-classics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts in Criminology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-in-criminology-criminology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts in Environmental Studies — Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-in-environmental-studies-environmental-studies-arts.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts in Environmental Studies — ALES",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-in-environmental-studies-environmental-studies-ales.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Fine Arts in Drama Acting",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-fine-arts-in-drama-acting-drama-acting.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Fine Arts in Drama Production – Stage Management Route",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-fine-arts-in-drama-production-stage-management-route.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Fine Arts in Drama Production – Design Route",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-fine-arts-in-drama-production-design-route.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Fine Arts in Drama Production – Technical Production Route",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-fine-arts-in-drama-production-technical-production-route.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Fine Arts in Art and Design",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-fine-arts-in-art-and-design-art-and-design.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Design – Social Sciences Route",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-design-social-sciences-route.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Design – Business and Marketing Route",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-design-business-and-marketing-route.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Design – General Route",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-design-general-route.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Design – Engineering Route",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-design-engineering-route.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Music – General Route",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-music-general-route.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Music – Performance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-music-performance.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Music – Composition + Sonic Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-music-composition-and-sonic-arts.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Music/Bachelor of Education (Secondary) – Education - Music - Secondary",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-music-education-music-secondary.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Music/Bachelor of Education (Elementary) – Education - Music - Elementary",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-music-education-music-elementary.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts (Drama)/Bachelor of Education in Secondary Education – Drama",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-drama-drama.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-neuroscience.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Physiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-physiology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Applied Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-applied-mathematics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-statistics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-physics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Geology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-geology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Integrative Physiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-integrative-physiology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Mathematics and Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-mathematics-and-finance.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Cell Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-cell-biology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Computing Science – Software Practice Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-computing-science-software-practice-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Environmental Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-environmental-earth-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Molecular Cellular and Developmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-molecular-cellular-and-developmental-biology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-biochemistry.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Pharmacology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-pharmacology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Paleontology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-paleontology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Mathematics Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-mathematics-physics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Ecology Evolution and Environmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-ecology-evolution-and-environmental-biology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Mathematics and Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-mathematics-and-economics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Computing Science – Artificial Intelligence Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-computing-science-artificial-intelligence-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-psychology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Planning",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-planning.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Immunology and Infection",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-immunology-and-infection.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Geophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-geophysics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Astrophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-astrophysics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-earth-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Computing Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-computing-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-mathematics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-chemistry.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Biological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-biological-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-data-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Data Science – Computing Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-data-science-computing-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Data Science – Mathematics Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-data-science-mathematics-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Data Science – Statistics Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-major-data-science-statistics-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Planning",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-planning.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-earth-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Biological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-biological-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Computing Science – Artificial Intelligence Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-computing-science-artificial-intelligence-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Pharmacology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-pharmacology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Mathematics and Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-mathematics-and-economics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Cell Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-cell-biology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Applied Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-applied-mathematics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-statistics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-physics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Geology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-geology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Astrophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-astrophysics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Physiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-physiology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Integrative Physiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-integrative-physiology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Ecology Evolution and Environmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-ecology-evolution-and-environmental-biology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Paleontology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-paleontology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Geophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-geophysics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-neuroscience.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Mathematical Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-mathematical-physics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Molecular Cellular and Developmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-molecular-cellular-and-developmental-biology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Mathematics and Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-mathematics-and-finance.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Immunology and Infection",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-immunology-and-infection.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Computing Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-computing-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-chemistry.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-psychology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-mathematics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Environmental Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-environmental-earth-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-biochemistry.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Computing Science – Software Practice Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-computing-science-software-practice-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-data-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Data Science – Computing Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-data-science-computing-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Data Science – Mathematics Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-data-science-mathematics-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Data Science – Statistics Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-data-science-statistics-option.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "BSc (Specialization in Science and Education)/BEd (Secondary) – Science and Education - Physical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bsc-specialization-in-science-and-education-science-and-education-physical-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "BSc (Specialization in Science and Education)/BEd (Secondary) – Science and Education - Mathematical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bsc-specialization-in-science-and-education-science-and-education-mathematical-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "BSc (Specialization in Science and Education)/BEd (Secondary) – Science and Education - Biological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bsc-specialization-in-science-and-education-science-and-education-biological-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Second Languages: Spanish",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-second-languages-spanish.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-physics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Drama",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-drama.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Trades Manufacturing and Transportation",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-trades-manufacturing-and-transportation.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-computer-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-chemistry.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Art",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-art.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-mathematics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Biological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-biological-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Physical Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-physical-education.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Second Languages: Japanese",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-second-languages-japanese.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Social Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-social-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Second Languages: Other",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-second-languages-other.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – General Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-general-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-music.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Second Languages: German",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-second-languages-german.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Human Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-human-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Physical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-physical-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Second Languages: Ukrainian",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-second-languages-ukrainian.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Second Languages: French",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-second-languages-french.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Second Languages: Cree",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-second-languages-cree.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – English Language Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-english-language-arts.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Recreation",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-recreation.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Design",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-design.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Media",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-media.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Health",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-health.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Natural Resources",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-natural-resources.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education – Career and Technology Studies: Communication Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-secondary-education-career-and-technology-studies-communication-arts.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Elementary Education – Generalist Degree",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-elementary-education-generalist-degree.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education in Elementary Education (Augustana) – Generalist Degree",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-education-in-elementary-education-augustana-generalist-degree.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts/Bachelor of Education – General Arts/Secondary Education",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-and-education-general-arts-secondary-education.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-marketing.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-accounting.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Business Economics and Law",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-business-economics-and-law.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Business Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-business-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Business Technology Management",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-business-technology-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Strategic Management and Organization",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-strategic-management-and-organization.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-finance.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Operations Management",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-operations-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Entrepreneurship and Innovation",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-entrepreneurship-and-innovation.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – International Business",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-international-business.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Human Resources Management",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-human-resources-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce – Business Analytics",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-business-analytics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce Honors – Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-honors-accounting.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce Honors – Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-honors-finance.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce Honors – Operations Management",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-honors-operations-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Commerce Honors – Strategy Management",
+   "cycle": "baccalaureat",
+   "faculte": "Alberta School of Business",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-commerce-honors-strategy-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Ethics and Global Studies (Interdisciplinary)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-ethics-and-global-studies-interdisciplinary.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Creativity and Culture (Interdisciplinary)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-creativity-and-culture-interdisciplinary.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Sport and Exercise Science",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-sport-exercise-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Law, Crime and Justice Studies (Interdisciplinary)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-law-crime-and-justice-studies-interdisciplinary.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Sustainability Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-sustainability-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts – Psychology and Mental Health",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-psychology-and-mental-health.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Management – Management and Business Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-management-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science – General Sciences (Augustana)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-general-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science – Sport and Exercise Science (Augustana)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-sports-exercise-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science – Environmental Science (Augustana)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-environmental-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science – Integrative Biology (Augustana)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-integrative-biology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science – Computing Science and Mathematics (Augustana)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-computing-science-and-mathematics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science – Chemical and Physical Sciences (Augustana)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-chemical-and-physical-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science – Psychology (Augustana)",
+   "cycle": "baccalaureat",
+   "faculte": "Augustana Campus",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-psychology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-chemical-engineering-chemical-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Chemical Engineering – Computer Process Control",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-chemical-engineering-computer-process-control-chemical-engineering-computer-process-control.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Chemical Engineering – Bioprocessing & Biomanufacturing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-chemical-engineering-bioprocessing-biomanufacturing.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Chemical Engineering – Clean Energy and Sustainable Process Systems",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-chemical-engineering-clean-energy-and-sustainable-process-systems.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-civil-engineering-civil-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Civil Engineering – Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-civil-engineering-environmental-engineering-environmental-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-computer-engineering-computer-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Computer Engineering – Nanoscale System Design Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-computer-engineering-nanoscale-system-design-option-nanoscale-system-design.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-electrical-engineering-electrical-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Electrical Engineering – Nanoengineering Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-electrical-engineering-nanoengineering-option-nanoengineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Engineering Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-engineering-physics-engineering-physics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Engineering Physics – Nanoengineering Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-engineering-physics-nanoengineering-option-nanoengineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Materials Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-materials-engineering-materials-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-mechanical-engineering-mechanical-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Mining Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-mining-engineering-mining-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Petroleum Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-petroleum-engineering-petroleum-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Mechatronics and Robotics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-mechatronics-and-robotics-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Computer Engineering Co-operative – Software Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-computer-engineering-software-option-co-operative-computer-engineering-software.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Mechanical Engineering Co-operative – Biomedical Option",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-mechanical-engineering-biomedical-option-co-operative-biomedical-engineering.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Agriculture – Sustainable Agricultural Systems",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-agriculture-sustainable-agricultural-systems.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Agriculture – Agricultural and Resource Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-agriculture-agricultural-and-resource-economics.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Agriculture – Crop Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-agriculture-crop-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Agriculture – Animal Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-agriculture-animal-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Forestry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-forestry-forestry.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Forest Business Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-forest-business-management-forest-business-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Agricultural/Food Business Management – Food Business Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-agricultural-food-business-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Agricultural/Food Business Management – Agricultural Business Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-agricultural-agricultural-business-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Animal Health – Companion and Performance Animals",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-animal-health-companion-and-performance-animals.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Animal Health – Food Animals",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-animal-health-food-animals.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Human Ecology – Family Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-human-ecology-family-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Human Ecology – Clothing, Textiles and Material Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-human-ecology-clothing-textiles-and-material-culture.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Fashion Business Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-fashion-business-management-fashion-business-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Nutrition and Food Science – Dietetics Specialization",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-nutrition-and-food-science-dietetics-specialization.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Nutrition and Food Science – Food Science and Technology Specialization",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-nutrition-and-food-science-food-science-and-technology-specialization.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Nutrition and Food Science – General Program",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-nutrition-and-food-science-general-program.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Environmental and Conservation Sciences – Wildlife and Rangeland Resources Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-environmental-and-conservation-sciences-wildlife-and-rangeland-resources-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Environmental and Conservation Sciences – Conservation Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-environmental-and-conservation-sciences-conservation-biology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Environmental and Conservation Sciences – Human Dimensions of Environmental Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-environmental-and-conservation-sciences-human-dimensions-of-environmental-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Environmental and Conservation Sciences – Land Reclamation",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-environmental-and-conservation-sciences-land-reclamation.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Environmental and Conservation Sciences – Environmental Economics and Policy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-environmental-and-conservation-sciences-environmental-economics-and-policy.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Food Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-food-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Nutrition",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-with-honors-nutrition.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Environmental and Conservation Sciences/Bachelor of Arts in Native Studies – Human Dimensions of Environmental Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agricultural, Life & Environmental Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-environmental-and-conservation-sciences-human-dimensions-of-environmental-management1.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Environmental and Conservation Sciences/Bachelor of Arts in Native Studies – Native Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Native Studies",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-environmental-and-conservation-sciences-native-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts in Native Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Native Studies",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-in-native-studies-native-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts in Native Studies with Honors",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Native Studies",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-in-native-studies-with-honors-native-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts in Native Studies/Bachelor of Education in Elementary Education – Elementary Education - Native Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Native Studies",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-in-native-studies-elementary-education-native-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts in Native Studies/Bachelor of Education in Secondary Education – Secondary Education - Native Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Native Studies",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-in-native-studies-secondary-education-native-studies.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Certificate in Indigenous Governance and Partnership",
+   "cycle": "certificat",
+   "faculte": "Faculty of Native Studies",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/certificate-in-indigenous-governance-and-partnership-indigenous-governance-and-partnership.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Kinesiology – Sport Performance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology, Sport, and Recreation",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-kinesiology-sport-performance.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Kinesiology – Physical Activity and Health",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology, Sport, and Recreation",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-kinesiology-physical-activity-and-health.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Kinesiology – Adapted Physical Activity",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology, Sport, and Recreation",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-kinesiology-adapted-physical-activity.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Kinesiology/Bachelor of Education in Secondary Education – Education - Kinesiology - Secondary",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology, Sport, and Recreation",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-kinesiology-education-kinesiology-secondary.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Kinesiology/Bachelor of Education in Elementary Education – Education - Kinesiology - Elementary",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology, Sport, and Recreation",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-kinesiology-education-kinesiology-elementary.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology, Sport, and Recreation",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-kinesiology-kinesiology.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts in Recreation, Sport and Tourism",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology, Sport, and Recreation",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-arts-in-recreation-sport-and-tourism-recreation-sport-and-tourism.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Nursing",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-nursing-nursing.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing Honors - Collaborative",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Nursing",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-nursing-honors-collaborative.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science (Dental Hygiene Specialization)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Medicine & Dentistry",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-dental-hygiene-specialization-dental-hygiene.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Radiation Therapy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Medicine & Dentistry",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-science-in-radiation-therapy-radiation-therapy.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science in Medical Laboratory Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Medicine & Dentistry",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-science-medical-laboratory-science.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Health Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "College of Health Sciences",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bachelor-of-health-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Ingénierie – Génie (première année)",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-sciences-en-genie.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Education/Baccalauréat-es-Sciences – Sciences biologiques",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-sciences-biologiques.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Education/Baccalauréat-es-Sciences – Sciences mathématiques",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-sciences-mathematiques.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Education/Baccalauréat-es-Sciences – Sciences physiques",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-sciences-physiques.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Éducation secondaire – Français",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-secondaire-francais.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Éducation secondaire – Sciences générales",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-secondaire-sciences-generales.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Éducation secondaire – Musique",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-secondaire-musique.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Éducation secondaire – Mathématique",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-secondaire-mathematique.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Éducation secondaire – Études sociales",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-secondaire-etudes-sociales.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat en Éducation élémentaire – Degré de Généraliste",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-en-education-elementaire-degre-de-generaliste.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts avec spécialisation – Sciences socio-politiques",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-avec-specialisation-sciences-socio-politiques.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts avec spécialisation – Études interdisciplinaires",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-avec-specialisation-etudes-interdisciplinaires.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts avec spécialisation – Études canadiennes",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-avec-specialisation-etudes-canadiennes.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts avec spécialisation – Français-langue et littérature",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-avec-specialisation-francais-langue-et-litterature.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat ès Sciences – Mathématique",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-sciences-mathematique.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat ès Sciences – Physique",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-sciences-physique.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat ès Sciences – Chimie",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-sciences-chimie.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat ès Sciences – Sciences mathématiques",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-sciences-sciences-mathematiques.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat ès Sciences – Sciences biologiques",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-sciences-sciences-biologiques.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat ès Sciences – Psychologie sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-sciences-psychologie-sciences.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat ès Sciences – Sciences physiques",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-sciences-sciences-physiques.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts – Études canadiennes",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-etudes-canadiennes.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts – Science politique",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-science-politique.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts – Psychologie",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-psychologie.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts – Économie",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-economie.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts – Française-langue",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-francaise-langue.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts – Histoire",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-histoire.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts – Français-littérature",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-francais-litterature.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Baccalauréat-ès-Arts – Sociologie",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/baccalaureat-es-arts-sociologie.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Science in Nursing/Baccalauréat bilingue ès sciences Infirmières",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-science-in-nursing-nursing.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Gestion des operations",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-gestion-des-operations.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Gestion Stratégique et Organisation",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-gestion-strategique-et-organisation.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Entrepreneuriat et innovation",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-entrepreneuriat-et-entreprise-familiale.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Commerce International",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-affaires-internationales.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Business Technology Management",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-business-technology-management.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Vente",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-vente.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Gestion des ressources humaines",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-gestion-des-ressources-humaines.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Comptabilite",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-comptabilite.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Économie et droit des affaires",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-economie-et-droit-des-affaires.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Bilingual Bachelor of Commerce/Baccalauréat bilingue en Administration des affaires – Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/en/undergraduate-programs/bilingual-bachelor-of-commerce-finance.html",
+   "source": "https://www.ualberta.ca/en/undergraduate-programs/sitemap.xml"
+  },
+  {
+   "nom": "Certificat en Développement Durable",
+   "cycle": "certificat",
+   "faculte": "Campus Saint-Jean",
+   "lien": "https://www.ualberta.ca/fr/campus-saint-jean/a-propos/developpement-durable/certificat-en-developpement-durable.html",
+   "source": "https://www.ualberta.ca/fr/campus-saint-jean/programmes/etudes-du-1er-cycle/index.html"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Bachelor of Arts with Honors – Foundation Year",
+   "raison": "année d'entrée (foundation year) menant aux BA Honors, pas un programme nommé distinct"
+  },
+  {
+   "nom": "Bachelor of Arts – Undeclared",
+   "raison": "voie d'admission non déclarée (undeclared), pas un programme nommé"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Undeclared",
+   "raison": "voie d'admission non déclarée (undeclared), pas un programme nommé"
+  },
+  {
+   "nom": "Bachelor of Science with Major – Business Minor",
+   "raison": "mineure (Business Minor) jumelée à une majeure en sciences — mineure exclue"
+  },
+  {
+   "nom": "Bachelor of Science with Honors – Business Minor",
+   "raison": "mineure (Business Minor) jumelée à une spécialisation en sciences — mineure exclue"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Mathematics",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Mathematics »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Second Languages: Ukrainian",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Second Languages: Ukrainian »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Second Languages: German",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Second Languages: German »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Human Sciences",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Human Sciences »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Biological Sciences",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Biological Sciences »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Drama",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Drama »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Recreation",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Recreation »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Design",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Design »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Computer Science",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Computer Science »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Art",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Art »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Social Studies",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Social Studies »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Second Languages: Spanish",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Second Languages: Spanish »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Second Languages: Cree",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Second Languages: Cree »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Natural Resources",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Natural Resources »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Communication Arts",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Communication Arts »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Chemistry",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Chemistry »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Physical Education",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Physical Education »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Second Languages: Other",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Second Languages: Other »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Second Languages: French",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Second Languages: French »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – English Language Arts",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – English Language Arts »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Trades Manufacturing and Transportation",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Trades Manufacturing and Transportation »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Media",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Media »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Career and Technology Studies: Health",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Career and Technology Studies: Health »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Music",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Music »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Physics",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Physics »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Physical Sciences",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Physical Sciences »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – Second Languages: Japanese",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – Second Languages: Japanese »"
+  },
+  {
+   "nom": "Bachelor of Education in Secondary Education - After Degree – General Science",
+   "raison": "voie après-diplôme (after degree) du même programme, fusionnée avec « Bachelor of Education in Secondary Education – General Science »"
+  },
+  {
+   "nom": "Bachelor of Education in Elementary Education - After Degree – Generalist Degree",
+   "raison": "voie après-diplôme fusionnée avec « Bachelor of Education in Elementary Education – Generalist Degree »"
+  },
+  {
+   "nom": "Bachelor of Arts – Undeclared (Augustana)",
+   "raison": "voie d'admission non déclarée, pas un programme nommé"
+  },
+  {
+   "nom": "Bachelor of Science – Undeclared (Augustana)",
+   "raison": "voie d'admission non déclarée, pas un programme nommé"
+  },
+  {
+   "nom": "Bachelor of Science in Chemical Engineering Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Chemical Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Chemical Engineering Co-operative – Computer Process Control",
+   "raison": "variante co-op du même programme, fusionnée avec « … Chemical Engineering – Computer Process Control »"
+  },
+  {
+   "nom": "Bachelor of Science in Chemical Engineering Co-operative – Bioprocessing & Biomanufacturing",
+   "raison": "variante co-op du même programme, fusionnée avec « … Chemical Engineering – Bioprocessing & Biomanufacturing »"
+  },
+  {
+   "nom": "Bachelor of Science in Chemical Engineering Co-operative – Clean Energy and Sustainable Process Systems",
+   "raison": "variante co-op du même programme, fusionnée avec « … Chemical Engineering – Clean Energy and Sustainable Process Systems »"
+  },
+  {
+   "nom": "Bachelor of Science in Civil Engineering Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Civil Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Civil Engineering Co-operative – Environmental Engineering",
+   "raison": "variante co-op du même programme, fusionnée avec « … Civil Engineering – Environmental Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Computer Engineering Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Computer Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Computer Engineering Co-operative – Nanoscale System Design Option",
+   "raison": "variante co-op du même programme, fusionnée avec « … Computer Engineering – Nanoscale System Design Option »"
+  },
+  {
+   "nom": "Bachelor of Science in Electrical Engineering Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Electrical Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Electrical Engineering Co-operative – Nanoengineering Option",
+   "raison": "variante co-op du même programme, fusionnée avec « … Electrical Engineering – Nanoengineering Option »"
+  },
+  {
+   "nom": "Bachelor of Science in Engineering Physics Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Engineering Physics »"
+  },
+  {
+   "nom": "Bachelor of Science in Engineering Physics Co-operative – Nanoengineering Option",
+   "raison": "variante co-op du même programme, fusionnée avec « … Engineering Physics – Nanoengineering Option »"
+  },
+  {
+   "nom": "Bachelor of Science in Materials Engineering Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Materials Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Mechanical Engineering Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Mechanical Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Mining Engineering Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Mining Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Petroleum Engineering Co-operative",
+   "raison": "variante co-op du même programme, fusionnée avec « Bachelor of Science in Petroleum Engineering »"
+  },
+  {
+   "nom": "Bachelor of Science in Engineering – Qualifying Year",
+   "raison": "année de qualification commune (1re année) avant le choix de discipline, pas un programme nommé"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing - After Degree",
+   "raison": "voie après-diplôme fusionnée avec « Bachelor of Science in Nursing »"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing with Honors - After Degree",
+   "raison": "voie après-diplôme fusionnée avec « Bachelor of Science in Nursing Honors - Collaborative » (à vérifier)"
+  },
+  {
+   "nom": "BSc (Dental Hygiene Specialization) – Post-Diploma Degree Completion",
+   "raison": "voie de complétion post-diplôme du même programme, fusionnée"
+  },
+  {
+   "nom": "Bachelor of Science in Medical Laboratory Science – Post-Professional",
+   "raison": "voie post-professionnelle du même programme, fusionnée"
+  },
+  {
+   "nom": "Doctor of Medicine",
+   "raison": "doctorat professionnel (MD), exclu"
+  },
+  {
+   "nom": "Doctor of Dental Surgery",
+   "raison": "doctorat professionnel (DDS), exclu"
+  },
+  {
+   "nom": "Doctor of Pharmacy – Pharmacy Entry-to-Practice",
+   "raison": "doctorat professionnel (PharmD), exclu"
+  },
+  {
+   "nom": "Doctor of Pharmacy – Pharmacy for Practicing Pharmacists",
+   "raison": "doctorat professionnel (PharmD), exclu"
+  },
+  {
+   "nom": "Juris Doctor – Law",
+   "raison": "diplôme professionnel de droit (JD, deuxième entrée), exclu"
+  },
+  {
+   "nom": "Baccalauréat en Éducation - après-diplôme (Campus Saint-Jean)",
+   "raison": "voie après-diplôme, fusionnée avec les lignes Baccalauréat en Éducation du Campus Saint-Jean"
+  },
+  {
+   "nom": "Baccalauréat en éducation à Calgary (Campus Saint-Jean)",
+   "raison": "variante de lieu (Calgary) du B.Éd. du Campus Saint-Jean, fusionnée"
+  },
+  {
+   "nom": "Baccalauréat en éducation à distance (Campus Saint-Jean)",
+   "raison": "variante de mode (à distance) du B.Éd. du Campus Saint-Jean, fusionnée"
+  },
+  {
+   "nom": "Pages non-programmes du sitemap (apply-*.html ×9, apply/<état>.html ×9, index.html, sitemap-preview.html)",
+   "raison": "pages d'admission/navigation, pas des programmes — non comptées dans « attendu »"
+  }
+ ]
+}

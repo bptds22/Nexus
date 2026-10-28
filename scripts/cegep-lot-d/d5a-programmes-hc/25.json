@@ -1,0 +1,1008 @@
+{
+ "universite": "University of New Brunswick",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.unb.ca/academics/programs/index.html",
+  "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html",
+  "https://www.unb.ca/academics/calendar/undergraduate/current/saintjohnprograms/index.html",
+  "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofbusinessadministration/certificateprograms.html",
+  "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofeducation/certificatesanddiplomas.html"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 129,
+  "certificat": 24,
+  "comment": "Baccalaureat: 129 degree entries of the official UNB program directory (Fredericton + Saint John + Moncton accelerated nursing, incl. Law JD); unit = directory entry (subject + degree). Same-name entries in the same degree across campuses merged; same subject under different degrees kept apart with the degree in brackets (e.g. 'Economics (Bachelor of Arts)' vs 'Economics (Bachelor of Business Administration)'). Certificat: 1 in the directory (Wabanaki Governance) + 23 certificates named in the current undergraduate calendar (Fredericton Arts 5, Science 4, BBA 5, Education 7; Saint John 2)."
+ },
+ "programmes": [
+  {
+   "nom": "Applied Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/applied-arts/applied-arts.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Accounting (Bachelor of Applied Management)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business",
+   "lien": "https://www.unb.ca/academics/programs/applied-management/accounting.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "General Business",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business",
+   "lien": "https://www.unb.ca/academics/programs/applied-management/general-business.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/anthropology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Biology (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/biology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Classical Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/classical-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Classics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/classics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Comparative Cultural Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/comparative-cultural-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Comparative Literature",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/comparative-literature.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/creative-writing.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Criminal Justice Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/criminal-justice-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Criminology and Criminal Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/criminology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Drama",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/drama.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Economic Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/economic-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Economics (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/economics-fr.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/english-fr.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/french.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Gender and Women's Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/gender-and-womens-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/gender-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/history.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Communication Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/information-and-communication-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "International Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/international-development-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Law in Society",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/law-in-society.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/linguistics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Mathematics (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/mathematics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Media Arts and Cultures",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/media-arts--cultures.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/music.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/neuroscience.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/philosophy.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/political-science.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Politics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/politics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Psychology (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/psychology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/sociology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Statistics (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/arts/statistics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Accounting (Bachelor of Business Administration)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/accounting-fr.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Digital Business Design",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business",
+   "lien": "https://www.unb.ca/academics/programs/business/digital-business-sj.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Economics (Bachelor of Business Administration)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/economics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Economics and Finance (combined)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/economics-and-finance-combined.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Entrepreneurship",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/entrepreneurship.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/finance.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "French Communication and Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business",
+   "lien": "https://www.unb.ca/academics/programs/business/french-communication-and-culture-sj.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Human Resources Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/hrm.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "International Business",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/international-business.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Logistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/logistics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.unb.ca/academics/programs/business/marketing.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Computer Science (Bachelor of Computer Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Computer Science",
+   "lien": "https://www.unb.ca/academics/programs/computer-science/computer-science_f.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Computer Science (Bachelor of Science in Computer Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/computer-science/computer-science_sj.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Adult Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.unb.ca/academics/programs/education/adult-education.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Early Childhood Education",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.unb.ca/academics/programs/education/earlychildhood.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Education (Bachelor of Education)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.unb.ca/academics/programs/education/education-fr.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Education (Bachelor of Arts, Bachelor of Education)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/education/education_sj.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.unb.ca/academics/programs/engineering/chemical-engineering_f.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.unb.ca/academics/programs/engineering/civil-f.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Electrical and Computer Engineering",
+   "lien": "https://www.unb.ca/academics/programs/engineering/electrical.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/engineering/enveng_sj.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Geological Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.unb.ca/academics/programs/engineering/geological.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Geomatics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.unb.ca/academics/programs/engineering/gge.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.unb.ca/academics/programs/engineering/mechanical-f.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Environmental Engineering Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/engineering-tech/environmental-engineering-technology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Environmental Management",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Forestry and Environmental Management, Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/environment-and-natural-resources/envm.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Forestry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Forestry and Environmental Management",
+   "lien": "https://www.unb.ca/academics/programs/forestry/forestry.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Biomedical Sciences and Health",
+   "cycle": "baccalaureat",
+   "faculte": "Interdisciplinary",
+   "lien": "https://www.unb.ca/academics/programs/health/biomedical.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Management in Health",
+   "cycle": "baccalaureat",
+   "faculte": "Interdisciplinary",
+   "lien": "https://www.unb.ca/academics/programs/health/management.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Society and Health",
+   "cycle": "baccalaureat",
+   "faculte": "Interdisciplinary",
+   "lien": "https://www.unb.ca/academics/programs/health/society-health.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Radiography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/health-sciences/radiography.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Respiratory Therapy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/health-sciences/respiratory-therapy.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology",
+   "lien": "https://www.unb.ca/academics/programs/kin/kinesiology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Integrated Studies",
+   "cycle": "baccalaureat",
+   "faculte": "School of Leadership Studies",
+   "lien": "https://www.unb.ca/academics/programs/leadership-studies/integrated-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Leadership Studies",
+   "cycle": "baccalaureat",
+   "faculte": "School of Leadership Studies",
+   "lien": "https://www.unb.ca/academics/programs/leadership-studies/leadership-studies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Medical Laboratory Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/medical-laboratory-science/medical-laboratory-science.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Nursing",
+   "lien": "https://www.unb.ca/academics/programs/nursing/nursing.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Recreation and Sport Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Kinesiology",
+   "lien": "https://www.unb.ca/academics/programs/recreation-and-sport-studies/brss.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Applied Coastal Ecology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/science/applied-coastal-ecology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Applied Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/applied-physics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Biology (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/biology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Biology-Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/biology-chemistry.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Biology-Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/science/biology-psychology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Biology-Mathematics and Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/biomath.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Biology-Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/biophysics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/chemistry.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Chemistry-Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/chemphys.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Earth Sciences-Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/earth-phys.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/earth-sciences.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Economics (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/economics-fr.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Engineering Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/engineering-physics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Environmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/science/environmental-biology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Environmental Geosciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/environmental-geochemistry.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Environmental Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/environmental-sciences.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "General Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/gensci.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Geological Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/geostudies.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Marine Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/science/marine-biology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Mathematics-Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/math-phys.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Mathematics/Statistics-Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/mathecon.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Mathematics (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/science/mathematics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Mathematics and Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/mathematics-and-statistics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Medicinal Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/medchem.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/physics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Psychology (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/programs/science/psychology.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Statistics (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": "https://www.unb.ca/academics/programs/science/statistics.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/programs/socialwork/socialwork.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Software Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Computer Science, Faculty of Engineering",
+   "lien": "https://www.unb.ca/academics/programs/software-engineering/software_eng.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Wabanaki Governance (Certificate)",
+   "cycle": "certificat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.unb.ca/academics/programs/education/wabanakigovernance.html",
+   "source": "https://www.unb.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Certificate in Applied Behaviour Analysis",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/cel/intervention/aba-credit.html",
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate in Family Violence Issues",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofarts/certificateprograms/certificateinfamilyviolenceissues.html",
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate in Film Production",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofarts/certificateprograms/certificateinfilmproduction.html",
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate in Publishing",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofarts/certificateprograms/certificateinpublishing.html",
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate in Ethics",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofarts/certificateprograms/certficateinethics.html",
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate in Foundations of Biomedical Sciences",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofscience/certificateinfoundationsofbiomedicalsciences.html",
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate of Foundational Geoscience Knowledge",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate in Resource Geology",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate in Environmental Earth Science",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/index.html"
+  },
+  {
+   "nom": "Certificate in Business Administration Level I",
+   "cycle": "certificat",
+   "faculte": "Faculty of Management",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofbusinessadministration/certificateprograms.html"
+  },
+  {
+   "nom": "Certificate in Business Administration Level II",
+   "cycle": "certificat",
+   "faculte": "Faculty of Management",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofbusinessadministration/certificateprograms.html"
+  },
+  {
+   "nom": "Certificate in Public Administration Level I",
+   "cycle": "certificat",
+   "faculte": "Faculty of Management",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofbusinessadministration/certificateprograms.html"
+  },
+  {
+   "nom": "Certificate in Public Administration Level II",
+   "cycle": "certificat",
+   "faculte": "Faculty of Management",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofbusinessadministration/certificateprograms.html"
+  },
+  {
+   "nom": "Certificate in Applied Human Resources Management",
+   "cycle": "certificat",
+   "faculte": "Faculty of Management",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofbusinessadministration/certificateprograms.html"
+  },
+  {
+   "nom": "Certificate in Adult Education",
+   "cycle": "certificat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofeducation/certificatesanddiplomas.html"
+  },
+  {
+   "nom": "Certificate in Early Childhood Education",
+   "cycle": "certificat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofeducation/certificatesanddiplomas.html"
+  },
+  {
+   "nom": "Certificate in Teaching French as a Second Language (CTFSL)",
+   "cycle": "certificat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofeducation/certificatesanddiplomas.html"
+  },
+  {
+   "nom": "Certificate in Teaching English as a Second Language",
+   "cycle": "certificat",
+   "faculte": "Faculty of Education",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/frederictonprograms/bachelorofeducation/certificatesanddiplomas.html"
+  },
+  {
+   "nom": "Certificate in Data Analytics",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science, Applied Science, and Engineering",
+   "lien": null,
+   "source": "https://www.unb.ca/academics/calendar/undergraduate/current/saintjohnprograms/index.html"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Economics - Saint John (Bachelor of Arts)",
+   "raison": "Campus variant / accelerated stream merged into « Economics (Bachelor of Arts) » (counted)"
+  },
+  {
+   "nom": "English - Saint John (Bachelor of Arts)",
+   "raison": "Campus variant / accelerated stream merged into « English » (counted)"
+  },
+  {
+   "nom": "French - Saint John (Bachelor of Arts)",
+   "raison": "Campus variant / accelerated stream merged into « French » (counted)"
+  },
+  {
+   "nom": "History - Saint John (Bachelor of Arts)",
+   "raison": "Campus variant / accelerated stream merged into « History » (counted)"
+  },
+  {
+   "nom": "Philosophy - Saint John (Bachelor of Arts)",
+   "raison": "Campus variant / accelerated stream merged into « Philosophy » (counted)"
+  },
+  {
+   "nom": "Psychology - Saint John (Bachelor of Arts)",
+   "raison": "Campus variant / accelerated stream merged into « Psychology (Bachelor of Arts) » (counted)"
+  },
+  {
+   "nom": "Sociology - Saint John (Bachelor of Arts)",
+   "raison": "Campus variant / accelerated stream merged into « Sociology » (counted)"
+  },
+  {
+   "nom": "Accounting - Saint John (Bachelor of Business Administration)",
+   "raison": "Campus variant / accelerated stream merged into « Accounting (Bachelor of Business Administration) » (counted)"
+  },
+  {
+   "nom": "Economics - Saint John (Bachelor of Business Administration)",
+   "raison": "Campus variant / accelerated stream merged into « Economics (Bachelor of Business Administration) » (counted)"
+  },
+  {
+   "nom": "Finance - Saint John (Bachelor of Business Administration)",
+   "raison": "Campus variant / accelerated stream merged into « Finance » (counted)"
+  },
+  {
+   "nom": "Human Resources Management - Saint John (Bachelor of Business Administration)",
+   "raison": "Campus variant / accelerated stream merged into « Human Resources Management » (counted)"
+  },
+  {
+   "nom": "Marketing - Saint John (Bachelor of Business Administration)",
+   "raison": "Campus variant / accelerated stream merged into « Marketing » (counted)"
+  },
+  {
+   "nom": "Chemical Engineering - Saint John (Bachelor of Science in Engineering)",
+   "raison": "Campus variant / accelerated stream merged into « Chemical Engineering » (counted)"
+  },
+  {
+   "nom": "Civil Engineering - Saint John (Bachelor of Science in Engineering)",
+   "raison": "Campus variant / accelerated stream merged into « Civil Engineering » (counted)"
+  },
+  {
+   "nom": "Electrical Engineering - Saint John (Bachelor of Science in Engineering)",
+   "raison": "Campus variant / accelerated stream merged into « Electrical Engineering » (counted)"
+  },
+  {
+   "nom": "Geological Engineering - Saint John (Bachelor of Science in Engineering)",
+   "raison": "Campus variant / accelerated stream merged into « Geological Engineering » (counted)"
+  },
+  {
+   "nom": "Geomatics Engineering - Saint John (Bachelor of Science in Engineering)",
+   "raison": "Campus variant / accelerated stream merged into « Geomatics Engineering » (counted)"
+  },
+  {
+   "nom": "Mechanical Engineering - Saint John (Bachelor of Science in Engineering)",
+   "raison": "Campus variant / accelerated stream merged into « Mechanical Engineering » (counted)"
+  },
+  {
+   "nom": "Law (Juris Doctor)",
+   "raison": "First-professional law degree (counted)"
+  },
+  {
+   "nom": "Nursing - Saint John (Bachelor of Nursing)",
+   "raison": "Campus variant / accelerated stream merged into « Nursing » (counted)"
+  },
+  {
+   "nom": "Nursing - Accelerated Program - Moncton (Bachelor of Nursing)",
+   "raison": "Campus variant / accelerated stream merged into « Nursing » (counted)"
+  },
+  {
+   "nom": "Biology-Psychology - Fredericton (Bachelor of Science)",
+   "raison": "Campus variant / accelerated stream merged into « Biology-Psychology » (counted)"
+  },
+  {
+   "nom": "Biology - Saint John (Bachelor of Science)",
+   "raison": "Campus variant / accelerated stream merged into « Biology (Bachelor of Science) » (counted)"
+  },
+  {
+   "nom": "Chemistry - Saint John (Bachelor of Science)",
+   "raison": "Campus variant / accelerated stream merged into « Chemistry » (counted)"
+  },
+  {
+   "nom": "Geology (Saint John)",
+   "raison": "Directory entry: only a Minor in Geology is available in Saint John; full degree in Fredericton (Earth Sciences) (counted)"
+  },
+  {
+   "nom": "Physics - Saint John (Bachelor of Science)",
+   "raison": "Campus variant / accelerated stream merged into « Physics » (counted)"
+  },
+  {
+   "nom": "Psychology - Saint John (Bachelor of Science)",
+   "raison": "Campus variant / accelerated stream merged into « Psychology (Bachelor of Science) » (counted)"
+  },
+  {
+   "nom": "Software Engineering - Saint John (Bachelor of Science in Software Engineering)",
+   "raison": "Campus variant / accelerated stream merged into « Software Engineering » (counted)"
+  },
+  {
+   "nom": "International Baccalaureate Educator Certificate in Teaching and Learning - 10-Month BEd Students",
+   "raison": "Awarded externally by the IB (counted)"
+  },
+  {
+   "nom": "International Baccalaureate Educator Certificate in Teaching and Learning - Practicing Teachers (Online)",
+   "raison": "Awarded externally by the IB; for practising teachers (counted)"
+  },
+  {
+   "nom": "Certificate in First Nations Governance and Leadership",
+   "raison": "à vérifier: calendar Education certificate, possibly the former name of the directory's 'Wabanaki Governance' certificate (counted)"
+  },
+  {
+   "nom": "Certificate in General Studies (Saint John)",
+   "raison": "à vérifier: general-studies accumulation certificate (counted)"
+  },
+  {
+   "nom": "Diploma in Advanced Undergraduate Study (DAUS)",
+   "raison": "Diploma (not counted)"
+  },
+  {
+   "nom": "College of Extended Learning professional development certificates",
+   "raison": "Non-credit (not counted)"
+  },
+  {
+   "nom": "Bachelor of Geomatics; Bachelor of Arts & Science; Bachelor of Industrial Engineering Technology; Bachelor of Information Sciences; Bachelor of Science in Economics (SJ)",
+   "raison": "à vérifier: degree headings in the current calendar indexes without a separate entry in the program directory (not counted)"
+  }
+ ]
+}

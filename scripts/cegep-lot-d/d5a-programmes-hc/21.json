@@ -1,0 +1,1152 @@
+{
+ "universite": "Dalhousie University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.dal.ca/study/programs.html",
+  "https://www.dal.ca/faculty/arts/programs.html",
+  "https://www.dal.ca/faculty/science/explore/departments-programs.html",
+  "https://www.dal.ca/faculty/health/programs.html",
+  "https://www.dal.ca/faculty/computerscience/undergraduate-programs.html",
+  "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html",
+  "https://www.dal.ca/faculty/engineering/programs.html",
+  "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=9878&loaduseredits=False",
+  "https://www.dal.ca/faculty/management/programs.html",
+  "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=9952&loaduseredits=False",
+  "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+ ],
+ "blocages": [
+  "https://www.dal.ca/study/programs.html (official program finder) renders its list by script and is empty to WebFetch (not a block); replaced by each faculty's official program page and the 2026/2027 undergraduate calendar (academiccalendar.dal.ca)",
+  "https://cdn.dal.ca/content/dam/dalhousie/pdf/academics/academiccalendar/UG_2026_2027.pdf exceeds the 10 MB fetch limit (not a block); online calendar used instead"
+ ],
+ "attendu": {
+  "baccalaureat": 89,
+  "certificat": 70,
+  "comment": "Baccalaureat: entries counted on the official faculty program lists before merging (FASS majors/honours 29, Science departments 16, Health undergraduate 13, Computer Science 2, Agriculture 16 incl. 5 BEng Truro listings, Engineering 7 disciplines per calendar incl. new Computer Engineering, Management 3, Architecture and Planning 2 per calendar, BASc Food Science 1). Unit = program entry as listed by the faculty (subject/major, e.g. 'BSc or BA Biology' = 1 row). Certificat: 70 certificates in the 'Certificates' chapter of the 2026/2027 undergraduate calendar. Computer Science faculty page is marked archival (pre-Sept 2026 structure)."
+ },
+ "programmes": [
+  {
+   "nom": "Black and African Diaspora Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/black-african-diaspora.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Cinema and Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/cinema-and-media-studies.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Classics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/classics.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Contemporary Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences (University of King's College)",
+   "lien": "https://www.dal.ca/academics/undergraduate_programs/contemporary.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/creativewriting.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Early Modern Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences (University of King's College)",
+   "lien": "https://www.dal.ca/academics/undergraduate_programs/ems.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/english.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Environment, Sustainability and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/ess.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "European Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/european.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/french.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Gender & Women's Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/gws.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "German",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/german.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/history.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "History of Science and Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences (University of King's College)",
+   "lien": "https://www.dal.ca/academics/undergraduate_programs/hst.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "International Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/international-development-studies-ba.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Law, Justice and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/ljso.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/music.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/philosophy.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/polisci.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/religious.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Sociology & Social Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/sosa.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Spanish & Latin American Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/spanish.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Theatre",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/theatre-ba.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Theatre (Acting)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/theatre-acting-ba.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Theatre (Theatre Studies)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/theatre-studies-ba.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Theatre (Stage Design & Technical Theatre)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/stage-design-technical-theatre-ba.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "Theatre (Costume Studies)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts and Social Sciences",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/costume-studies-ba.html",
+   "source": "https://www.dal.ca/faculty/arts/programs.html"
+  },
+  {
+   "nom": "BSc Biochemistry and Molecular Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://medicine.dal.ca/departments/department-sites/biochemistry-molecular-biology.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/biology-bsc-ba.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA Marine Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/marine-biology-bsc-ba.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/chemistry.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/earth-environmental-sciences.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/earth-environmental-sciences.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/economics.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc in Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/math-stats.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA in Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/math-stats.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA in Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/math-stats.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc (Medical Sciences)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/medical-science.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc in Microbiology and Immunology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/microbiology-immunology-bsc.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA in Ocean Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/oceanography.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA in Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/physics.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA in Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/psychology_neuroscience.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "BSc or BA in Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.dal.ca/faculty/science/psychology_neuroscience.html",
+   "source": "https://www.dal.ca/faculty/science/explore/departments-programs.html"
+  },
+  {
+   "nom": "Arctic Nursing (BScN)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/faculty/health/nursing/undergraduate-program/arctic-nursing.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Diagnostic Medical Ultrasound (BHSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/faculty/health/health-sciences/programs/undergraduate-programs/diagnostic-medical-ultrasound.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Health Promotion (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/study/program-sites/health-promotion.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Kinesiology (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/kinesiology.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Nuclear Medicine Technology (BHSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/faculty/health/health-sciences/programs/undergraduate-programs/nuclear-medicine-technology.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Nursing (BScN)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/nursing.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Medical Laboratory Technology (Post Diploma)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/faculty/health/health-sciences/programs/post-diploma-bhsc-program/medical-laboratory-technology.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Radiological Technology (BHSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/faculty/health/health-sciences/programs/undergraduate-programs/radiological-technology.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Recreation Management (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/recmgmt.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Respiratory Therapy (BHSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/faculty/health/health-sciences/programs/undergraduate-programs/respiratory-therapy.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Social Work (BSW)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/academics/programs/professional/socialwork.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Therapeutic Recreation (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Health",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/rectherapeutic.html",
+   "source": "https://www.dal.ca/faculty/health/programs.html"
+  },
+  {
+   "nom": "Bachelor of Computer Science (BCS)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Computer Science",
+   "lien": "https://www.dal.ca/faculty/computerscience/undergraduate-programs/study-computer-science.html",
+   "source": "https://www.dal.ca/faculty/computerscience/undergraduate-programs.html"
+  },
+  {
+   "nom": "Bachelor of Applied Computer Science (BACS)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Computer Science",
+   "lien": "https://www.dal.ca/faculty/computerscience/undergraduate-programs/study-applied-computer-science.html",
+   "source": "https://www.dal.ca/faculty/computerscience/undergraduate-programs.html"
+  },
+  {
+   "nom": "International Food Business (BAgr)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/international-food-business-bagr.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Landscape Architecture (BLA)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/landscape-architecture-bla.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Agriculture (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/agriculture-bsc.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Bioveterinary Science (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/bioveterinary-science-bsc.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Agricultural Business (BSc Agr)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/agricultural-business-bsc.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Agricultural Economics (BSc Agr)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/agricultural-economics-bsc-agr.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Animal Science (BSc Agr)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/animal-science-bsc-agr.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Aquaculture (BSc Agr)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/aquaculture-bsc.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Environmental Sciences (BSc Agr)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/environmental-sciences-bsc-agr.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Plant Science (BSc Agr)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/plant-science-bsc-agr.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Small Business Management (BTech)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Agriculture",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/small-business-management-btech.html",
+   "source": "https://www.dal.ca/study/faculties/agriculture/programs/undergraduate-programs.html"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/Chemical-Engineering.html",
+   "source": "https://www.dal.ca/faculty/engineering/programs.html"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/Civil-Engineering.html",
+   "source": "https://www.dal.ca/faculty/engineering/programs.html"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.dal.ca/faculty/engineering/future-students/computerengineering.html",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=9878&loaduseredits=False"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/Electrical-Engineering.html",
+   "source": "https://www.dal.ca/faculty/engineering/programs.html"
+  },
+  {
+   "nom": "Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/Environmental-Engineering.html",
+   "source": "https://www.dal.ca/faculty/engineering/programs.html"
+  },
+  {
+   "nom": "Industrial Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/Industrial-Engineering.html",
+   "source": "https://www.dal.ca/faculty/engineering/programs.html"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Engineering",
+   "lien": "https://www.dal.ca/academics/programs/undergraduate/Mechanical-Engineering.html",
+   "source": "https://www.dal.ca/faculty/engineering/programs.html"
+  },
+  {
+   "nom": "Bachelor of Commerce Co-op (BComm Co-op)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.dal.ca/faculty/management/programs/undergraduate-programs/bcomm.html",
+   "source": "https://www.dal.ca/faculty/management/programs.html"
+  },
+  {
+   "nom": "Bachelor of Management (BMgmt)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.dal.ca/faculty/management/programs/undergraduate-programs/bmgmt.html",
+   "source": "https://www.dal.ca/faculty/management/programs.html"
+  },
+  {
+   "nom": "Bachelor of Science (Recreation) and Management (BSc(Rec)BMgmt)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Management",
+   "lien": "https://www.dal.ca/study/programs/undergraduate/recreation-management-bsc-bmgmt.html",
+   "source": "https://www.dal.ca/faculty/management/programs.html"
+  },
+  {
+   "nom": "Bachelor of Environmental Design Studies (BEDS)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Architecture and Planning",
+   "lien": null,
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=9952&loaduseredits=False"
+  },
+  {
+   "nom": "Bachelor of Community Design",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Architecture and Planning",
+   "lien": null,
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=9952&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Actuarial and Financial Mathematics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44025&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Acute and Critical Care",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44006&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Animal Behaviour",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44028&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Animal Welfare",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43976&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Applied and Computational Mathematics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43965&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Aquaculture and the Environment",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43964&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Aquaculture",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43993&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Art History and Visual Culture",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43990&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Artificial Intelligence and Intelligent Systems",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43987&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Biomedical Engineering",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44022&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Black and African Diaspora Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43996&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Cardiac Ultrasound",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43986&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Communication Technologies and Cyber Security",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43988&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Communicating Sustainability",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44021&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Computing in Arts & Social Sciences",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44002&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Dance and Movement",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43962&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Data Analytics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44030&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Data Science",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44029&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Disability Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43984&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Emergency Health Services Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44019&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Emergency Health Services Systems Planning",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43985&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Entrepreneurship and Innovation",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44001&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Environment, Sustainability and Society",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44008&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Environmental Biology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43977&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Environmental Impact Assessment",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43966&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Financial Accounting",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44011&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Fintech and Financial Innovation",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44009&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Food, Agriculture, and Sustainability",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44031&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Food Bioscience",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43983&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Fundamentals of Interdisciplinary Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43997&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Genetics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43967&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Genetics and Molecular Biology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43978&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Geographic Information Science (GIS)",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43968&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Geotechnical Engineering",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44024&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Graphics, Gaming, and Media",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43989&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Heritage Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44004&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Human Physiology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44017&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Indigenous Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43963&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Information Technology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43969&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Integrated Pest Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43979&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Intercultural Communication",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43961&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in International Rural Development",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43980&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Jewish Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=45482&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Leadership",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44014&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Magnetic Resonance Imaging",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43994&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Management Accounting",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44012&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Managing Data and Information",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43999&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Marketing Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44000&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Materials Science",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43970&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Medical Humanities",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44003&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Medicinal Chemistry",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43971&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Mental Health",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44007&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Neurotechnology Innovation",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43972&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Organic Agriculture",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43981&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Perinatal and Paediatric Nursing",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44013&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Public Health",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44005&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Public Sector Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43998&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Quantitative Finance",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44010&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Science Communication",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44016&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Science Communication and Leadership",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43973&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Spanish Language and Culture",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=45476&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Structural Engineering",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44026&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Sustainable Development",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43975&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Sustainable Soil Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44015&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Technology Education",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43982&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Theatre Creation",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44020&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in User Experience Design and Evaluation",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43991&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Vascular Ultrasound",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43995&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Water Resources Engineering",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=44023&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  },
+  {
+   "nom": "Certificate in Web and Mobile Development",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&topicgroupid=43992&loaduseredits=False",
+   "source": "https://academiccalendar.dal.ca/Catalog/ViewCatalog.aspx?pageid=viewcatalog&catalogid=141&chapterid=10139&loaduseredits=False"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Canadian Studies",
+   "raison": "FASS programs page: no longer accepting new students (counted)"
+  },
+  {
+   "nom": "Russian Studies",
+   "raison": "FASS programs page: currently suspended (counted)"
+  },
+  {
+   "nom": "Pharmacy (PharmD)",
+   "raison": "First-professional doctorate (counted, Health list)"
+  },
+  {
+   "nom": "Engineering (BEng) - Agriculture campus (Truro) listing",
+   "raison": "Common first two years of the BEng at Truro / Diploma of Engineering; merged into the Faculty of Engineering disciplines (campus variant) (counted)"
+  },
+  {
+   "nom": "Civil Engineering (BEng) - Truro listing",
+   "raison": "Merged with Civil Engineering (campus variant) (counted)"
+  },
+  {
+   "nom": "Electrical Engineering (BEng) - Truro listing",
+   "raison": "Merged with Electrical Engineering (campus variant) (counted)"
+  },
+  {
+   "nom": "Environmental Engineering (BEng) - Truro listing",
+   "raison": "Merged with Environmental Engineering (campus variant) (counted)"
+  },
+  {
+   "nom": "Industrial Engineering (BEng) - Truro listing",
+   "raison": "Merged with Industrial Engineering (campus variant) (counted)"
+  },
+  {
+   "nom": "Bachelor of Applied Science (Food Science)",
+   "raison": "Calendar: admission suspended, pending review / currently inactive (counted)"
+  },
+  {
+   "nom": "Civil & Resource Engineering",
+   "raison": "Engineering faculty page label of Civil Engineering; same program (calendar name kept) (not counted twice)"
+  },
+  {
+   "nom": "Co-op options (Biology, Chemistry, Economics, etc.), Truro Start (BA, BSc, Rec Mgmt), online/on-campus BSW",
+   "raison": "Variants merged into the parent program (not counted)"
+  },
+  {
+   "nom": "Integrated Science Program; Science (BSc) general",
+   "raison": "First-year program / general BSc not listed as a Science department program; à vérifier (not counted)"
+  },
+  {
+   "nom": "Combined Bachelor of Science/Diploma of Engineering; Combined Bachelor of Arts/Diploma of Engineering; Arts/Engineering concurrent",
+   "raison": "Combined routes with a diploma, à vérifier (not counted)"
+  },
+  {
+   "nom": "Arabic, Chinese (Mandarin), Film Studies, Indigenous Studies, Italian Studies",
+   "raison": "Listed as calendar departments/programs but not on the FASS majors/honours program list (minor/certificate-level); not counted"
+  },
+  {
+   "nom": "Diplomas (Actuarial Science, Meteorology, Engineering, DipTech, Landscape Horticulture, Health diplomas)",
+   "raison": "Diplomas excluded (not counted)"
+  },
+  {
+   "nom": "Bachelor of Journalism / Journalism (University of King's College)",
+   "raison": "2026/2027 calendar chapter shows only a Minor in Journalism Studies; à vérifier (not counted)"
+  },
+  {
+   "nom": "Graduate Certificate in Mental Health and Addictions; Sexton Leader Certificate",
+   "raison": "Graduate / non-credit (not counted)"
+  },
+  {
+   "nom": "Medicine, Dentistry, Law",
+   "raison": "First-professional / separate DLM calendar (not counted)"
+  }
+ ]
+}

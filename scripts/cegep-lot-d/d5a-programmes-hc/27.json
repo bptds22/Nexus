@@ -1,0 +1,515 @@
+{
+ "universite": "Saint Mary's University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.smu.ca/future-students/ba-programs/",
+  "https://www.smu.ca/future-students/bsc-programs/",
+  "https://www.smu.ca/future-students/bcomm-programs/",
+  "https://www.smu.ca/future-students/ba-programs/certificates/",
+  "https://www.smu.ca/future-students/bsc-programs/certificates/",
+  "https://www.smu.ca/future-students/bcomm-programs/minorsandcertificates/",
+  "https://www.smu.ca/academics/academic-programs-landing.html"
+ ],
+ "blocages": [
+  "https://www.smu.ca/academics/programs.html returned HTTP 404 (moved, not a block); the official BA/BSc/BComm program pages and academic-programs landing page were used"
+ ],
+ "attendu": {
+  "baccalaureat": 50,
+  "certificat": 16,
+  "comment": "Baccalaureat: entries of the official 'Future students' degree pages: BA majors 26 (incl. BES), BSc academic programs 12 (incl. 'Engineering Program' = new Bachelor of Engineering in Resource Engineering, first cohort Sept 2026), BComm majors 12. Unit = listed program; the word 'Program' dropped from names; same subject under two degrees disambiguated with (BA)/(BSc)/(BComm). Certificat: 16 distinct certificates named on the BA (11), BSc (4) and BComm (5) certificate pages plus 1 on the academic programs landing page, after removing cross-listed duplicates."
+ },
+ "programmes": [
+  {
+   "nom": "Ancient Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/ancient-studies-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/anthropology-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Asian Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/asian-studies-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Atlantic Canada Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/atlantic-canada-studies-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Criminology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/criminology-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Economics (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/economics-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/english-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Entrepreneurship (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/entrepreneurship-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/french-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Geography (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/geography-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Global Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/global-development-studies-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Health, Wellness and Sport in Society",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/healthwellnessandsportinsocietyprogram/",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/history-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Irish Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/irish-studies-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Law and Ethics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/lawandethicsprogram/",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/linguistics-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Mathematics (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/mathematics-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/philosophy-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/political-science-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Psychology (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/psychology-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Public Humanities and Heritage",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/publichumanitiesandheritageprogram/",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Social Justice and Community Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/social-justice-community-studies-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/sociology-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Spanish and Hispanic Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/spanish-hispanic-culture-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "The Study of Religion",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/study-of-religion-program.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Bachelor of Environmental Studies (BES)",
+   "cycle": "baccalaureat",
+   "faculte": "School of the Environment",
+   "lien": "https://www.smu.ca/future-students/bes-program/",
+   "source": "https://www.smu.ca/future-students/ba-programs/"
+  },
+  {
+   "nom": "Astrophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/astrophysics-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/biology-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/chemistry-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Computing Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/computing-science-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Computing Science & Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/computing-science-business-administration.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Earth Science (Geology)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/earth-science-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/environmental-science-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Geography (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/geography-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Mathematics (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/mathematics-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/physics-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Psychology (BSc)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/psychology-program.html",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Bachelor of Engineering in Resource Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/eng-program/resource/",
+   "source": "https://www.smu.ca/future-students/bsc-programs/"
+  },
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/accounting-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Economics (BComm)",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/economics-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Entrepreneurship (BComm)",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/entrepreneurship-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/finance-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "General Business Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/general-business-studies-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Global Business Management",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/global-business-management-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Human Resource Management",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/human-resource-management-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Management",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/management-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Management Information Systems & Analytics",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/managementinformationsystemsanalyticsprogram/",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/marketing-program.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Sports Business",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/sportsbusinessprogram/",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Sustainability Management",
+   "cycle": "baccalaureat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/sustainabilitymanagementprogram/",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/"
+  },
+  {
+   "nom": "Certificate in Atlantic Canada Studies",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/academics/certificate-in-atlantic-canada-studies.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate of Chinese Studies",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://smu-ca-public.courseleaf.com/undergraduate/programs/chinese/#certificateinchinesestudiestext",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in Computing and Data Analytics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.smu.ca/future-students/programs/ccda",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in Forensic Psychology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.smu.ca/future-students/ba-programs/certificates/certificateinforensicpsychology/",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in German Language and Culture",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/academics/certificate-in-german-language-and-culture.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in Health, Wellness & Sport in Society",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/certificates/hwss",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in Human Resource Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.smu.ca/future-students/certificate-in-human-resource-managment.html",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/minorsandcertificates/"
+  },
+  {
+   "nom": "Certificate of Japanese Studies",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://smu-ca-public.courseleaf.com/undergraduate/programs/japanese/#programtext",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in Linguistics",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/academics/certificate-in-linguistics.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate of Proficiency in French",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/future-students/ba-programs/certificates/certificateofproficiencyinfrench/",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in Spanish Language & Hispanic Culture",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.smu.ca/academics/certificate-in-spanish-and-hispanic-culture.html",
+   "source": "https://www.smu.ca/future-students/ba-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in Forensic Sciences",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.smu.ca/future-students/bsc-programs/certificates/certificateinforensicsciences/",
+   "source": "https://www.smu.ca/future-students/bsc-programs/certificates/"
+  },
+  {
+   "nom": "Certificate in Retail Management",
+   "cycle": "certificat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://smu-ca-public.courseleaf.com/undergraduate/programs/marketing/#certificatetext",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/minorsandcertificates/"
+  },
+  {
+   "nom": "Certificate in Sports Business",
+   "cycle": "certificat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/minorsandcertificates/certificateinsportsbusiness/",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/minorsandcertificates/"
+  },
+  {
+   "nom": "Certificate in Sustainability Business",
+   "cycle": "certificat",
+   "faculte": "Sobey School of Business",
+   "lien": "https://www.smu.ca/future-students/bcomm-programs/minorsandcertificates/certificateinsustainabilitybusiness/",
+   "source": "https://www.smu.ca/future-students/bcomm-programs/minorsandcertificates/"
+  },
+  {
+   "nom": "Certificate in Mathematical Sciences for Education",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://www.smu.ca/academics/mathematical-sciences-for-education.html",
+   "source": "https://www.smu.ca/academics/academic-programs-landing.html"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Diploma in Engineering",
+   "raison": "Two-year diploma (Engineering Program entry also covers the new BEng, kept) (not counted)"
+  },
+  {
+   "nom": "Mining Engineering; Renewable Energy Engineering",
+   "raison": "Streams of the Bachelor of Engineering in Resource Engineering, merged (not counted)"
+  },
+  {
+   "nom": "Medical School Pathway; Pre-Health Sciences Options; BSc Co-op Program",
+   "raison": "Pathways / co-op option, not programs (listed on BSc page, not counted)"
+  },
+  {
+   "nom": "Bachelor of Science with a Diploma in Engineering; BSc Major in Mathematics with a Diploma in Engineering",
+   "raison": "Combined routes of existing BSc majors (not counted)"
+  },
+  {
+   "nom": "Certificate in Computing and Data Analytics / Forensic Psychology / Human Resource(s) Management (repeated on BA, BSc and BComm certificate pages)",
+   "raison": "Same certificate listed on several faculty pages; one row each (duplicates not counted)"
+  },
+  {
+   "nom": "B.S. in Education (University of Maine at Presque Isle partnership)",
+   "raison": "Degree awarded by a partner university (not counted)"
+  },
+  {
+   "nom": "Minors; graduate programs; Continuing Education (University Preparation, E-Learning, Community Learning)",
+   "raison": "Excluded by rule (not counted)"
+  }
+ ]
+}

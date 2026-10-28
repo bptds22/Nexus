@@ -1,0 +1,935 @@
+{
+ "universite": "Ontario Tech University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://ontariotechu.ca/programs/undergraduate/index.php",
+  "https://ontariotechu.ca/programs/programs.json"
+ ],
+ "blocages": [
+  "https://calendar.ontariotechu.ca/content.php?catoid=92&navoid=4144 (calendrier 2026-2027, Programs by degree) : réponse HTTP 202 vide (défi anti-robot) — non contourné.",
+  "https://ontariotechu.ca/programs/undergraduate/... : fiches chargées en JavaScript (pas un blocage) ; remplacé par le flux JSON public officiel qui alimente ce répertoire, https://ontariotechu.ca/programs/programs.json (référencé par le script officiel programs.js)."
+ ],
+ "attendu": {
+  "baccalaureat": 146,
+  "certificat": 0,
+  "comment": "Baccalauréats : 146 fiches de type « Undergraduate » du flux officiel programs.json (dont 34 marquées aussi « College-to-university transfer ») ; unité = fiche du répertoire ; faculté = champ faculty du flux. Certificats : 0 — aucun certificat de premier cycle crédité au répertoire (l'offre « Continuous Learning » et les micro-credentials sont non créditées ; 2 Undergraduate Diplomas exclus)."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/accounting/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Adult Learning with Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/adult-learning-with-technology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Aerospace",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/aerospace-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Affective Science and Mental Health",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/affective-science-and-mental-health/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Aging and Learning in an Era of Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Education; Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/aging-and-learning-in-an-era-of-technology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Allied Health Sciences - Bridge",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/college-to-university-transfer/health-sciences-and-medicine/allied-health-sciences-bridge/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Alternative Dispute Resolution",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/alternative-dispute-resolution/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Applied Biotechnology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/applied-biotechnology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Applied Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/applied-sociology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Artificial Intelligence (Computer Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Science; School of Artificial Intelligence",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/artificial-intelligence-computer-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Artificial Intelligence Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science; School of Artificial Intelligence",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/artificial-intelligence-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Artificial Intelligence for Business",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology; School of Artificial Intelligence",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/artificial-intelligence-ai-for-business/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Artificial Intelligence for Professional Communicators",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities; School of Artificial Intelligence",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/ai-for-professional-communicators/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Arts - General",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/arts-general/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Astrophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/astrophysics/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Automotive Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/automotive-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Biological Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/biological-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Biomechanics and Ergonomics",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/biomechanics-and-ergonomics/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Biomedical Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/biomedical-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Business Analytics and Artificial Intelligence",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology; School of Artificial Intelligence",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/business-analytics-and-artificial-intelligence/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Business and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/business-society/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Chemical Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/chemical-biology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/chemistry/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Cognitive and Brain Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/cognitive-and-brain-sciences/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Commerce",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/commerce/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Communication and Digital Media Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/communication-and-digital-media-studies/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Comprehensive Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/comprehensive-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Computational Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/computational-physics/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science; School of Artificial Intelligence",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/computer-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Concurrent Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/concurrent-education/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Creativity, Digital Arts and Entertainment Industries",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/creativity-digital-arts-entertainment-industries/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Criminal Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/criminal-justice/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Criminology and Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/criminology-and-justice/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Cybersecurity for Business",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/cybersecurity-for-business/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/data-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Developmental Psychological Science",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/developmental-and-psychological-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Developmental Science and Learning",
+   "cycle": "baccalaureat",
+   "faculte": "Education; Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/developmental-science-and-learning/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Digital Technologies",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/digital-technologies/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Early Childhood Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/early-childhood-studies/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Economics (Commerce)",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology; School of Artificial Intelligence",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/economics-commerce/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Economics (Political Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/economics-political-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Education, Consecutive, Intermediate/Senior",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/education-consecutive-intermediate-senior/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Education, Consecutive, Primary/Junior",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/education-consecutive-primary-junior/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Educational Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Education; Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/educational-psychology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Educational Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/educational-studies/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/electrical-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Energy Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/energy-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Entrepreneurship",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/entrepreneurship/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Environmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/environmental-biology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Equity, Diversity and Inclusion",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/equity-diversity-and-inclusion/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Exercise Science and Rehabilitation",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/exercise-science-and-rehabilitation/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/finance/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Forensic Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/forensic-psychology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Forensic Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/forensic-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Game Development and Interactive Media",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/information-technology-game-development-and-interactive-media/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Global Crime and Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/global-crime-and-justice/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Global Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/global-studies/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Health Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/health-administration/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Health Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/health-sciences/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Human Health Science",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/human-health-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Human Rights and Advocacy",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/human-rights-and-advocacy/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Inclusive Educational Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Education; Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/inclusive-educational-studies/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Industrial Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/industrial-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Integrated Mathematics and Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/integrated-math-and-comp-sci/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Interactive Computing",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/interactive-computing/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Internet of Things",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/internet-of-things/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/kinesiology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Law, Technology and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/law-technology-and-society/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Learning Sciences and Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Education; Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/learning-sciences-and-technology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Legal Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/legal-studies/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Manufacturing Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/manufacturing-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Marine Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/marine-biology/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/marketing/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Mathematics for Science and Industry",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/mathematics-for-science-and-industry/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/mechanical-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Mechatronics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/mechatronics-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Medical Laboratory Science",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/medical-laboratory-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Mental Health and Special Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education; Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/mental-health-and-special-education/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Nanophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/nanophysics/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Networking and Information Technology Security",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/information-technology-networking-and-information-technology-security/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/neuroscience/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Nuclear Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/nuclear-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Nursing - Collaborative",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/nursing-collaborative/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Organizational Behaviour and Human Resources Management",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/organizational-behaviour-and-human-resources-management/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Pharmaceutical Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/pharmaceutical-chemistry/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/physics/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Policing in Society",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/policing-in-society/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/political-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Psychology (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/psychology-bachelor-of-arts/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Psychology (Bachelor of Science)",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/psychology-bachelor-of-science/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Psychology - Advanced Entry",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/college-to-university-transfer/social-science-and-humanities/psychology-advanced-entry/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Psychology - GAS Transfer",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/college-to-university-transfer/social-science-and-humanities/psychology-gas-transfer/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Public Health",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/health-sciences-and-medicine/public-health/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Railway Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/railway-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Science, Technology and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/science-technology-and-society/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Smart Grid",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/smart-grid/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Social Innovation and Entrepreneurship",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/social-innovation-and-entrepreneurship/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Society, Technology and Human Values",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/society-technology-and-human-values/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Sociology, Technology and Innovation",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/sociology-technology-and-innovation/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Software Development",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/software-development/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Software Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering and Applied Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/engineering/software-engineering/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Special Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/education/special-education/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Strategic Communication, Social Media and Society",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/strategic-comms-social-media-society/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Sustainability",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/science/sustainability/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Technology Management (Bachelor of Commerce)",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/business/technology-management-bcom/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Technology Management (Bachelor of Information Technology)",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/technology-management-bit/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Victimology and Victim Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/victimology-and-victim-studies/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Video Games, Creative Industries and Society (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/video-games-creative-industries-and-society-ba/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Video Games, Creative Industries and Society (Bachelor of Information Technology)",
+   "cycle": "baccalaureat",
+   "faculte": "Business and Information Technology",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/computers-and-technology/video-games-creative-industries-and-society-bit/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  },
+  {
+   "nom": "Youth, Crime and Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Social Science and Humanities",
+   "lien": "https://ontariotechu.ca/programs/undergraduate/social-science-and-humanities/youth-crime-and-justice/index.php",
+   "source": "https://ontariotechu.ca/programs/programs.json"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Arts - General - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Arts - General »"
+  },
+  {
+   "nom": "Arts - General - GAS Transfer",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Arts - General »"
+  },
+  {
+   "nom": "Biological Science - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Biological Science »"
+  },
+  {
+   "nom": "Commerce - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Commerce »"
+  },
+  {
+   "nom": "Commerce - Bridge",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Commerce »"
+  },
+  {
+   "nom": "Communication and Digital Media Studies - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Communication and Digital Media Studies »"
+  },
+  {
+   "nom": "Communication and Digital Media Studies - GAS Transfer",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Communication and Digital Media Studies »"
+  },
+  {
+   "nom": "Computer Science - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Computer Science »"
+  },
+  {
+   "nom": "Criminology and Justice - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Criminology and Justice »"
+  },
+  {
+   "nom": "Criminology and Justice - Advanced Entry - Online",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Criminology and Justice »"
+  },
+  {
+   "nom": "Criminology and Justice - GAS Transfer",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Criminology and Justice »"
+  },
+  {
+   "nom": "Educational Psychology - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Educational Psychology »"
+  },
+  {
+   "nom": "Educational Psychology - GAS Transfer",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Educational Psychology »"
+  },
+  {
+   "nom": "Educational Studies - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Educational Studies »"
+  },
+  {
+   "nom": "Educational Studies - GAS Transfer",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Educational Studies »"
+  },
+  {
+   "nom": "Facilitating Adult Learning with Technology - Undergraduate Diploma",
+   "raison": "diplôme de premier cycle (Undergraduate Diploma), hors périmètre"
+  },
+  {
+   "nom": "Forensic Psychology - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Forensic Psychology »"
+  },
+  {
+   "nom": "Forensic Psychology - GAS Transfer",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Forensic Psychology »"
+  },
+  {
+   "nom": "Kinesiology - Bridge - Fitness and Health Promotion",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Kinesiology »"
+  },
+  {
+   "nom": "Kinesiology Advanced Entry - Fitness and Health Promotion",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Kinesiology »"
+  },
+  {
+   "nom": "Kinesiology Advanced Entry - Massage",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Kinesiology »"
+  },
+  {
+   "nom": "Kinesiology Advanced Entry - OTA and PTA",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Kinesiology »"
+  },
+  {
+   "nom": "Legal Studies - Accelerated UK LLB pathway",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Legal Studies »"
+  },
+  {
+   "nom": "Legal Studies - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Legal Studies »"
+  },
+  {
+   "nom": "Legal Studies - GAS Transfer",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Legal Studies »"
+  },
+  {
+   "nom": "Manufacturing Engineering - Bridge",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Manufacturing Engineering »"
+  },
+  {
+   "nom": "Medical Laboratory Science - Bridge",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Medical Laboratory Science »"
+  },
+  {
+   "nom": "Medical Laboratory Science - Northern Access Initiative",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Medical Laboratory Science »"
+  },
+  {
+   "nom": "Networking and Information Technology Security - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Networking and Information Technology Security »"
+  },
+  {
+   "nom": "Nursing - Post RPN (Advanced Entry)",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Nursing - Collaborative »"
+  },
+  {
+   "nom": "Nursing - Second Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Nursing - Collaborative »"
+  },
+  {
+   "nom": "Political Science - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Political Science »"
+  },
+  {
+   "nom": "Political Science - GAS Transfer",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Political Science »"
+  },
+  {
+   "nom": "Pre-Engineering",
+   "raison": "voie préparatoire sans grade (aucun grade indiqué)"
+  },
+  {
+   "nom": "Public Policy - Undergraduate Diploma",
+   "raison": "diplôme de premier cycle (Undergraduate Diploma), hors périmètre"
+  },
+  {
+   "nom": "Sociology, Technology and Innovation - Advanced Entry",
+   "raison": "voie d'admission (transfert collégial / admission avancée / seconde entrée) du même programme, fusionnée avec « Sociology, Technology and Innovation »"
+  }
+ ]
+}

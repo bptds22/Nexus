@@ -1,0 +1,485 @@
+{
+ "universite": "Cape Breton University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.cbu.ca/academics/program-types/undergraduate/",
+  "https://www.cbu.ca/academic-programs-sitemap.xml",
+  "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+ ],
+ "blocages": [
+  "https://pressbooks.atlanticoer-relatlantique.ca/2627version/ (official 2026-2027 calendar on Pressbooks) and its /wp-json/pressbooks/v2/toc returned HTTP 403 to WebFetch; replaced by the official CBU Academic Calendar 2025-2026 PDF hosted on cbu.ca (certificates)",
+  "https://www.cbu.ca/academics/program-types/undergraduate/ loads its program table by script (empty to WebFetch, not a block); replaced by the official cbu.ca academic-programs sitemap + each program page's type labels"
+ ],
+ "attendu": {
+  "baccalaureat": 51,
+  "certificat": 19,
+  "comment": "Baccalaureat: 51 entries of the official program directory (academic-programs sitemap, 68 entries) that are degrees, majors or BET streams/specialisations, after setting aside 1 certificate, 3 diplomas, 5 post-bacc diplomas and 8 graduate programs; unit = directory entry (degrees and majors are both listed as programs). Each subject page's 'Program Types' labels were read to classify. BET stream rows use the calendar's full names (directory labels: Chemical, Electronics & Controls, Environmental Studies, Manufacturing, Mechanical, Petroleum). Certificat: the directory lists only 1 certificate, so the 19 certificates named in the 2025-2026 calendar (incl. 3 retired/discontinued) were used; the directory's Mi'kmaw Cultural Tourism certificate is one of them."
+ },
+ "programmes": [
+  {
+   "nom": "Bachelor of Arts (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-arts-ba/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts Community Studies (BACS)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-arts-community-studies-bacs/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Arts and Science in Environment",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-arts-and-science-in-environment/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-social-work/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/anthropology/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Communication",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/communication/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/english/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Folklore",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/folklore/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Gaelic Language and Cultural Sustainability",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/gaelic-language-cultural-sustainability/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/history/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Mi'kmaq Studies",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/mikmaq-studies/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/music/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/philosophy/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/political-science/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/sociology/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Sport and Physical Activity Leadership",
+   "cycle": "baccalaureat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": "https://www.cbu.ca/academics/programs/sport-and-physical-activity-leadership/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.cbu.ca/academics/programs/psychology/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.cbu.ca/academics/programs/mathematics/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Business Administration (BBA)",
+   "cycle": "baccalaureat",
+   "faculte": "Shannon School of Business",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-business-administration-bba/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Shannon School of Business",
+   "lien": "https://www.cbu.ca/academics/programs/accounting/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Shannon School of Business",
+   "lien": "https://www.cbu.ca/academics/programs/marketing/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Supply Chain Management",
+   "cycle": "baccalaureat",
+   "faculte": "Shannon School of Business",
+   "lien": "https://www.cbu.ca/academics/programs/supply-chain-management/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Hospitality and Tourism Management",
+   "cycle": "baccalaureat",
+   "faculte": "Shannon School of Business",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-hospitality-and-tourism-management/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Education",
+   "cycle": "baccalaureat",
+   "faculte": "School of Education and Health",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-education/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Health Sciences (Public Health)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Education and Health",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-health-sciences-public-health/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "School of Nursing",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-science-nursing/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Science",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-science/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/biology/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/chemistry/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Engineering Technology",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-engineering-technology/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Engineering Technology (Chemical)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/chemical/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Engineering Technology (Electronics & Controls)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/electronics-controls/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Engineering Technology (Environmental Studies)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/environmental-studies/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Engineering Technology (Manufacturing)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/manufacturing/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Engineering Technology (Mechanical)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/mechanical/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Engineering Technology (Petroleum)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/petroleum/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Bachelor of Technology (Nautical Science)",
+   "cycle": "baccalaureat",
+   "faculte": "School of Science and Technology",
+   "lien": "https://www.cbu.ca/academics/programs/bachelor-of-technology-nautical-science/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Certificate in Mi'kmaw Cultural Tourism",
+   "cycle": "certificat",
+   "faculte": "Shannon School of Business",
+   "lien": "https://www.cbu.ca/academics/programs/certificate-in-mikmaw-cultural-tourism/",
+   "source": "https://www.cbu.ca/academic-programs-sitemap.xml"
+  },
+  {
+   "nom": "Certificate in Ethnomusicology",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Public and Digital History",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Professional, Creative, and Content Writing",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Social Research",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Gaelic Language",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Cultural Sustainability (Gaelic)",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Quantitative and Qualitative Psychology Research Methods",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Bioethics and Health",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Mental Health Promotion and Protection",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate of Proficiency in French Language",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Theatre Arts",
+   "cycle": "certificat",
+   "faculte": "School of Arts and Social Sciences",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Management & Administration (Through Canadian Institute of Management)",
+   "cycle": "certificat",
+   "faculte": "Shannon School of Business",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in High School Mathematics Education",
+   "cycle": "certificat",
+   "faculte": "School of Education and Health",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Foundations for Health Professions",
+   "cycle": "certificat",
+   "faculte": "School of Science and Technology",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  },
+  {
+   "nom": "Certificate in Industrial Chemistry",
+   "cycle": "certificat",
+   "faculte": "School of Science and Technology",
+   "lien": null,
+   "source": "https://www.cbu.ca/wp-content/uploads/2026/03/CBU-Academic-Calendar-2025-2026.pdf"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "French",
+   "raison": "Directory entry is Concentration/Minor only (no major or degree) (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Gaelic",
+   "raison": "Minor only (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Economics",
+   "raison": "BBA concentration only (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Finance",
+   "raison": "BBA concentration only (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Hospitality and Tourism Management",
+   "raison": "BBA/BHTM concentration only (the BHTM degree has its own row) (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Nutrition",
+   "raison": "Minor only (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Gender and Women's Studies",
+   "raison": "Minor only (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Human Resources",
+   "raison": "BBA concentration only (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Legal Studies",
+   "raison": "BBA concentration only (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Religious Studies",
+   "raison": "Concentration/Minor only (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Cape Breton Medical Campus",
+   "raison": "Medical (MD) program via Dalhousie Medical School - first-professional, excluded (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Elmitek Pathway Program",
+   "raison": "Pathway (2 semesters) into BA/BACS, not a credential (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Beinn Mhabu",
+   "raison": "à vérifier: directory entry typed 'Degree' but leads to existing BACS/BHTM degrees (cohort/partnership route); not counted as a separate program (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Bachelor of Engineering Transfer",
+   "raison": "Calendar: Engineering Transfer Program = Engineering Diploma (transfer to complete BEng elsewhere), not a CBU bachelor's (counted in attendu baccalaureat)"
+  },
+  {
+   "nom": "Certificate in Heritage Studies",
+   "raison": "Retired (calendar 2025-2026) (counted in attendu certificat)"
+  },
+  {
+   "nom": "Certificate in Public Administration",
+   "raison": "Retired (calendar 2025-2026) (counted in attendu certificat)"
+  },
+  {
+   "nom": "Certificate in Professional Development",
+   "raison": "Discontinued (calendar 2025-2026) (counted in attendu certificat)"
+  },
+  {
+   "nom": "Diplomas (Education Curriculum, Government Management, Educational Technology) and 5 Post-Baccalaureate Diplomas",
+   "raison": "Diplomas excluded by rule (not counted)"
+  },
+  {
+   "nom": "8 graduate programs (MBA CED, MEd x3, MAIBA, MDM, MHLI, MA Community Sport & Health)",
+   "raison": "Graduate (not counted)"
+  },
+  {
+   "nom": "Bachelor of Emergency Management; Bachelor of Technology Information; Bachelor of Science in Human Nutrition (Transfer); Bachelor of Science Nursing with Advanced Major",
+   "raison": "à vérifier: present in 2025-2026 calendar but no entry in the current online program directory (not counted)"
+  },
+  {
+   "nom": "BSW embedded certificate options (Mental Health Promotion in Social Work; Indigenous Perspectives in Social Work)",
+   "raison": "Elective bundles inside the BSW, not stand-alone certificates (not counted)"
+  },
+  {
+   "nom": "Cape Breton Inclusive Program certificate",
+   "raison": "Non-standard inclusive pathway attestation (not counted)"
+  },
+  {
+   "nom": "Bachelor of Arts co-op / Gaelic College variants",
+   "raison": "Merged into Bachelor of Arts (BA) (variant)"
+  }
+ ]
+}

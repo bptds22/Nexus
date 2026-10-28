@@ -1,0 +1,255 @@
+{
+ "universite": "Algoma University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://algomau.ca/academics/programs/",
+  "https://algomau.ca/academics/certificates/"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 21,
+  "certificat": 13,
+  "comment": "Baccalauréats : décompte des 21 entrées de la page officielle « Undergraduate Programs » (aucun total affiché ; la page ne nomme pas le grade, unité = entrée du répertoire). Certificats : décompte des 13 certificats de la page « Certificates » (pas de page propre par certificat ; lien = page Certificates)."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/accounting/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Anishinaabe Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/anishinaabe-studies/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Anishinaabemowin",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/anishinaabemowin/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/biology/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/business-administration/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Community Development",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/community-development/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Community Economic and Social Development",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/community-economic-social-development/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/computer-science/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/economics/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/english/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/environmental-science/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Finance & Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/finance-economics/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Geography, Geology and Land Stewardship",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/geography-geology/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/history/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Law & Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/law-justice/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/music/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/political-science/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/psychology/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/social-work/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/sociology/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Visual Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/programs/visual-arts/",
+   "source": "https://algomau.ca/academics/programs/"
+  },
+  {
+   "nom": "Interdisciplinary Aboriginal Learning Certificate",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Business",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Human Resources Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Accounting",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Community Economic and Social Development",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in First Nation Social Policy and Community Development",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Computing",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Geomatics",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Aki and Environmental Stewardship",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Information Technology",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Law and Justice",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Public Policy and Administration",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  },
+  {
+   "nom": "Certificate in Social Welfare",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://algomau.ca/academics/certificates/",
+   "source": "https://algomau.ca/academics/certificates/"
+  }
+ ],
+ "exclus": []
+}

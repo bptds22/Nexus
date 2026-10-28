@@ -1,0 +1,813 @@
+{
+ "universite": "Queen's University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.queensu.ca/admission/undergraduate-programs"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 88,
+  "certificat": 30,
+  "comment": "Répertoire officiel des admissions (5 pages, 118 entrées dont 1 bloc Law à sous-entrées). Unité = une ligne par entrée du répertoire. attendu = entrées étiquetées « bachelor's / undergraduate program » (baccalaureat) et « certificate » (certificat) ; une entrée portant les deux étiquettes compte dans les deux. Pas de total affiché."
+ },
+ "programmes": [
+  {
+   "nom": "Animation Theory and Practice",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/academic-calendar/arts-science/certificates/animation-theory-and-practice-certificate/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Applied Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.econ.queensu.ca/undergraduate/degrees-programs-study/major-applied-economics-apec",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Art History",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/art/art-history/undergraduate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Artist in Community Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://educ.queensu.ca/teacher-education/program-tracks/ace",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Astrophysics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/physics/undergrad-studies/physics-program-overview/physics-astronomy",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / Health Sciences",
+   "lien": "https://healthsci.queensu.ca/liscbchm/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://biology.queensu.ca/prospective-students/undergraduate-students/degree-plans/biology-major",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Biology - Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://biology.queensu.ca/prospective-students/undergraduate-students/degree-plans/biology-and-mathematics-ssp",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Biology - Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://biology.queensu.ca/prospective-students/undergraduate-students/degree-plans/biology-and-psychology-ssp",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Biomedical Computing",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.cs.queensu.ca/undergraduate/programs/specializations/biomedical-computing.php",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Biotechnology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://biology.queensu.ca/academics/undergraduate/degree-plans/biotechnology-ssp/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Black Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/gnds/undergraduate/black-studies",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Business",
+   "cycle": "certificat",
+   "faculte": "Smith Business",
+   "lien": "https://smith.queensu.ca/academic_programs/certificate-in-business/index.php",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Business / Commerce",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Business",
+   "lien": "https://smith.queensu.ca/bcom/index.php",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/chee/undergraduate/chemical-engineering",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.chem.queensu.ca/undergraduate/degree-programs-undergraduate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/civil/undergraduate/civil-engineering",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Classical Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/classics/undergraduate/degree-programs-plans",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Classics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/classics/undergraduate/degree-programs-plans",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Cognitive Science",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.cs.queensu.ca/undergraduate/programs/specializations/cognitive-science.php",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/ece/undergraduate/computer-engineering/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.cs.queensu.ca/undergraduate/programs/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Computing",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.cs.queensu.ca/undergraduate/programs/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Computing and the Creative Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / DAN School of Drama & Music",
+   "lien": "https://www.cs.queensu.ca/undergraduate/programs/specializations/computing-and-the-creative-arts.php",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs"
+  },
+  {
+   "nom": "Computing, Mathematics, and Analytics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.cs.queensu.ca/undergraduate/programs/specializations/computing-mathematics-and-analytics.php",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Concurrent Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://educ.queensu.ca/teacher-education/concurrent-education",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Data Analytics",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/academic-calendar/arts-science/certificates/data-analytics-certificate/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Disability and Physical Activity",
+   "cycle": "certificat",
+   "faculte": "Arts and Science / School of Kinesiology and Health Studies",
+   "lien": "https://skhs.queensu.ca/students/DIPA",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Drama",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / DAN School of Drama & Music",
+   "lien": "https://sdm.queensu.ca/future-students/undergraduate-programs",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Earth Systems Science",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/ensc/undergraduate/program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/academic-calendar/arts-science/schools-departments-programs/economics/economics-major-arts-ba-honours/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://educ.queensu.ca/teacher-education/consecutive",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Electrical and Computer Engineering: Innovation Stream",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/ece/undergraduate/ecei",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/ece/undergraduate/electrical-engineering/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Employment Relations",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/employment-studies/undergraduate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Employment Relations",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/employment-studies/undergraduate/certificate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Engineering Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/chee/undergraduate/engineering-chemistry",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Engineering Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / Smith Engineering",
+   "lien": "https://www.queensu.ca/physics/undergrad-studies/engineering-physics-program-overview/engineering-physics",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "English and Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/english/undergraduate/program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Entrepreneurship, Innovation & Creativity",
+   "cycle": "certificat",
+   "faculte": "Arts and Science / DAN School of Drama & Music",
+   "lien": "https://sdm.queensu.ca/future-students/undergraduate-programs",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Environmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://biology.queensu.ca/prospective-students/undergraduate-students/degree-plans/biotechnology-ssp",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Environmental Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/ensc/undergraduate/program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Environmental Geology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/ensc/undergraduate/program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Environmental Life Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/ensc/undergraduate/program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Environmental Science",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/ensc/undergraduate/program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/ensc/undergraduate/program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Environmental Toxicology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/ensc/undergraduate/program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "Film and Media",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/filmandmedia/undergraduate/undergraduate-program-overview",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=1"
+  },
+  {
+   "nom": "French Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/french/students/prospective-undergraduate-students",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/gnds/undergraduate/gender-studies/programs",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Geographic Information Science",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/geographyandplanning/undergraduate-geography/certificate-and-combined-degree",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/geographyandplanning/undergraduate-geography/programs",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Geological Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / Smith Engineering",
+   "lien": "https://www.queensu.ca/geol/prospective-students/undergraduate-geological-engineering",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Geological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/geol/prospective-students/undergraduate-geological-sciences",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "German Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/academic-plans/german-studies",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Global Action and Engagement",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/academic-calendar/arts-science/certificates/global-action-engagement-certificate/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Global Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/devs/undergraduate/degree-plans-and-certificate-requirements",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Health Sciences (Bachelor of Health Sciences)",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences",
+   "lien": "https://bhsc.queensu.ca",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Health Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / School of Kinesiology and Health Studies",
+   "lien": "https://skhs.queensu.ca/students/undergrad/health",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Hispanic Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/academic-plans/hispanic-studies",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/history/undergraduate/programs-and-plans",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Indigenous Languages and Cultures",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/certificates",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/academic-plans/indigenous-studies",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Indigenous Teacher Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://educ.queensu.ca/teacher-education/tracks/itep",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "International Studies",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/ipo/certificate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Italian",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/academic-plans/italian",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Jewish Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/jewishstudies/undergraduate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / School of Kinesiology and Health Studies",
+   "lien": "https://skhs.queensu.ca/students/undergrad/kinesiology",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Languages, Literatures and Cultures",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/academic-plans/languages-literatures-and-cultures",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Certificate in Law",
+   "cycle": "certificat",
+   "faculte": "Law",
+   "lien": "https://certificate.queenslaw.ca/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=2"
+  },
+  {
+   "nom": "Life Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / Health Sciences",
+   "lien": "https://healthsci.queensu.ca/liscbchm/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/academic-plans/linguistics",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Mathematical Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/physics/undergrad-studies/physics-program-overview/physics-astronomy",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/mathstat/undergraduate/prospective-undergraduate/math",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Mathematics & Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / Smith Engineering",
+   "lien": "https://www.queensu.ca/mathstat/undergraduate/prospective-undergraduate/mthe",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Mechanical and Materials Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/mme/undergraduate/mechanical-materials-engineering",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Mechatronics and Robotics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/mre/undergraduate/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Media and Performance Production",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / DAN School of Drama & Music",
+   "lien": "https://sdm.queensu.ca/future-students/undergraduate-programs/media-and-performance-production",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Mining Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/mining/undergraduate/mining-engineering",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Mining Technologies",
+   "cycle": "certificat",
+   "faculte": "Smith Engineering",
+   "lien": "https://smithengineering.queensu.ca/mining/professional-development/certificate-in-mining-technologies",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Mohawk Language and Culture",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/artsci/programs-and-degrees/mohawk-language-and-culture-certificate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / DAN School of Drama & Music",
+   "lien": "https://sdm.queensu.ca/future-students/undergraduate-programs",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Music Theatre",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science / DAN School of Drama & Music",
+   "lien": "https://sdm.queensu.ca/undergraduate/music-theatre/",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Nursing",
+   "cycle": "baccalaureat",
+   "faculte": "Health Sciences / School of Nursing",
+   "lien": "https://nursing.queensu.ca/undergraduate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Outdoor & Experiential Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://educ.queensu.ca/teacher-education/tracks/oee",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/philosophy/undergraduate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Physics & Astronomy",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/physics/undergrad-studies/physics-program-overview/physics-astronomy",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Political Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/politics/undergraduate-studies",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Politics, Philosophy and Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.econ.queensu.ca/undergraduate/degrees-programs-study/politics-philosophy-and-economics-ppec",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Primary-Junior French as a Second Language Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://educ.queensu.ca/teacher-education/program-tracks/pjfsl/1",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=3"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/psychology/undergraduate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/religion/undergraduate/degree-programs-plans",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "Sexual and Gender Diversity",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/gnds/undergraduate/sxgd-certificate",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/sociology/undergraduate/program-information",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "Software Design",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.cs.queensu.ca/undergraduate/programs/specializations/software-design.php",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "Spanish and Latin American Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/academic-plans/spanish-and-latin-american-studies-slas",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/mathstat/undergraduate/prospective-undergraduate/stats",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "Technological Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://educ.queensu.ca/teacher-education/consecutive/tech",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "Urban Planning Studies",
+   "cycle": "certificat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/geographyandplanning/undergraduate/programs",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  },
+  {
+   "nom": "World Language Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts and Science",
+   "lien": "https://www.queensu.ca/llcu/academics/academic-plans/world-language-studies",
+   "source": "https://www.queensu.ca/admission/undergraduate-programs?page=4"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Business / Commerce (certificat CIB)",
+   "raison": "doublon du certificat « Business » (même Certificate in Business, même lien)"
+  },
+  {
+   "nom": "Business / Commerce + Law (BCom/JD)",
+   "raison": "programme combiné menant au JD (professionnel, second cycle d'entrée) ; le BCom est déjà listé sous « Business / Commerce »"
+  },
+  {
+   "nom": "Fine Art (Visual Art)",
+   "raison": "« Admissions to this program have been suspended » (fiche répertoire)"
+  },
+  {
+   "nom": "Enterprise Sales",
+   "raison": "certificat professionnel edX (QueensX), non crédité"
+  },
+  {
+   "nom": "First Nations, Métis, and Inuit Studies in Education",
+   "raison": "certificat de perfectionnement pour enseignants (Ontario post-grad / qualification additionnelle, Faculty of Education), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Internationally Trained Teacher Education",
+   "raison": "à vérifier : programme passerelle pour enseignants formés à l'étranger (Education), pas un certificat de premier cycle identifiable"
+  },
+  {
+   "nom": "Principal's Qualification Program",
+   "raison": "certificat de perfectionnement pour enseignants (Ontario post-grad / qualification additionnelle, Faculty of Education), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Reading and Literacy Studies in Education",
+   "raison": "certificat de perfectionnement pour enseignants (Ontario post-grad / qualification additionnelle, Faculty of Education), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Special Education",
+   "raison": "certificat de perfectionnement pour enseignants (Ontario post-grad / qualification additionnelle, Faculty of Education), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Teacher Leadership",
+   "raison": "certificat de perfectionnement pour enseignants (Ontario post-grad / qualification additionnelle, Faculty of Education), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Teaching English Language Learners",
+   "raison": "certificat de perfectionnement pour enseignants (Ontario post-grad / qualification additionnelle, Faculty of Education), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Teaching Mathematics",
+   "raison": "certificat de perfectionnement pour enseignants (Ontario post-grad / qualification additionnelle, Faculty of Education), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Technology in Teaching",
+   "raison": "certificat de perfectionnement pour enseignants (Ontario post-grad / qualification additionnelle, Faculty of Education), pas un certificat de premier cycle"
+  },
+  {
+   "nom": "Teaching English as a Second Language",
+   "raison": "à vérifier : certificats TESL 1/2 de Professional Studies (Education), statut crédit de premier cycle non établi"
+  },
+  {
+   "nom": "Professional Editing Standards",
+   "raison": "à vérifier : certificat de Professional Studies (Education), statut crédit de premier cycle non établi"
+  },
+  {
+   "nom": "Workplace Training and Development",
+   "raison": "à vérifier : certificat de Professional Studies (Education), statut crédit de premier cycle non établi"
+  },
+  {
+   "nom": "Professional Impact Analysis",
+   "raison": "certificat de formation professionnelle (centre Smith Business), non crédité"
+  },
+  {
+   "nom": "Liberal Arts University Transfer (LAT)",
+   "raison": "voie de transfert Seneca → Arts and Science, pas un programme distinct (fusionné aux programmes Arts and Science)"
+  },
+  {
+   "nom": "Learning Language as an Additional Language (QBridge)",
+   "raison": "programme de langue (étiquette « other »), ni baccalauréat ni certificat"
+  },
+  {
+   "nom": "Juris Doctor",
+   "raison": "premier grade professionnel en droit (JD), exclu"
+  },
+  {
+   "nom": "Graduate Diploma in Immigration and Citizenship Law; LLM; LLM (Political and Legal Thought); PhD (Law)",
+   "raison": "cycles supérieurs"
+  },
+  {
+   "nom": "Law + Business MBA (JD/MBA), Economics + Law (MA/JD), JD/MPA, JD/MIR, Civil Law / Common Law, International Law Programs at Bader College",
+   "raison": "programmes combinés JD/cycles supérieurs ou programmes du JD"
+  },
+  {
+   "nom": "International Business (Master of International Business)",
+   "raison": "maîtrise (étiquette « double degree »)"
+  },
+  {
+   "nom": "Technological Education (multi-session) ; Primary-Junior French as a Second Language Education (multi-session)",
+   "raison": "variantes de modalité fusionnées dans la ligne du programme"
+  }
+ ]
+}

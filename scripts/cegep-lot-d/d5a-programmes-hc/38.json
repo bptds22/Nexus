@@ -1,0 +1,454 @@
+{
+ "universite": "MacEwan University",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://calendar.macewan.ca/programs/",
+  "https://www.macewan.ca/academics/programs/"
+ ],
+ "blocages": [
+  "https://www.macewan.ca/academics/programs/ — page d'accueil « Browse Programs » sans liste lisible (contenu dynamique) ; remplacée par l'annuaire officiel calendar.macewan.ca/programs/ (Programs A-Z)"
+ ],
+ "attendu": {
+  "baccalaureat": 50,
+  "certificat": 17,
+  "comment": "Annuaire officiel « Programs A-Z » (calendar.macewan.ca, servi comme édition 2027-2028 ; l'édition 2026-2027 en vigueur n'a pas été trouvée à une autre adresse). Unité = entrée de l'annuaire (grade + majeure). Baccalauréats : 50 entrées du groupe Degrees. Certificats : 14 du groupe Certificates + Post-Baccalaureate Certificate + Certificate of Achievement Sustainability Studies + Behavioural Interventions (suspendu) = 17 (Occupational Health Nursing compté une fois). Faculté non affichée : null."
+ },
+ "programmes": [
+  {
+   "nom": "Bachelor of Applied Human Service Administration",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/applied-degree-programs/bahsa-human-service-admin/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts, Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/ba-anthropology/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts, Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/ba-economics/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts, English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/ba-english/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts, History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/ba-history/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts, Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/ba-philosophy/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts, Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/ba-political-science/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts, Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/ba-psychology/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Arts, Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/ba-sociology/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Child and Youth Care",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcyc-child-youth-care/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Commerce, Accounting",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcom-accounting/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Commerce, Human Resource Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcom-human-resources-management/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Commerce, International Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcom-international-business/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Commerce, Legal Studies in Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcom-legal-studies-business/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Commerce, Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcom-management/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Commerce, Marketing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcom-marketing/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Commerce, Supply Chain Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcom-supply-chain-management/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Communication Studies, Journalism",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcs-journalism/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Communication Studies, Professional Communication",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcs-professional-communication/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Communication Studies, Public Relations",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bcs-public-relations/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Design",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bdes-design/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Design, Digital Experience Design",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bdes-digital-experience-design/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Early Childhood Curriculum Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/beccs-early-childhood-curriculum-studies/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Fine Arts, Arts and Cultural Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bfa-arts-and-cultural-management/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Fine Arts, Music Theatre Performance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bfa-music-theatre-performance/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Fine Arts, Studio Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bfa-studio-arts/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Fine Arts, Theatre Production",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bfa-theatre-production/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Music, Composition",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bmus-composition/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Music, General",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bmus-general/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Music, Performance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bmus-performance/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Music, Recording and Production",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bmus-recording-production/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Psychiatric Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bpn-psychiatric-nursing/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Public Safety and Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bpsj-public-safety-and-justice/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Applied Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-applied-statistics/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Biological Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-biological-sciences/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-chemistry/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-computer-science/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Data Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-data-science/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Environmental Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-environmental-science/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Mathematical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-mathematical-sciences/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-mathematics/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Physical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-physical-sciences/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science, Psychology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsc-psychology/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Science in Nursing",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bscn-nursing/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Bachelor of Social Work",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/degree-programs/bsw-social-work/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Accounting Technology Certificate",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-diplomas/accounting-strategic-measurement/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Business Management",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-diplomas/business-management-certificate/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Educational Assistant",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-diplomas/educational-assistant/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Emergency Communication and Response",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-diplomas/emergency-communications-response/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Human Resource Management Certificate",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-diplomas/human-resources-management/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Office Assistant, Administrative",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-administrative/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Office Assistant, Legal",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-legal/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Office Assistant, Medical",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-diplomas/office-assistant-medical/",
+   "source": "https://calendar.macewan.ca/programs/"
+  },
+  {
+   "nom": "Certificate of Achievement Sustainability Studies",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://calendar.macewan.ca/programs/certificates-achievement/sustainability/",
+   "source": "https://calendar.macewan.ca/programs/"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Bachelor of Arts, Undeclared",
+   "raison": "admission non déclarée (Undeclared), pas un programme nommé"
+  },
+  {
+   "nom": "Bachelor of Commerce, Undeclared",
+   "raison": "admission non déclarée (Undeclared), pas un programme nommé"
+  },
+  {
+   "nom": "Bachelor of Music, Undeclared",
+   "raison": "admission non déclarée (Undeclared), pas un programme nommé"
+  },
+  {
+   "nom": "Bachelor of Physical Education Transfer",
+   "raison": "programme de transfert universitaire (University Transfer) : grade délivré par un autre établissement"
+  },
+  {
+   "nom": "Bachelor of Science, Undeclared",
+   "raison": "admission non déclarée (Undeclared), pas un programme nommé"
+  },
+  {
+   "nom": "Bridge to Canadian Nursing (Certificate)",
+   "raison": "à vérifier : certificat de transition pour infirmières formées à l'étranger (déjà diplômées), pas un certificat de premier cycle ordinaire"
+  },
+  {
+   "nom": "Digital Experience Design (Post-Diploma Certificate)",
+   "raison": "certificat post-diplôme (réservé aux diplômés), hors premier cycle"
+  },
+  {
+   "nom": "Gerontology (Post-Diploma Certificate)",
+   "raison": "certificat post-diplôme (réservé aux diplômés), hors premier cycle"
+  },
+  {
+   "nom": "Hospice Palliative Care (Post-Diploma Certificate)",
+   "raison": "certificat post-diplôme (réservé aux diplômés), hors premier cycle"
+  },
+  {
+   "nom": "Occupational Health Nursing (aussi listé Suspended) (Post-Diploma Certificate)",
+   "raison": "certificat post-diplôme (réservé aux diplômés), hors premier cycle"
+  },
+  {
+   "nom": "Perioperative Nursing for Registered Nurses and Licensed Practical Nurses (Post-Diploma Certificate)",
+   "raison": "certificat post-diplôme (réservé aux diplômés), hors premier cycle"
+  },
+  {
+   "nom": "Post-Baccalaureate Certificate in Behaviour Analysis",
+   "raison": "certificat post-baccalauréat, hors premier cycle"
+  },
+  {
+   "nom": "Behavioural Interventions Certificate (Certificate of Achievement)",
+   "raison": "programme suspendu (Suspended Programs)"
+  },
+  {
+   "nom": "Mineures (49), diplômes et sorties de diplôme (30), programmes d'entrée (5), Asia Pacific Management Diploma et Public Relations Diploma (suspendus)",
+   "raison": "hors des deux types retenus — non comptés dans « attendu »"
+  }
+ ]
+}

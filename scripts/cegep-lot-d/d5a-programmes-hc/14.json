@@ -1,0 +1,772 @@
+{
+ "universite": "University of Waterloo",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://uwaterloo.ca/future-students/programs",
+  "https://uwaterloo.ca/future-students/programs/minors"
+ ],
+ "blocages": [
+  "https://uwaterloo.ca/academic-calendar/undergraduate-studies/catalog : catalogue chargé en JavaScript (non bloqué, mais illisible) ; certificats relevés sur la page officielle Future Students « Minors and specializations »"
+ ],
+ "attendu": {
+  "baccalaureat": 113,
+  "certificat": 3,
+  "comment": "Répertoire Future Students « All programs » : 113 entrées (dont pages-catégories et doublons). Unité = une ligne par entrée nommée ; les compteurs de majors entre parenthèses sont retirés des noms. Faculté non affichée (null). Certificats : 3 nommés sur la page Minors, certificates and diplomas."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting and Financial Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/accounting-and-financial-management",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/actuarial-science",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/anthropology",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Applied Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/applied-mathematics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Applied Mathematics with Scientific Computing and Scientific Machine Learning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/applied-mathematics-scientific-computing",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Architectural Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/architectural-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Architecture",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/architecture",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/biochemistry",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Biological and Medical Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/biological-and-medical-physics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/biology",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Biomedical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/biomedical-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Biomedical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/biomedical-sciences",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Biostatistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/biostatistics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Business Administration (Laurier) and Computer Science (Waterloo) Double Degree",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/business-administration-computer-science-double-degree",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Business Administration (Laurier) and Mathematics (Waterloo) Double Degree",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/business-administration-mathematics-double-degree",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Chemical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/chemical-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/chemistry",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Civil Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/civil-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Classical Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/classical-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Climate and Environmental Change",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/climate-environmental-change",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Combinatorics and Optimization",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/combinatorics-and-optimization",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Communication Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/communication-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Computational Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/computational-mathematics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Computer Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/computer-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/computer-science",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Computing and Financial Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/computing-and-financial-management",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/data-science",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Earth Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/earth-sciences",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/economics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Electrical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/electrical-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/english",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Environment and Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/environment-and-business",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Environment, Resources and Sustainability",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/environment-resources-and-sustainability",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Environmental Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/environmental-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Environmental Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/environmental-sciences",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Fine Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/fine-arts",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "French",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/french",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Gender and Social Justice",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/gender-and-social-justice",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Geography and Aviation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/geography-and-aviation",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Geography and Environmental Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/geography-and-environmental-management",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Geological Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/geological-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Geospatial Data Analysis",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/geospatial-data-science",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Global Business and Digital Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/global-business-and-digital-arts",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Health Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/health-sciences",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/history",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Honours Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/honours-arts",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Honours Arts and Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/arts-and-business",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Honours Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/honours-science",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Information Technology Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/information-technology-management",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Kinesiology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/kinesiology",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Legal Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/legal-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Liberal Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/liberal-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Life Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/life-sciences",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Management Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/management-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Materials and Nanosciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/materials-and-nanosciences",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematical Economics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mathematical-economics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematical Finance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mathematical-finance",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematical Optimization",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mathematical-optimization",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematical Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mathematical-physics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematical Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mathematical-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mathematics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematics/Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mathematics-business-administration",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematics/Chartered Professional Accountancy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mathematics-accounting",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematics/Financial Analysis and Risk Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/financial-analysis-and-risk-management",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mathematics/Teaching",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/waterloo-math-teaching",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mechanical Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mechanical-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Mechatronics Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/mechatronics-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Medicinal Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/medicinal-chemistry",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Medieval Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/medieval-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Music",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/music",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Nanotechnology Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/nanotechnology-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Peace and Conflict Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/peace-and-conflict-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/philosophy",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Physical Sciences",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/physical-sciences",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/physics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Physics and Astronomy",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/physics-and-astronomy",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Planning",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/planning",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/political-science",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Psychology – Bachelor of Arts",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/psychology-arts",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Psychology – Bachelor of Science",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/psychology-science",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Public Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/public-health",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Pure Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/pure-mathematics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Recreation and Leisure Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/recreation-and-leisure-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Recreation, Leadership and Health",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/recreation-leadership-health",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Religion, Culture, and Spirituality",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/religion-culture-spirituality",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Science and Aviation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/science-and-aviation",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Science and Business",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/science-and-business",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Science and Financial Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/science-financial-management",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Sexualities, Relationships, and Families",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/sexualities-relationships-families",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Social Development Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/social-development-studies",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Social Development Studies and Bachelor of Social Work (BSW) Double Degree",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/sds-social-work-double-degree",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/sociology",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Software Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/software-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Sport and Recreation Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/sport-recreation-management",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/statistics",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Sustainability and Financial Management",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/sustainability-financial-management",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Systems Design Engineering",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/systems-design-engineering",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Theatre and Performance",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/theatre-performance",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Therapeutic Recreation",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/future-students/programs/therapeutic-recreation",
+   "source": "https://uwaterloo.ca/future-students/programs"
+  },
+  {
+   "nom": "Certificate in Geographic Information Systems",
+   "cycle": "certificat",
+   "faculte": null,
+   "lien": "https://uwaterloo.ca/academic-calendar/undergraduate-studies/catalog#/programs/BkAT33Wngl",
+   "source": "https://uwaterloo.ca/future-students/programs/minors"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Bachelor of Arts ; Bachelor of Science",
+   "raison": "pages génériques de grade (vue d'ensemble), pas des programmes nommés"
+  },
+  {
+   "nom": "Business programs ; Co-op programs ; Environmental programs at a glance ; Minors and specializations ; Pathways to medical school and other health professions",
+   "raison": "pages-catégories du répertoire, pas des programmes"
+  },
+  {
+   "nom": "Teaching",
+   "raison": "doublon de « Education (teaching) » (même lien)"
+  },
+  {
+   "nom": "Education (teaching)",
+   "raison": "à vérifier : page d'orientation vers les voies d'enseignement (Waterloo n'offre pas de B.Ed. propre ; Mathematics/Teaching est listé à part)"
+  },
+  {
+   "nom": "Pre-law",
+   "raison": "voie préparatoire (orientation), pas un programme menant à un grade"
+  },
+  {
+   "nom": "Human Rights and Law (LLB)",
+   "raison": "LLB décerné par l'University of Essex en second-entry après 3 ans de BA à Waterloo ; exclu (le BA relève des majors Arts)"
+  },
+  {
+   "nom": "Medical Sciences (Waterloo) and Doctor of Medicine (St. George's University)",
+   "raison": "programme intégré menant au MD (premier grade professionnel)"
+  },
+  {
+   "nom": "Optometry",
+   "raison": "premier grade professionnel (OD)"
+  },
+  {
+   "nom": "Pharmacy",
+   "raison": "premier grade professionnel (PharmD)"
+  },
+  {
+   "nom": "Noms avec mentions « (two/four/16/28 majors available) »",
+   "raison": "mention retirée du nom ; le nom de l'entrée est conservé"
+  },
+  {
+   "nom": "EDGE experiential education certificate",
+   "raison": "à vérifier : certificat d'apprentissage expérientiel (composantes non académiques + cours PD), pas un certificat de crédits disciplinaire"
+  },
+  {
+   "nom": "Community Leadership Certificate",
+   "raison": "certificat co-curriculaire (Student Success Office), non crédité"
+  },
+  {
+   "nom": "Certificate in Co-operative Education Research ; Certificate in Global Experience",
+   "raison": "à vérifier : figuraient au calendrier 2023-2024 (archives), non relevés au calendrier courant (chargé en JavaScript)"
+  }
+ ]
+}

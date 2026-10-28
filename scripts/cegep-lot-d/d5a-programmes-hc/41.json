@@ -1,0 +1,1169 @@
+{
+ "universite": "University of Regina",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.uregina.ca/academics/programs/index.html"
+ ],
+ "blocages": [],
+ "attendu": {
+  "baccalaureat": 109,
+  "certificat": 68,
+  "comment": "Répertoire officiel « Find a Program » (cartes filtrables par type). Baccalauréat = entrées « Bachelor's Degree » (92) + « After Degree (2 Years) » (11) + entrées « Pathway » menant à un baccalauréat (6) ; certificat = entrées « Certificate (1 - 2 Years) » (68). Une ligne par carte nommée ; le répertoire inclut nativement les programmes offerts par les collèges fédérés (Campion, Luther, First Nations University of Canada) et La Cité universitaire francophone — retenus tels quels, noms français de La Cité retenus et doublons anglais fusionnés. Mineures (Pathway), diplômes, maîtrises, développement professionnel et « Pre-professional Studies » hors compte. Faculté = étiquette du filtre officiel."
+ },
+ "programmes": [
+  {
+   "nom": "Accounting",
+   "cycle": "baccalaureat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/accounting.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Actuarial Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/actuarial-science.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Administration",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/administration.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Advanced Studio Art",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-advanced-studio-art.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Animation",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-animation.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/anthropology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Art History and Curatorial Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/art-history-curatorial-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Arts and Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/arts-science.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Arts Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/arts-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Audio Recording and Sound Design",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-audio-recording-sound-design.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Baccalauréat en éducation française",
+   "cycle": "baccalaureat",
+   "faculte": "La Cité universitaire francophone",
+   "lien": "https://www.uregina.ca/academics/programs/la-cite-universitaire-francophone/en/bed-education-francaise.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Baccalauréat en éducation française au secondaire",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/baccalaureat-education-francaise-secondaire.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Baccalauréat en éducation française élémentaire",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/baccalaureat-education-francaise-elementaire.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Bachelor of Social Work – Bilingual Option",
+   "cycle": "baccalaureat",
+   "faculte": "Social Work",
+   "lien": "https://www.uregina.ca/academics/programs/social-work/social-work-bilingual.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/biology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/business-administration.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Certificat en traduction",
+   "cycle": "certificat",
+   "faculte": "La Cité universitaire francophone",
+   "lien": "https://www.uregina.ca/academics/programs/la-cite-universitaire-francophone/fr/cert-traduction.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Chemical Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/chemical-technology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Chemistry and Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/chemistry-biochemistry.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Chinese Language and Culture",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-chinese.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Classical and Medieval Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/classical-medieval.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/computer-science.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Creative Practice",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-creative-practice.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Creative Technologies",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/creative-technologies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Criminology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/criminology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Criminology",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/criminology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Cultures of Display",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cultures-display.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Data Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/data-science.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Design",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/design.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Devised Performance and Theatre Creation (BFA)",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/devised-performance-theatre-creation.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Digital Marketing",
+   "cycle": "certificat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/cert-digital-marketing.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/economics.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Economics",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/economics.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Education",
+   "cycle": "certificat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/cert-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Education Elementary Pre-K-8",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/education-elementary-pre-k-to-8.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Electronic Systems Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering & Applied Science",
+   "lien": "https://www.uregina.ca/academics/programs/engineering/electronic-systems-engineering.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Elementary Teacher Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/elementary-teacher-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Elementary Teacher Education - YNTEP",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/elementary-teacher-education-yntep.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Energy Systems Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering & Applied Science",
+   "lien": "https://www.uregina.ca/academics/programs/engineering/energy-systems-engineering.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "English",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/english.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "English - Creative Writing",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/english-creative-writing.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Environmental Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/environmental-biology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Environmental Systems Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering & Applied Science",
+   "lien": "https://www.uregina.ca/academics/programs/engineering/environmental-systems-engineering.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Études francophones et interculturelles",
+   "cycle": "baccalaureat",
+   "faculte": "La Cité universitaire francophone",
+   "lien": "https://www.uregina.ca/academics/programs/la-cite-universitaire-francophone/fr/ba-etudes-francophone-interculturelles.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Études francophones et interculturelles",
+   "cycle": "certificat",
+   "faculte": "La Cité universitaire francophone",
+   "lien": "https://www.uregina.ca/academics/programs/la-cite-universitaire-francophone/fr/cert-etudes-francophones-interculturelles.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Extended Studies in Aboriginal Education",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/extended-studies-aboriginal-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Extended Studies in First Nations Language",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/extended-studies-first-nations-language.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Extended Studies in Inclusive Education",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/extended-studies-inclusive-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Film Production",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-film-production.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Film Production",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/film-production.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Film Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/film-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/finance.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Forensic Psychology",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-forensic-psychology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Science",
+   "cycle": "certificat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/science.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "français langue seconde",
+   "cycle": "certificat",
+   "faculte": "La Cité universitaire francophone",
+   "lien": "https://www.uregina.ca/academics/programs/la-cite-universitaire-francophone/fr/cert-francais-langue-seconde-enligne.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "French as a Second Language",
+   "cycle": "baccalaureat",
+   "faculte": "La Cité universitaire francophone",
+   "lien": "https://www.uregina.ca/academics/programs/la-cite-universitaire-francophone/en/ba-french-second-language.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "General Business Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/general-business-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Geography and Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/arts/geography-environmental-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Geology and Environmental Geoscience",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/geology-environmental-geoscience.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "German Language and Culture",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-german-language-culture.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Gerontology",
+   "cycle": "baccalaureat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/gerontology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Health and Medical Humanities",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/health-medical-humanities.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Health Promotion",
+   "cycle": "baccalaureat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/health-promotion.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Health Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/health-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Health Studies",
+   "cycle": "certificat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/health-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "History",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/history.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Hospitality, Tourism and Gaming Entertainment Management",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/hospitality-tourism-gaming-entertainment-management.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Human Kinetics",
+   "cycle": "baccalaureat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/human-kinetics.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Human Resource Management",
+   "cycle": "baccalaureat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/human-resource-management.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Ideation, Creativity and Entrepreneurship",
+   "cycle": "certificat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/cert-ideation-creativity-entrepreneurship.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Birth Worker Certificate",
+   "cycle": "certificat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/indigenous-birth-support-worker-certificate.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Economic Development",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/indigenous-economic-development.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Environmental Management",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/indigenous-environmental-management.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Fine Arts",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-indigenous-fine-arts.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Fine Arts",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/indigenous-fine-arts.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Health Practice",
+   "cycle": "certificat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/cert-indigenous-health-practice.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Journalism and Communication",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-indigenous-journalism-communications.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Language",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/indigenous-language.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Language Guardianship",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/indigenous-language-guardianship.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Language Reclamation",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/indigenous-language-reclamation.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Language Reclamation",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/indigenous-language-reclamation.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Languages",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/indigenous-language-literature.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Literatures in English",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-indigenous-literatures.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Management",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/indigenous-management.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Social Work (Qualifying)",
+   "cycle": "certificat",
+   "faculte": "Social Work",
+   "lien": "https://www.uregina.ca/academics/programs/social-work/indigenous-social-work.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Social Work (Qualifying)",
+   "cycle": "baccalaureat",
+   "faculte": "Social Work",
+   "lien": "https://www.uregina.ca/academics/programs/social-work/indigenous-social-work.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/indigenous-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Indigenous Teacher Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/indigenous-teacher-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Industrial Systems Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering & Applied Science",
+   "lien": "https://www.uregina.ca/academics/programs/engineering/industrial-systems-engineering.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Intercultural Leadership",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-intercultural-leadership.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "International Business",
+   "cycle": "certificat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/cert-international-business.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "International Studies",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/international-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "International Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/international-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Japanese Language and Culture",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-japanese.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Journalism, News Media, and Communication",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/journalism-news-media-communication.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "journalisme et en communication francophone",
+   "cycle": "certificat",
+   "faculte": "La Cité universitaire francophone",
+   "lien": "https://www.uregina.ca/academics/programs/la-cite-universitaire-francophone/fr/cert-journalisme-communication-francophone.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Liberal Arts",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/cce/cert-dip-liberal-arts.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Local Government Administration / Advanced Local Government Administration",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/local-government-administration.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Marketing",
+   "cycle": "baccalaureat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/hill-levene-business/hill/marketing.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/mathematics.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Media, Art, and Performance",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-media-art-performance.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Medical Laboratory Science",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/medical-laboratory-science.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Medical Radiation Technology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/medical-radiation-technology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Museum and Heritage Studies",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-museum-heritage-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Music (Bachelor of Arts)",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/music-ba.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Music (Bachelor of Music)",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/music.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Music Education",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/music-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Nonprofit Sector Leadership and Innovation",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/nonprofit-sector-leadership-innovation.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Northern Saskatchewan Indigenous Teacher Education Program",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/northern-saskatchewan-indigenous-teacher-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "After Degree Nursing Program (ADNP)",
+   "cycle": "baccalaureat",
+   "faculte": "Nursing",
+   "lien": "https://www.uregina.ca/academics/programs/nursing/nursing-after-degree.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Nursing Readiness",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/nursing-readiness-cert.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Online Bachelor of Education (Elementary)",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/online-bachelor-education-elementary.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/philosophy.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Philosophy, Politics and Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/philosophy-politics-economics.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Physical Education and Physical Literacy",
+   "cycle": "baccalaureat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/physical-education-literacy.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/physics.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Police Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/police-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/political-science.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Politics and International Governance",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-politics-international-governance.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Pop Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/pop-culture.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/arts/psychology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Public Relations / Advanced Public Relations and Communications Management",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/public-relations.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Certificate in Queer, Trans, and Gender Studies",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/queer-trans-gender-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Reconciliation Studies",
+   "cycle": "certificat",
+   "faculte": "Continuing Education",
+   "lien": "https://www.uregina.ca/academics/programs/cce/reconciliation-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Religious Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/religious-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Resource and Environmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/resource-environmental-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Saskatchewan Collaborative Bachelor of Science in Nursing (SCBScN)",
+   "cycle": "baccalaureat",
+   "faculte": "Nursing",
+   "lien": "https://www.uregina.ca/academics/programs/nursing/nursing.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Saskatchewan Collaborative Bachelor of Science in Nursing (SCBScN) – Bilingual Option",
+   "cycle": "baccalaureat",
+   "faculte": "Nursing",
+   "lien": "https://www.uregina.ca/academics/programs/nursing/nursing-bilingual.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Elementary Teacher Education - SUNTEP",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/elementary-teacher-education-suntep.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Secondary Teacher Education",
+   "cycle": "baccalaureat",
+   "faculte": "Education",
+   "lien": "https://www.uregina.ca/academics/programs/education/secondary-teacher-education.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Social Work",
+   "cycle": "baccalaureat",
+   "faculte": "Social Work",
+   "lien": "https://www.uregina.ca/academics/programs/social-work/social-work.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/sociology.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Software Systems Engineering",
+   "cycle": "baccalaureat",
+   "faculte": "Engineering & Applied Science",
+   "lien": "https://www.uregina.ca/academics/programs/engineering/software-systems-engineering.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Spanish Language and Hispanic Cultures",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-spanish-language-hispanic-culture.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Sport and Recreation Management",
+   "cycle": "baccalaureat",
+   "faculte": "Paul J. Hill School of Business (Undergraduate)",
+   "lien": "https://www.uregina.ca/academics/programs/khs/sport-recreation-management.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/statistics.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Statistics",
+   "cycle": "certificat",
+   "faculte": "Science",
+   "lien": "https://www.uregina.ca/academics/programs/science/statistics.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Sustainability",
+   "cycle": "certificat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/cert-sustainability.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Theatre and Drama Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/theatre-drama-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Therapeutic Recreation",
+   "cycle": "baccalaureat",
+   "faculte": "Kinesiology & Health Studies",
+   "lien": "https://www.uregina.ca/academics/programs/khs/therapeutic-recreation.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "User Experience Design",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-user-experience-design.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Video Game Design",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-video-game-design.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Visual Arts",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-visual-arts.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Visual Arts (BA)",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/visual-arts-ba.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Visual Arts (BFA)",
+   "cycle": "baccalaureat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/visual-arts-bfa.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Visual Arts Post-Baccalaureate",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-visual-arts-post-baccalaureate.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Visual Communication Design",
+   "cycle": "certificat",
+   "faculte": "Media, Art, and Performance",
+   "lien": "https://www.uregina.ca/academics/programs/map/cert-visual-communication-design.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  },
+  {
+   "nom": "Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Arts",
+   "lien": "https://www.uregina.ca/academics/programs/arts/women-gender-studies.html",
+   "source": "https://www.uregina.ca/academics/programs/index.html"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "Arts Education [Bachelor's Degree]",
+   "raison": "Même programme listé deux fois (cartes « Bachelor’s Degree » et « After Degree », même nom), fusionné"
+  },
+  {
+   "nom": "Baccalauréat en éducation française [Bachelor's Degree]",
+   "raison": "Même programme listé deux fois (cartes « Bachelor’s Degree » et « After Degree », même nom), fusionné"
+  },
+  {
+   "nom": "Baccalauréat en éducation française [Pathway]",
+   "raison": "Entrée « Pathway » du même programme (page EN/FR), fusionnée"
+  },
+  {
+   "nom": "Bachelor of Social Work After Degree [After Degree (2 Years)]",
+   "raison": "Voie après-grade du même programme : fusionnée dans « Social Work »"
+  },
+  {
+   "nom": "Carbon Capture, Utilization and Storage [Certificate]",
+   "raison": "Certificat de maîtrise (admission par Graduate Studies and Research, page « master-cert ») — cycle supérieur"
+  },
+  {
+   "nom": "Certificate in Translation [Certificate]",
+   "raison": "Version anglaise du même certificat de La Cité : fusionnée dans « Certificat en traduction »"
+  },
+  {
+   "nom": "Cheminement intégré PÉFI - Droit [Bachelor's Degree]",
+   "raison": "Cheminement intégré BA + JD (JD professionnel à l'Université d'Ottawa) ; le BA correspondant est déjà listé — à vérifier"
+  },
+  {
+   "nom": "Cheminement intégré PÉFI - Droit [Pathway]",
+   "raison": "Cheminement intégré BA + JD (JD professionnel à l'Université d'Ottawa) ; le BA correspondant est déjà listé — à vérifier"
+  },
+  {
+   "nom": "Elementary Teacher Education [After Degree (2 Years)]",
+   "raison": "Voie après-grade (After Degree) du même programme, fusionnée"
+  },
+  {
+   "nom": "Elementary Teacher Education - YNTEP [After Degree (2 Years)]",
+   "raison": "Voie après-grade (After Degree) du même programme, fusionnée"
+  },
+  {
+   "nom": "Francophone Journalism and Communication [Certificate]",
+   "raison": "Version anglaise du même certificat de La Cité : fusionnée dans « journalisme et en communication francophone »"
+  },
+  {
+   "nom": "French and Francophone Intercultural Studies [Bachelor's Degree]",
+   "raison": "Version anglaise du même BA de La Cité : fusionnée dans « Études francophones et interculturelles » (nom français retenu)"
+  },
+  {
+   "nom": "French and Francophone Intercultural Studies (CFFIS) [Certificate]",
+   "raison": "Version anglaise du même certificat de La Cité : fusionnée dans « Études francophones et interculturelles »"
+  },
+  {
+   "nom": "French as a Second Language [Certificate]",
+   "raison": "Version anglaise du même certificat en ligne de La Cité : fusionnée dans « français langue seconde »"
+  },
+  {
+   "nom": "Master's Certificate in Human Resources Administration in Education [Certificate]",
+   "raison": "Certificat de maîtrise (cycle supérieur)"
+  },
+  {
+   "nom": "Indigenous Teacher Education [After Degree (2 Years)]",
+   "raison": "Voie après-grade (After Degree) du même programme, fusionnée"
+  },
+  {
+   "nom": "Integrated Pathway in French and Francophone Intercultural Studies and Law - Bachelor of Arts (BA) and Juris Doctor (JD) [Pathway]",
+   "raison": "Cheminement intégré BA + JD (JD professionnel à l'Université d'Ottawa) ; le BA correspondant est déjà listé — à vérifier"
+  },
+  {
+   "nom": "Integrated Pathway in French and Francophone Intercultural Studies and Law - Bachelor of Arts (BA) and Juris Doctor (JD) [Bachelor's Degree]",
+   "raison": "Cheminement intégré BA + JD (JD professionnel à l'Université d'Ottawa) ; le BA correspondant est déjà listé — à vérifier"
+  },
+  {
+   "nom": "Labour Relations (MCert.) [Certificate]",
+   "raison": "Certificat de maîtrise (cycle supérieur)"
+  },
+  {
+   "nom": "Northern Saskatchewan Indigenous Teacher Education Program [Bachelor's Degree]",
+   "raison": "Même programme listé deux fois (cartes « Bachelor’s Degree » et « After Degree », même nom), fusionné"
+  },
+  {
+   "nom": "Online Bachelor of Education (Elementary) [Bachelor's Degree]",
+   "raison": "Même programme listé deux fois (cartes « Bachelor’s Degree » et « After Degree », même nom), fusionné"
+  },
+  {
+   "nom": "Organizational Leadership (MCert.) [Certificate]",
+   "raison": "Certificat de maîtrise (cycle supérieur)"
+  },
+  {
+   "nom": "Project Management (MCert.) [Certificate]",
+   "raison": "Certificat de maîtrise (cycle supérieur)"
+  },
+  {
+   "nom": "Saskatchewan Collaborative Bachelor of Science in Nursing (SCBScN) - LPN to BScN Pathway [Pathway]",
+   "raison": "Voie d'accès (LPN) du même programme : fusionnée dans « Saskatchewan Collaborative Bachelor of Science in Nursing (SCBScN) »"
+  },
+  {
+   "nom": "Saskatchewan Collaborative Bachelor of Science in Nursing (SCBScN) - RPN to BScN Pathway [Pathway]",
+   "raison": "Voie d'accès (RPN) du même programme : fusionnée dans « Saskatchewan Collaborative Bachelor of Science in Nursing (SCBScN) »"
+  },
+  {
+   "nom": "Secondary Teacher Education [Bachelor's Degree]",
+   "raison": "Même programme listé deux fois (cartes « Bachelor’s Degree » et « After Degree », même nom), fusionné"
+  },
+  {
+   "nom": "String Performance Post-Baccalaureate [After Degree (2 Years)]",
+   "raison": "Diplôme post-baccalauréat (diploma), pas un baccalauréat"
+  },
+  {
+   "nom": "Travail Social – Option Bilingue [Bachelor's Degree]",
+   "raison": "Version française de la même option : fusionnée dans « Bachelor of Social Work – Bilingual Option »"
+  },
+  {
+   "nom": "Women's and Gender Studies [Bachelor's Degree]",
+   "raison": "Même programme listé deux fois (cartes « Bachelor’s Degree » et « After Degree », même nom), fusionné"
+  }
+ ]
+}

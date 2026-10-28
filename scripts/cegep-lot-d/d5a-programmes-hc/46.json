@@ -1,0 +1,587 @@
+{
+ "universite": "University of Winnipeg",
+ "date_releve": "2026-10-28",
+ "sources_generales": [
+  "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf",
+  "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf",
+  "https://www.uwinnipeg.ca/academics/calendar/docs/other-programs.pdf",
+  "https://www.uwinnipeg.ca/future-student/docs/intl-undergrad-viewbook.pdf",
+  "https://www.uwinnipeg.ca/academics/calendar/docs/anth.pdf (et autres fichiers de département du calendrier 2026-27, même dossier)"
+ ],
+ "blocages": [
+  "https://www.uwinnipeg.ca/ (toutes les pages HTML essayées : /, /academics/programs/index.html, /programs/index.html, /academics/calendar/, /future-student/index.html) ainsi que https://library.uwinnipeg.ca/ et https://news.uwinnipeg.ca/ renvoient 403 à une requête simple et à WebFetch ; aucun contournement tenté. Remplacé par les PDF officiels du calendrier 2026-27 servis librement sous https://www.uwinnipeg.ca/academics/calendar/docs/ (Degree and Major Requirements, Education, Other Programs, fichiers de département) et le viewbook international officiel 2027-2028. Le répertoire « Undergraduate Programs » lui-même n'a pas pu être lu."
+ ],
+ "attendu": {
+  "baccalaureat": 63,
+  "certificat": 17,
+  "comment": "Répertoire HTML bloqué (403) : unité = majeure par grade du tableau officiel « Majors leading to Bachelor's Degrees » du calendrier 2026-27 (36 BA, 13 BSc, 2 BBA, 1 BPHE, 1 BKin) + BSc (Athletic Therapy) du fichier Kinesiology + programmes BEd de la liste « Degrees/Programs Offered » du fichier Education (5 entrées de grade, dont l'After-Degree fusionné) + WEC et CATEP + Certified Teacher BEd (fusionné). Nom = « grade – majeure » composé des libellés officiels. Variantes 3 ans / 4 ans / Honours / Business Stream / Joint Applied fusionnées. Attendu baccalauréat = 60 lignes + After-Degree BEd + Certified Teacher BEd + CRS 4 ans fermé. Certificats = 14 certificats crédités nommés dans les fichiers de département (dont 4 niveaux Anishinaabemowin) + Post-Baccalaureate Certificate in Economics + 2 certificats annoncés par le viewbook 2027-28. Programmes discontinués/non offerts et PACE listés dans exclus pour mémoire. Faculté : intitulés du viewbook officiel ; null quand non indiquée."
+ },
+ "programmes": [
+  {
+   "nom": "Bachelor of Arts – Anthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/anth.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Applied Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/acs.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Classics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/clas.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Communications",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/rhet.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Conflict Resolution Studies",
+   "cycle": "baccalaureat",
+   "faculte": null,
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/crs.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Criminal Justice",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/cj.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Dance (Theatre and Film)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/danc.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Developmental Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/dev.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Disability Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/dis.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – East Asian Languages and Cultures",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/ealc.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Economics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business and Economics",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/econ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Economics and Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business and Economics",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/efin.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – English",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/engl.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Environmental Studies and Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/env.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – French Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/fren.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/geog.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – German Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/germ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – History",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/hist.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – History of Art",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/hisa.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Human Rights",
+   "cycle": "baccalaureat",
+   "faculte": "Global College",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/hr.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Indigenous Languages",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Indigenous Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/is.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Interdisciplinary Linguistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/ling.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/math.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Modern Languages",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/mod.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Philosophy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/phil.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Political Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/pol.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Psychology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/psyc.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Religion and Culture",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/rel.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Rhetoric and Communications",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/rhet.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Sociology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/soc.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Spanish Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/span.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/stat.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Theatre and Film",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/thfm.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Urban and Inner City Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/uic.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Arts – Women's and Gender Studies",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/wgs.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Applied Computer Science",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/acs.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Bioanthropology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/bant.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Biochemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/biochem.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Biology",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/biol.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Chemistry",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/chem.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Environmental Studies and Sciences",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/env.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Geography",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/geog.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Kinesiology and Applied Health",
+   "cycle": "baccalaureat",
+   "faculte": "Gupta Faculty of Kinesiology and Applied Health",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/kin.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Mathematics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/math.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Neuroscience",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/nsci.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Physics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/phys.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Radiation Therapy",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/rt.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Statistics",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/stat.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Science – Kinesiology (Athletic Therapy)",
+   "cycle": "baccalaureat",
+   "faculte": "Gupta Faculty of Kinesiology and Applied Health",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/kin.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/kin.pdf"
+  },
+  {
+   "nom": "Bachelor of Business Administration – Business Administration",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business and Economics",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/bus.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Business Administration – Economics and Finance",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Business and Economics",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/efin.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Physical and Health Education – Kinesiology and Applied Health",
+   "cycle": "baccalaureat",
+   "faculte": "Gupta Faculty of Kinesiology and Applied Health",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/kin.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Bachelor of Kinesiology – Kinesiology and Applied Health",
+   "cycle": "baccalaureat",
+   "faculte": "Gupta Faculty of Kinesiology and Applied Health",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/kin.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf"
+  },
+  {
+   "nom": "Integrated BEd/BA/BPHE or BSc Program",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf"
+  },
+  {
+   "nom": "Integrated BEd/BA/BPHE or BSc Joint UW/RRC Polytech Applied Commerce Education Program",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf"
+  },
+  {
+   "nom": "Integrated BEd/BA/BPHE or BSc Joint UW/RRC Polytech Industrial Arts Education Program",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf"
+  },
+  {
+   "nom": "Joint UW/RRC Polytech Vocational Teacher Education Program",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf"
+  },
+  {
+   "nom": "Winnipeg Education Centre Program (WEC)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf"
+  },
+  {
+   "nom": "Community-Based Aboriginal Teacher Education Program (CATEP)",
+   "cycle": "baccalaureat",
+   "faculte": "Faculty of Education",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/educ.pdf"
+  },
+  {
+   "nom": "Certificate in Urban and Community Planning",
+   "cycle": "certificat",
+   "faculte": "Faculty of Science",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/geog.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/geog.pdf"
+  },
+  {
+   "nom": "Certificate in Indigenous Languages",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf"
+  },
+  {
+   "nom": "Certificate in Teaching Indigenous Languages for Vitality",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf"
+  },
+  {
+   "nom": "Certificate in Supporting Multilingualism and Indigenous Languages in Schools",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf"
+  },
+  {
+   "nom": "Certificate in Anishinaabemowin",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/il.pdf"
+  },
+  {
+   "nom": "Certificate in Public Policy and Administration",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/pol.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/pol.pdf"
+  },
+  {
+   "nom": "Certificate in Applied Psychology",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/psyc.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/psyc.pdf"
+  },
+  {
+   "nom": "Certificate in Writing",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/rhet.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/rhet.pdf"
+  },
+  {
+   "nom": "Research Methods Certificate",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/soc.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/soc.pdf"
+  },
+  {
+   "nom": "Certificate in Urban and Inner-City Studies",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/uic.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/uic.pdf"
+  },
+  {
+   "nom": "Certificate in Community Advocacy",
+   "cycle": "certificat",
+   "faculte": "Faculty of Arts",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/uic.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/uic.pdf"
+  },
+  {
+   "nom": "Post-Baccalaureate Certificate in Economics",
+   "cycle": "certificat",
+   "faculte": "Faculty of Business and Economics",
+   "lien": "https://www.uwinnipeg.ca/academics/calendar/docs/econ.pdf",
+   "source": "https://www.uwinnipeg.ca/academics/calendar/docs/econ.pdf"
+  }
+ ],
+ "exclus": [
+  {
+   "nom": "2-year After-Degree BEd Program",
+   "raison": "Voie après-grade du BEd : fusionnée dans « Integrated BEd/BA/BPHE or BSc Program »"
+  },
+  {
+   "nom": "The Certified Teacher BEd Program",
+   "raison": "Voie de mise à niveau pour enseignants certifiés menant au même BEd/BA/BPHE ou BEd/BSc : fusionnée dans « Integrated BEd/BA/BPHE or BSc Program » — à vérifier"
+  },
+  {
+   "nom": "Post-Baccalaureate Diploma in Education",
+   "raison": "Diplôme post-baccalauréat (diploma), hors périmètre"
+  },
+  {
+   "nom": "Conflict Resolution Studies (4-Year BA)",
+   "raison": "Variante 4 ans fermée (« No new Majors will be accepted after June 30, 2023 ») ; le BA 3 ans reste listé"
+  },
+  {
+   "nom": "4-Year BSc Biology (UW/RRC Polytech joint)",
+   "raison": "« This program is being discontinued. No new students will be admitted. » — variante du BSc Biology"
+  },
+  {
+   "nom": "Joint BBA program with RRC Polytech",
+   "raison": "« currently under review. No new students will be accepted » — variante du BBA"
+  },
+  {
+   "nom": "International Development Studies (BA)",
+   "raison": "Programme en fermeture : aucune admission depuis le 30 juin 2023 (absent du tableau des majeures)"
+  },
+  {
+   "nom": "Joint Indigenous Studies/Aboriginal Governance Degree/Diploma (RRC/UW)",
+   "raison": "« This program is not being offered currently »"
+  },
+  {
+   "nom": "Certificate in Anishinaabemowin 2",
+   "raison": "Niveau d'un même certificat (le calendrier liste les niveaux 1 à 4 sous « Requirements for a Certificate in Anishinaabemowin ») : fusionné dans « Certificate in Anishinaabemowin »"
+  },
+  {
+   "nom": "Certificate in Anishinaabemowin 3",
+   "raison": "Niveau d'un même certificat (le calendrier liste les niveaux 1 à 4 sous « Requirements for a Certificate in Anishinaabemowin ») : fusionné dans « Certificate in Anishinaabemowin »"
+  },
+  {
+   "nom": "Certificate in Anishinaabemowin 4",
+   "raison": "Niveau d'un même certificat (le calendrier liste les niveaux 1 à 4 sous « Requirements for a Certificate in Anishinaabemowin ») : fusionné dans « Certificate in Anishinaabemowin »"
+  },
+  {
+   "nom": "Certificate in Human Rights",
+   "raison": "Annoncé comme « new » dans le viewbook international 2027-2028, absent du calendrier 2026-27 consultable — à vérifier"
+  },
+  {
+   "nom": "Certificate in Justice, Law and Rights",
+   "raison": "Annoncé comme « new » dans le viewbook international 2027-2028, absent du calendrier 2026-27 consultable — à vérifier"
+  },
+  {
+   "nom": "Programmes PACE (Applied Project Management Certificate, Business Intelligence Certificate, Leading Change Management Certificate, Management Certificate, etc.)",
+   "raison": "« Non-degree Programs » de l'éducation permanente (calendrier, Other Programs) — non crédités, hors compte attendu"
+  },
+  {
+   "nom": "Pre-professional pathways (Pre-Medicine, Pre-Law, etc.)",
+   "raison": "Cheminements préparatoires, pas des programmes de grade — hors compte attendu"
+  }
+ ]
+}
