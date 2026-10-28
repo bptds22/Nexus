@@ -54,8 +54,16 @@ export const CIBLE_DIVULGATION_CLUB_APRES =
  * La bonne phrase selon l'état du bouton. À préférer à un ternaire écrit
  * sur place : c'est le point unique où le temps du verbe se décide.
  */
-export function divulgationCible(dansLesCibles: boolean, club = false): string {
+/* Université (lot E4, sous lancement_universitaire ON) : seul le cégépien cible une université (E1) ; les recruteurs
+   universitaires de l'université lisent la cible (athletes_targeting_my_cegep rend les cibles de l'école du recruteur). */
+export const CIBLE_DIVULGATION_UNIVERSITE_AVANT =
+  "Les recruteurs de cette université verront que tu les as ciblés.";
+export const CIBLE_DIVULGATION_UNIVERSITE_APRES =
+  "Les recruteurs de cette université voient que tu les as ciblés.";
+
+export function divulgationCible(dansLesCibles: boolean, club = false, universite = false): string {
   if (club) return dansLesCibles ? CIBLE_DIVULGATION_CLUB_APRES : CIBLE_DIVULGATION_CLUB_AVANT;
+  if (universite) return dansLesCibles ? CIBLE_DIVULGATION_UNIVERSITE_APRES : CIBLE_DIVULGATION_UNIVERSITE_AVANT;
   return dansLesCibles ? CIBLE_DIVULGATION_APRES : CIBLE_DIVULGATION_AVANT;
 }
 

@@ -8,6 +8,7 @@ import "server-only";
 // JAMAIS. Jumeau de schoolPage/loadForRender.
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { lireLancementUniversitaire } from "@/lib/config/lancementUniversitaire";
 import { loadTeamPage } from "./teamPageData";
 import { sportKeyFromNom, defaultNeeds, mergeNeeds, toTeamNeeds, type PositionRow } from "./sportSlots";
 import {
@@ -46,9 +47,13 @@ export type TeamRenderResult =
   // d'emprunter l'identité d'une autre.
   | { configured: false; teamName: string | null; degraded?: TeamData };
 
-export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderResult> {
+/** `universite` (lot E4, route /universite/[école]/[équipe]) : ne rend QUE les équipes universitaires, et seulement
+ *  sous lancement_universitaire ON (404 sinon). Sans l'option, rien ne change : /college refuse les universités. */
+export async function loadTeamPageForRender(teamId: string, opts: { universite?: boolean } = {}): Promise<TeamRenderResult> {
   if (!UUID.test(teamId)) return { configured: false, teamName: null };
   const svc = createServiceClient();
+  const universite = opts.universite === true;
+  if (universite && !(await lireLancementUniversitaire(svc))) return { configured: false, teamName: null };
 
   const { data: teamRow } = await svc
     .from("teams")
@@ -60,7 +65,7 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
   // Lot D1a cégep : la clé service ne passe pas par la policy universites_masquees — une équipe
   // universitaire n'a pas de page publique (même règle que loadSchoolPageForRender).
   const { data: ecole } = await svc.from("schools").select("type").eq("id", team.school_id).maybeSingle();
-  if ((ecole as { type?: string } | null)?.type === "UNIVERSITE") return { configured: false, teamName: null };
+  if (((ecole as { type?: string } | null)?.type === "UNIVERSITE") !== universite) return { configured: false, teamName: null };
 
   // Pas de sortie anticipée quand la page n'est jamais configurée : on charge
   // quand même l'identité réelle (sport, école, calendrier, roster) pour bâtir
@@ -236,6 +241,7 @@ export async function loadTeamPageForRender(teamId: string): Promise<TeamRenderR
 
   // Jamais configurée → `configured` reste faux (contrat de /team-test), mais
   // l'équipe RÉELLE part avec la réponse pour la route publique.
+  if (universite) built.universite = true;
   if (!page.content) return { configured: false, teamName: team.name, degraded: built };
 
   return { configured: true, teamName: team.name, team: built };

@@ -41,7 +41,7 @@ export default function MaPageClient() {
   const schoolId = user?.profile.school_id ?? null;
 
   const [schoolName, setSchoolName] = React.useState("");
-  // Lot D5b : recruteur universitaire → la page de SON université, sans pages d'équipes (Q5).
+  // Lot D5b : recruteur universitaire → la page de SON université ; ses équipes reviennent au lot E4 (E2 en base).
   const [universite, setUniversite] = React.useState(false);
   const [teams, setTeams] = React.useState<PagesTabTeam[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -115,7 +115,7 @@ export default function MaPageClient() {
           Ton compte n&apos;est rattaché à aucun établissement — il n&apos;y a pas de page à modifier.
         </div>
       ) : (
-        <PagesTab schoolId={schoolId} schoolName={schoolName} teams={universite ? [] : teams} universite={universite} />
+        <PagesTab schoolId={schoolId} schoolName={schoolName} teams={teams} universite={universite} />
       )}
     </div>
   );

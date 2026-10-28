@@ -116,7 +116,7 @@ export default function BesoinsWidget({
             {cible ? "Dans tes cibles" : "Rajouter à mes cibles"}
           </button>
           {/* Divulgation — source unique `lib/cibles/divulgation.ts`. */}
-          <p className="cibles-disc">{divulgationCible(cible)}</p>
+          <p className="cibles-disc">{divulgationCible(cible, false, team.universite === true)}</p>
         </div>
       )}
       </div>

@@ -101,7 +101,7 @@ export default function TeamHero({
         {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Le bouton
             écrit `athlete_targets(school_id)` : on cible le CÉGEP depuis une
             page équipe, donc la phrase parle bien des recruteurs du cégep. */}
-        <p className="cibles-disc">{divulgationCible(cible)}</p>
+        <p className="cibles-disc">{divulgationCible(cible, false, team.universite === true)}</p>
         </>}
       </div>
     </div>

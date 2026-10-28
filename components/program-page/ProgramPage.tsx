@@ -176,7 +176,7 @@ export default function ProgramPage({ school, content, saison }: ProgramPageProp
           />
         )}
         {!hidden.includes("news") && <NewsSection news={content.news} etablissement={content.etablissement} />}
-        {ciblesVisibles && <CtaCibles ctaTitle={content.ctaTitle} inTargets={inTargets} onToggleTargets={toggleTargets} />}
+        {ciblesVisibles && <CtaCibles ctaTitle={content.ctaTitle} inTargets={inTargets} onToggleTargets={toggleTargets} universite={content.etablissement === "universite"} />}
         <div className="pfoot">⚡ Propulsé par Nexus · données de démonstration</div>
       </div>
     </div>
