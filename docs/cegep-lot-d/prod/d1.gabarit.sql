@@ -49,6 +49,13 @@ begin
          and cmd = 'SELECT' and tablename in ('schools', 'teams')) <> 2 then
     raise exception 'NEXUS: préalable D1a (universités masquées) absent — rien ne doit être importé avant';
   end if;
+-- [[GARDE_D1A2
+  if to_regprocedure('public.ids_universites()') is not null
+     or to_regprocedure('nexus_prive.ids_universites()') is null
+     or to_regprocedure('public.verrou_reference_universite()') is null then
+    raise exception 'NEXUS: préalable D1a2 (fonctions DEFINER fermées) absent — rien ne doit être importé avant';
+  end if;
+-- GARDE_D1A2]]
   if exists (select 1 from public.schools where type = 'UNIVERSITE') then
     raise exception 'NEXUS: des universités existent déjà';
   end if;
@@ -93,6 +100,165 @@ create temp table _cotes on commit drop as
 select (select count(*) from public.games g join _equipes q on q.rseq_team_id = g.home_rseq_team_id where g.home_team_id is null) as domicile,
        (select count(*) from public.games g join _equipes q on q.rseq_team_id = g.visitor_rseq_team_id where g.visitor_team_id is null) as visiteur;
 select 'côtés de match à relier' as quoi, * from _cotes;
+
+-- ── Banc des fonctions SECURITY DEFINER et des vues propriétaire ─────────────
+-- Toute fonction qu'un client peut appeler (/rpc) et qui lit écoles ou équipes est appelée avec les claims
+-- d'un vrai compte de chaque rôle non admin (ce que PostgREST pose depuis le jeton : request.jwt.claims +
+-- rôle authenticated / anon), AVANT puis APRÈS la création, chaque appel défait aussitôt. Les arguments
+-- d'identifiant reçoivent ceux des universités (pire cas : un client qui les connaîtrait). FUITE = un
+-- identifiant d'université ou d'équipe universitaire dans la réponse, ou plus de noms universitaires
+-- qu'avant la création. Les fonctions booléennes ou réservées à l'admin sont classées dans D1-AUDIT-DEFINER.md.
+set local statement_timeout = '600s';
+create temp table _banc_roles on commit drop as
+select 1 as o, 'athlète' as role, (select u.id from public.users u join public.athletes a on a.user_id = u.id
+         where u.role = 'ATHLETE'::public.user_role and exists (select 1 from public.team_athletes ta where ta.athlete_id = a.id)
+         order by u.id limit 1) as uid
+union all select 2, 'parent', (select u.id from public.users u where u.role = 'PARENT'::public.user_role order by u.id limit 1)
+union all select 3, 'coach', (select u.id from public.users u where u.role = 'COACH'::public.user_role
+         and exists (select 1 from public.team_coaches tc where tc.coach_id = u.id) order by u.id limit 1)
+union all select 4, 'recruteur collégial', coalesce(
+         (select c.cree_par from public.cartes_prospect c join public.users u on u.id = c.cree_par
+           where u.role = 'RECRUTEUR'::public.user_role and c.fusionnee_le is null order by c.created_at desc, c.id limit 1),
+         (select u.id from public.users u where u.role = 'RECRUTEUR'::public.user_role and u.onboarding_complete order by u.id limit 1))
+union all select 5, 'partenaire', (select mp.user_id from public.media_partners mp join public.users u on u.id = mp.user_id
+         where u.role = 'PARTNER'::public.user_role
+         order by exists (select 1 from _equipes q join public.sports s on s.nom = q.sport
+                           where public.partenaire_peut_evaluer(mp.id, s.id)) desc,
+                  (select count(*) from public.partenaire_prospects pp where pp.partner_id = mp.id) desc, mp.user_id limit 1)
+union all select 6, 'anon (site public)', null::uuid;
+do $$
+begin
+  if exists (select 1 from _banc_roles where uid is null and role not like 'anon%') then
+    raise exception 'NEXUS: banc — un compte témoin manque';
+  end if;
+end $$;
+
+-- Arguments, lus en postgres AVANT de changer de rôle. Avant la création, les ids universitaires sont factices.
+create function pg_temp.ctx() returns jsonb language sql as $$
+  with mp as (select mp.id from public.media_partners mp where mp.user_id = (select uid from _banc_roles where o = 5)),
+       ut as (select t.id, t.sport_id from public.teams t join _equipes q using (rseq_team_id))
+  select jsonb_build_object(
+    'U',   coalesce((select s.id from public.schools s where s.type = 'UNIVERSITE' order by s.name limit 1), '00000000-0000-4000-8000-0000000000d1'),
+    'UA',  coalesce((select array_agg(s.id) from public.schools s where s.type = 'UNIVERSITE'), '{}'),
+    'T',   coalesce((select id from ut order by id limit 1), '00000000-0000-4000-8000-0000000000d2'),
+    'TA',  coalesce((select array_agg(id) from ut), '{}'),
+    'TP',  coalesce((select ut.id from ut, mp where public.partenaire_peut_evaluer(mp.id, ut.sport_id) order by ut.id limit 1),
+                    (select id from ut order by id limit 1), '00000000-0000-4000-8000-0000000000d2'),
+    'TPS', coalesce((select ut.sport_id from ut, mp where public.partenaire_peut_evaluer(mp.id, ut.sport_id) order by ut.id limit 1),
+                    (select sport_id from ut order by id limit 1), (select sport_id from public.teams order by id limit 1)),
+    'ATH', (select array_agg(id) from (select a.id from public.athletes a order by a.id limit 200) x),
+    'A1',  (select a.id from public.athletes a order by a.id limit 1),
+    'CP',  coalesce((select array_agg(id) from (select c.id from public.cartes_prospect c order by c.id limit 300) x), '{}'),
+    'G',   (select g.id from public.games g where g.game_date >= current_date order by g.game_date, g.id limit 1),
+    'CEG', coalesce((select c.unite_cegep_id from public.cartes_prospect c where c.cree_par = (select uid from _banc_roles where o = 4)
+                      and c.fusionnee_le is null order by c.created_at desc, c.id limit 1),
+                    (select u.school_id from public.users u where u.id = (select uid from _banc_roles where o = 4))),
+    'CR',  (select c.id from public.cartes_prospect c where c.cree_par = (select uid from _banc_roles where o = 4)
+             and c.fusionnee_le is null order by c.created_at desc, c.id limit 1),
+    'TC',  coalesce((select ut.id from ut where ut.sport_id = (select c.unite_sport_id from public.cartes_prospect c
+                       where c.cree_par = (select uid from _banc_roles where o = 4) and c.fusionnee_le is null
+                       order by c.created_at desc, c.id limit 1) order by ut.id limit 1),
+                    (select id from ut order by id limit 1), '00000000-0000-4000-8000-0000000000d2'),
+    'INV', (select ti.id from public.team_invitations ti order by ti.created_at desc limit 1));
+$$;
+create function pg_temp.remplir(p_tpl text, c jsonb) returns text language plpgsql as $$
+declare k text; v text;
+begin
+  foreach k in array array['UA', 'TA', 'TPS', 'TP', 'ATH', 'A1', 'CP', 'CEG', 'CR', 'TC', 'INV', 'U', 'T', 'G'] loop
+    v := case when jsonb_typeof(c -> k) = 'array'
+              then quote_literal(coalesce((select '{' || string_agg(x, ',') || '}' from jsonb_array_elements_text(c -> k) x), '{}')) || '::uuid[]'
+              when c ->> k is null then 'null::uuid'
+              else quote_literal(c ->> k) || '::uuid' end;
+    p_tpl := replace(p_tpl, '{' || k || '}', v);
+  end loop;
+  return p_tpl;
+end $$;
+
+create temp table _appels (n int primary key, objet text not null, appel text not null) on commit drop;
+insert into _appels values
+  (1,  'admin_cegeps_sans_programme()',            'select jsonb_agg(x)::text from public.admin_cegeps_sans_programme() x'),
+  (2,  'athletes_nom_proche(…, université)',       'select jsonb_agg(x)::text from public.athletes_nom_proche(''Jean'', ''Tremblay'', {U}) x'),
+  (3,  'cartes_par_ids(300 cartes)',               'select public.cartes_par_ids({CP})::text'),
+  (4,  'coachs_nommables_equipe(équipe univ.)',    'select jsonb_agg(x)::text from public.coachs_nommables_equipe({T}) x'),
+  (5,  'depistage_profils_match(prochain match)',  'select jsonb_agg(x)::text from public.depistage_profils_match({G}) x'),
+  (6,  'get_my_children()',                        'select jsonb_agg(x)::text from public.get_my_children() x'),
+  (7,  'ids_universites() — /rpc public',          'select public.ids_universites()::text'),
+  (8,  'invitation_equipe_coach(dernière)',        'select public.invitation_equipe_coach({INV})::text'),
+  (9,  'list_interested_recruiters()',             'select jsonb_agg(x)::text from public.list_interested_recruiters() x'),
+  (10, 'list_team_commits(équipe univ.)',          'select jsonb_agg(x)::text from public.list_team_commits({T}) x'),
+  (11, 'lookup_civil_unclaimed_by_email(''a'')',   'select jsonb_agg(x)::text from public.lookup_civil_unclaimed_by_email(''a'') x'),
+  (12, 'matchs_recherche(31 jours)',                'select jsonb_agg(x)::text from public.matchs_recherche(current_date, current_date + 30) x'),
+  (13, 'matchs_recherche(équipes univ.)',          'select jsonb_agg(x)::text from public.matchs_recherche(current_date - 200, current_date + 200, null, null, null, {TA}) x'),
+  (14, 'matchs_recherche(texte « laval »)',        'select jsonb_agg(x)::text from public.matchs_recherche(current_date, current_date + 30, null, null, ''laval'') x'),
+  (15, 'matchs_suggestions(« laval »)',            'select jsonb_agg(x)::text from public.matchs_suggestions(''laval'') x'),
+  (16, 'matchs_suggestions(« université »)',       'select jsonb_agg(x)::text from public.matchs_suggestions(''université'') x'),
+  (17, 'matchs_suggestions(« rouge et or »)',      'select jsonb_agg(x)::text from public.matchs_suggestions(''rouge et or'') x'),
+  (18, 'matchs_suggestions(« carabins »)',         'select jsonb_agg(x)::text from public.matchs_suggestions(''carabins'') x'),
+  (19, 'partenaire_depistage_cartes(univ., équipes univ.)', 'select jsonb_agg(x)::text from public.partenaire_depistage_cartes({UA}, {TA}) x'),
+  (20, 'partenaire_mes_athletes()',                'select jsonb_agg(x)::text from public.partenaire_mes_athletes() x'),
+  (21, 'partenaire_prospects_terminees()',         'select jsonb_agg(x)::text from public.partenaire_prospects_terminees() x'),
+  (22, 'partenaire_rapprochements()',              'select jsonb_agg(x)::text from public.partenaire_rapprochements() x'),
+  (23, 'partenaire_rapprochements_refuses()',      'select jsonb_agg(x)::text from public.partenaire_rapprochements_refuses() x'),
+  (24, 'partner_athlete_profile(une fiche)',       'select jsonb_agg(x)::text from public.partner_athlete_profile({A1}) x'),
+  (25, 'partner_newsroom_events()',                'select jsonb_agg(x)::text from public.partner_newsroom_events() x'),
+  (26, 'processus_cartes(université)',             'select public.processus_cartes({U}, null, true)::text'),
+  (27, 'processus_cartes(son cégep)',              'select public.processus_cartes({CEG}, null, true)::text'),
+  (28, 'rapprochements_refuses_unite()',           'select jsonb_agg(x)::text from public.rapprochements_refuses_unite() x'),
+  (29, 'rapprochements_unite()',                   'select jsonb_agg(x)::text from public.rapprochements_unite() x'),
+  (30, 'recruiter_athlete_cards(200 fiches)',      'select jsonb_agg(x)::text from public.recruiter_athlete_cards({ATH}) x'),
+  (31, 'recruiter_athlete_profile(une fiche)',     'select jsonb_agg(x)::text from public.recruiter_athlete_profile({A1}) x'),
+  (32, 'recruiter_search_athletes()',              'select jsonb_agg(x)::text from public.recruiter_search_athletes() x'),
+  (33, 'recruiter_search_athletes(« laval »)',     'select jsonb_agg(x)::text from public.recruiter_search_athletes(''laval'') x'),
+  (34, 'team_record_hint(équipe univ.)',           'select public.team_record_hint({T})'),
+  (35, 'vue top_athletes_view',                    'select jsonb_agg(v)::text from (select * from public.top_athletes_view limit 1000) v'),
+  (36, 'vue trending_athletes_view',               'select jsonb_agg(v)::text from (select * from public.trending_athletes_view limit 1000) v');
+
+-- Rend « ok <ids univ.> <noms univ.> », « refusé <sqlstate> », « absente » (fonction retirée de l'API) ou « ERREUR ».
+create function pg_temp.appel(p_role text, p_uid uuid, p_sql text, p_ids text[], p_noms text[]) returns text
+language plpgsql as $$
+declare v text; n_id int; n_nom int;
+begin
+  begin
+    if p_uid is null then
+      perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
+      perform set_config('role', 'anon', true);
+    else
+      perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
+      perform set_config('role', 'authenticated', true);
+    end if;
+    execute p_sql into v;
+    v := lower(coalesce(v, ''));
+    select count(*) into n_id from unnest(p_ids) m where strpos(v, m) > 0;
+    -- Occurrences (pas seulement présence) : un nom déjà présent avant la création ne masque pas un ajout.
+    select coalesce(sum((length(v) - length(replace(v, m, ''))) / length(m)), 0) into n_nom from unnest(p_noms) m;
+    raise exception using errcode = 'NX000', message = 'ok ' || n_id || ' ' || n_nom;
+  exception
+    when sqlstate 'NX000' then return sqlerrm;
+    when undefined_function then return 'absente';
+    when insufficient_privilege then return 'refusé 42501';
+    when others then
+      if sqlerrm like 'NEXUS%' then return 'refusé ' || sqlstate; end if;
+      return 'ERREUR ' || sqlstate || ' ' || left(sqlerrm, 70);
+  end;
+end $$;
+create temp table _banc (moment text, o int, role text, n int, resultat text) on commit drop;
+create function pg_temp.banc(p_moment text) returns void language plpgsql as $$
+declare c jsonb := pg_temp.ctx(); r record; a record;
+        v_ids text[]; v_noms text[];
+begin
+  select coalesce(array_agg(x), '{}') into v_ids from (
+    select s.id::text as x from public.schools s where s.type = 'UNIVERSITE'
+    union select t.id::text from public.teams t join _equipes q using (rseq_team_id)) z;
+  select coalesce(array_agg(distinct x), '{}') into v_noms from (
+    select lower(name) as x from _ecoles union select lower(team_name) from _ecoles union select lower(nom) from _equipes) z
+   where length(x) >= 5;
+  for r in select * from _banc_roles order by o loop
+    for a in select * from _appels order by n loop
+      insert into _banc values (p_moment, r.o, r.role, a.n, pg_temp.appel(r.role, r.uid, pg_temp.remplir(a.appel, c), v_ids, v_noms));
+    end loop;
+  end loop;
+end $$;
+select pg_temp.banc('avant');
 
 -- ── Création ─────────────────────────────────────────────────────────────────
 insert into public.schools (name, type, province, team_name, city, region, langue, website, rseq_institution_id)
@@ -148,6 +314,13 @@ select 'fiche athlète → une équipe universitaire',
 select * from _verrou;
 
 -- Ce que voient les utilisateurs (policies D1a), essai défait aussitôt : écoles univ. / équipes univ.
+-- En prod, anon ne lit aucune équipe : « refusé ».
+create function pg_temp.compte_vu(q text, ids uuid[]) returns text language plpgsql as $$
+declare n bigint;
+begin
+  execute q into n using ids; return n::text;
+exception when insufficient_privilege then return 'refusé';
+end $$;
 create function pg_temp.vu(p_role text, p_uid uuid) returns text language plpgsql as $$
 declare v text; v_ids uuid[] := (select array_agg(rseq_team_id) from _equipes);  -- lu AVANT de changer de rôle
 begin
@@ -158,9 +331,8 @@ begin
       perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
     end if;
     perform set_config('role', p_role, true);
-    select (select count(*) from public.schools where type = 'UNIVERSITE') || ' / ' ||
-           (select count(*) from public.teams t where t.rseq_team_id = any (v_ids))
-      into v;
+    v := pg_temp.compte_vu('select count(*) from public.schools where type = ''UNIVERSITE''', v_ids) || ' / ' ||
+         pg_temp.compte_vu('select count(*) from public.teams t where t.rseq_team_id = any ($1)', v_ids);
     raise exception using errcode = 'NX000', message = v;
   exception
     when sqlstate 'NX000' then return sqlerrm;
@@ -175,6 +347,70 @@ union all select 'recruteur collégial', pg_temp.vu('authenticated', (select u.i
 union all select 'partenaire', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'PARTNER'::public.user_role order by u.id limit 1))
 union all select 'admin', pg_temp.vu('authenticated', (select u.id from public.users u where u.role = 'ADMIN'::public.user_role order by u.id limit 1));
 select role, vu as "écoles univ / équipes univ" from _vu;
+
+-- Banc APRÈS la création, puis les chemins d'écriture qui feraient afficher une université par ces
+-- fonctions (chaque essai défait aussitôt).
+select pg_temp.banc('apres');
+create function pg_temp.ecrire(p_uid uuid, p_sql text) returns text language plpgsql as $$
+declare n bigint;
+begin
+  begin
+    perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
+    perform set_config('role', 'authenticated', true);
+    execute p_sql;
+    get diagnostics n = row_count;
+    raise exception using errcode = 'NX000', message = 'accepté ' || n;
+  exception
+    when sqlstate 'NX000' then return sqlerrm;
+    when others then return 'refusé ' || sqlstate || case when sqlerrm like 'NEXUS%' then ' ' || left(sqlerrm, 70) else '' end;
+  end;
+end $$;
+create temp table _ecritures on commit drop as
+with c as (select pg_temp.ctx() as c),
+     e (o, role, essai, tpl) as (values
+  (1, 'athlète', 'fiche : committed_school_id → université',
+      'update public.athletes set committed_school_id = {U} where user_id = auth.uid()'),
+  (3, 'coach', 'compte : primary_team_id → équipe univ.',
+      'update public.users set primary_team_id = {T} where id = auth.uid()'),
+  (3, 'coach', 'team_coaches : se rattacher à une équipe univ.',
+      'insert into public.team_coaches (team_id, coach_id) values ({T}, auth.uid())'),
+  (3, 'coach', 'create_team_join_token(équipe univ.)',
+      'select public.create_team_join_token({T}, null, null)'),
+  (4, 'recruteur collégial', 'carte prospect : school_id → université',
+      'update public.cartes_prospect set school_id = {U} where id = {CR}'),
+  (4, 'recruteur collégial', 'carte prospect : team_id → équipe univ.',
+      'update public.cartes_prospect set team_id = {TC} where id = {CR}'),
+  (4, 'recruteur collégial', 'changer_rattachement_recruteur(université)',
+      'select public.changer_rattachement_recruteur(auth.uid(), {U}, ''Football'')'),
+  (5, 'partenaire', 'partenaire_prospect_enregistrer(université, équipe univ.)',
+      'select public.partenaire_prospect_enregistrer(null, ''Témoin'', ''Banc D1'', {TPS}, null, {U}, {TP}, null, true)'))
+select e.o, e.role, e.essai, pg_temp.ecrire(r.uid, pg_temp.remplir(e.tpl, c.c)) as resultat
+  from e cross join c join _banc_roles r on r.o = e.o;
+
+-- Tableau : une ligne par fonction, une colonne par rôle (valeur APRÈS ; « ok ids noms »).
+create temp table _banc_vu on commit drop as
+select a.n, a.objet, ap.o, ap.role, ap.resultat as apres, av.resultat as avant,
+       case when ap.resultat like 'ERREUR%' then 'ERREUR'
+            when ap.resultat like 'ok %' and (split_part(ap.resultat, ' ', 2)::int > 0
+                 or split_part(ap.resultat, ' ', 3)::int > coalesce(nullif(split_part(av.resultat, ' ', 3), '')::int, 0)
+                    and av.resultat like 'ok %') then 'FUITE'
+            when ap.resultat like 'ok %' and av.resultat not like 'ok %' and split_part(ap.resultat, ' ', 3)::int > 0 then 'FUITE'
+            else '' end as alerte
+  from _appels a
+  join _banc ap on ap.n = a.n and ap.moment = 'apres'
+  join _banc av on av.n = a.n and av.o = ap.o and av.moment = 'avant';
+select n, objet,
+       max(apres) filter (where o = 1) as athlete, max(apres) filter (where o = 2) as parent,
+       max(apres) filter (where o = 3) as coach, max(apres) filter (where o = 4) as recruteur_collegial,
+       max(apres) filter (where o = 5) as partenaire, max(apres) filter (where o = 6) as anon,
+       coalesce(nullif(string_agg(distinct nullif(alerte, ''), ','), ''), '—') as alerte
+  from _banc_vu group by n, objet order by n;
+select role, essai, resultat from _ecritures order by o, essai;
+select count(*) filter (where alerte = 'FUITE') as appels_qui_fuient,
+       count(*) filter (where alerte = 'ERREUR') as appels_en_erreur,
+       count(*) as appels,
+       (select count(*) from _ecritures where resultat like 'accepté%' and resultat <> 'accepté 0') as ecritures_acceptees
+  from _banc_vu;
 
 do $$
 declare n int;
@@ -198,12 +434,23 @@ begin
   if exists (select 1 from _emp_apres a join _emp_avant b using (objet) where a.n <> b.n or a.md5 <> b.md5) then
     raise exception 'NEXUS: une donnée hors du lot a changé';
   end if;
-  if exists (select 1 from _vu where role <> 'admin' and vu <> '0 / 0') or (select vu from _vu where role = 'admin') <> '12 / @@N_EQUIPES@@' then
+  if exists (select 1 from _vu where role <> 'admin' and vu not in ('0 / 0', '0 / refusé')) or (select vu from _vu where role = 'admin') <> '12 / @@N_EQUIPES@@' then
     raise exception 'NEXUS: un utilisateur non admin voit une université ou une équipe universitaire';
   end if;
   if exists (select 1 from _verrou where resultat not like 'REFUSÉ 42501 NEXUS: Une fiche athlète%') then
     raise exception 'NEXUS: le verrou D0 ne refuse pas une fiche athlète vers une université';
   end if;
+-- [[BANC_VERDICT
+  if exists (select 1 from _banc_vu where alerte = 'ERREUR') then
+    raise exception 'NEXUS: banc — un appel a échoué sans être un refus (voir le tableau)';
+  end if;
+  if exists (select 1 from _banc_vu where alerte = 'FUITE') then
+    raise exception 'NEXUS: banc — une fonction DEFINER rend une université ou une équipe universitaire';
+  end if;
+  if exists (select 1 from _ecritures where resultat like 'accepté%' and resultat <> 'accepté 0') then
+    raise exception 'NEXUS: banc — un client peut faire pointer une ligne vers une université';
+  end if;
+-- BANC_VERDICT]]
   raise notice 'NEXUS: VERDICT D1 — 12 universités, @@N_EQUIPES@@ équipes, rien d''autre ne bouge, invisibles hors admin, verrou tenu';
 end $$;
 select 'VERDICT' as verdict, 'conforme' as resultat;

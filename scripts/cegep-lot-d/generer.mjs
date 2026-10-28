@@ -1,7 +1,7 @@
-// Génère un fichier prod du lot D0 ou D1a cégep à partir de docs/cegep-lot-d/prod/<lot>.gabarit.sql
+// Génère un fichier prod du lot D0, D1a ou D1a2 cégep à partir de docs/cegep-lot-d/prod/<lot>.gabarit.sql
 // → docs/cegep-lot-d/prod/<lot>-<type>-<date>.sql, migration et rollback embarqués tels quels (LF), md5 gardés.
 // Le gabarit porte les deux suites : blocs « -- [[REJEU … -- REJEU]] » et « -- [[APPLY … -- APPLY]] ».
-// Usage : node scripts/cegep-lot-d/generer.mjs 20261028 [rejeu-blanc|apply] [d0|d1a]
+// Usage : node scripts/cegep-lot-d/generer.mjs 20261028 [rejeu-blanc|apply] [d0|d1a|d1a2]
 import fs from "node:fs";
 import crypto from "node:crypto";
 import path from "node:path";
@@ -15,6 +15,7 @@ if (!["rejeu-blanc", "apply"].includes(type)) throw new Error("type inconnu : " 
 const LOTS = {
   d0: ["20261028000000", "cegep_lot_d0_base"],
   d1a: ["20261028010000", "cegep_lot_d1a_universites_masquees"],
+  d1a2: ["20261028020000", "cegep_lot_d1a2_definer"],
 };
 if (!LOTS[lot]) throw new Error("lot inconnu : " + lot);
 const [VERSION, NOM] = LOTS[lot];
