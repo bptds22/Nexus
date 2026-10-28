@@ -1,0 +1,13 @@
+﻿-[ RECORD 1 ]---------+-----------------------------------------------------------------------------------------------------------------------------------
+d1a2_inscrit          | 1
+derniere              | 20261028020000
+trace                 | 1
+public_absente        | t
+prive_presente        | t
+anon_exec_pour_policy | t
+policy_teams          | (( SELECT is_admin() AS is_admin) OR (NOT (school_id = ANY (( SELECT nexus_prive.ids_universites() AS ids_universites)::uuid[]))))
+triggers              | 10
+universites           | 0
+ecoles                | 1408
+equipes               | 10349
+
