@@ -1,0 +1,13 @@
+﻿-[ RECORD 1 ]---------+------
+d3c_inscrit           | 1
+trace                 | 1
+interrupteur          | false
+temoin                | 0
+policies_d3a          | 0
+fonctions_filtre_d3a  | 0
+regles_retirees       | t
+protection_off_gardee | t
+lot_a_intact          | 6
+fiches                | 218
+favoris               | 21
+

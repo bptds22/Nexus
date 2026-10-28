@@ -290,10 +290,3 @@ test("lot B4 — Catégorie de la carte : liste canonique, rangée par âge", ()
 test("lot B4 — Collégial décoché par défaut", () => {
   assert.deepEqual([...TYPES_PAR_DEFAUT].sort(), ["CIVIL", "SECONDAIRE"]);
 });
-
-test("types par défaut : Collégial seul pour le recruteur universitaire (lot D3b), sinon Secondaire + Civil", async () => {
-  const { typesParDefautPour } = await import("@/lib/carteMatchs/carteMatchs");
-  assert.deepEqual(typesParDefautPour(true), ["COLLEGIAL"]);
-  assert.deepEqual(typesParDefautPour(false), TYPES_PAR_DEFAUT);
-  assert.notEqual(typesParDefautPour(false), TYPES_PAR_DEFAUT, "copie, jamais la constante elle-même");
-});

@@ -561,10 +561,11 @@ function CalendrierContent() {
   const isFree = tier === "free";
 
   const [filters, setFilters] = useState<CalendarFilters>(EMPTY_FILTERS);
-  // Recruteur universitaire (lot D3b) : ses cibles sont des cégépiens — Type « Collégial », promotions « Cégep ».
+  // Recruteur universitaire (lot D3b) : tous les athlètes, plus les cégépiens — Type « Collégial » offert,
+  // promotions « Secondaire ou Cégep ».
   const { data: moiCalendrier } = useCurrentUser();
   const universitaire = moiCalendrier?.profile.context === "universitaire";
-  const portee = universitaire ? "dec" : "secondaire";
+  const portee = universitaire ? "les_deux" : "secondaire";
   const [sort, setSort] = useState<CalendarSort>("date");
   const [view, setView] = useState<"list" | "cal">("list");
   const [showAdvanced, setShowAdvanced] = useState(false);

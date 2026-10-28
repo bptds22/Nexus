@@ -13,7 +13,6 @@
 
 import * as React from "react";
 import { useSubscription } from "@/lib/hooks/useSubscription";
-import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useCalendrierUnite } from "@/lib/queries/recruiter/useCalendrierUnite";
 import { useOrigineCarte } from "@/lib/carteMatchs/useOrigineCarte";
 import { useProfilsMatchs } from "@/lib/carteMatchs/useProfilsMatchs";
@@ -22,7 +21,7 @@ import {
   type ModeCarte,
 } from "@/lib/carteMatchs/useMatchsRecherche";
 import {
-  TYPES_MATCH, typesParDefautPour, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour,
+  TYPES_MATCH, TYPES_PAR_DEFAUT, erreurPlage, optionsCatDiv, filtrerCatDiv, grouperParJour,
   terrainsCarte, terrainDe, etatCalendrier, jourDecale, bornerFin, avisFinAjustee, matchsLisibles, trierMatchs,
   ajouterPastille, parametresPastilles, libelleDivision, LIEU_NON_PRECISE,
   type PastilleCarte, type MatchRecherche, type ProfilsMatch, type TypeMatch,
@@ -64,17 +63,7 @@ export function useCarteMatchsEtat(mode: ModeCarte) {
   const [sport, setSport] = React.useState("");
   // Partenaire : pas d'unité, donc pas de sport imposé — la recherche part tout de suite.
   const [sportInitialise, setSportInitialise] = React.useState(partenaire);
-  // Recruteur universitaire (lot D3b) : Collégial coché par défaut, posé une fois le compte lu.
-  const { data: moi } = useCurrentUser();
-  const universitaire = !partenaire && moi?.profile.context === "universitaire";
-  const typesDefaut = React.useMemo(() => typesParDefautPour(universitaire), [universitaire]);
-  const [types, setTypes] = React.useState<TypeMatch[]>(() => typesParDefautPour(false));
-  const [typesAjustes, setTypesAjustes] = React.useState(false);
-  React.useEffect(() => {
-    if (typesAjustes || !moi) return;
-    setTypes(typesParDefautPour(universitaire));
-    setTypesAjustes(true);
-  }, [moi, universitaire, typesAjustes]);
+  const [types, setTypes] = React.useState<TypeMatch[]>(TYPES_PAR_DEFAUT);
   const [categorie, setCategorie] = React.useState("");
   const [division, setDivision] = React.useState("");
   const [selection, setSelection] = React.useState<string | null>(null);
@@ -161,10 +150,10 @@ export function useCarteMatchsEtat(mode: ModeCarte) {
   /* Lot B4 cégep (décision BP 2026-10-26) : « Retirer les filtres » revient aux valeurs PAR DÉFAUT —
      Secondaire + Civil, Collégial décoché comme pour tous — et ne recoche plus le Collégial. Un filtre
      est donc « posé » quand les types s'écartent du défaut, pas quand il en manque un. */
-  const typesParDefaut = types.length === typesDefaut.length && typesDefaut.every((t) => types.includes(t));
+  const typesParDefaut = types.length === TYPES_PAR_DEFAUT.length && TYPES_PAR_DEFAUT.every((t) => types.includes(t));
   const filtresPoses = !!sport || !!categorie || !!division || !typesParDefaut;
   /** « Retirer les filtres » : tous les sports, les types par défaut, toutes catégories et divisions. */
-  const retirerFiltres = () => { setSport(""); setTypes([...typesDefaut]); setCategorie(""); setDivision(""); };
+  const retirerFiltres = () => { setSport(""); setTypes([...TYPES_PAR_DEFAUT]); setCategorie(""); setDivision(""); };
   const proposees = suggestions.filter((x) => !pastilles.some((y) => y.genre === x.genre && y.cle === x.cle));
   const menuVisible = suggOuvert && q.trim().length >= 2 && texte.trim().length >= 2 && (proposees.length > 0 || suggPret);
   /** Une suggestion devient une pastille ; le texte libre est vidé (sinon il

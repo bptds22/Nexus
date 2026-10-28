@@ -34,7 +34,7 @@ export interface CurrentUserProfile {
    *  l'interface proposerait alors ce que la RLS refuse. */
   is_platform_admin: boolean | null;
   /** users.context — « universitaire » pour le recruteur universitaire (lot D3b cégep) : son portail
-   *  masque ce qui est propre au cégep. La base, elle, ne lui rend que des cégépiens (lot D3a). */
+   *  masque ce qui est propre au cégep. La base lui rend tous les athlètes, plus les cégépiens sous ON. */
   context: string | null;
 }
 
