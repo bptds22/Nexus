@@ -1,0 +1,5 @@
+﻿    version     | op | corps_change | interrupteur | recruteurs_univ 
+----------------+----+--------------+--------------+-----------------
+ 20261028140000 |  1 | t            | false        |               0
+(1 row)
+
