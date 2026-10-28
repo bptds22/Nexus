@@ -7,7 +7,7 @@
    position, numéro, promotion, taille, poids, lien vidéo, courriel — tous
    facultatifs. Aucune autre coordonnée (décision BP).
 
-   L'équipe se choisit EN DEUX TEMPS (retour BP) : Scolaire ou Civil, puis
+   L'équipe se choisit EN DEUX TEMPS (retour BP) : Secondaire, Collégial ou Civil (lot E5), puis
    l'établissement (école ou club) cherché par son nom — seuls ceux qui ont
    une équipe du sport de l'unité —, puis une de SES équipes de ce sport,
    libellée « Football juvénile D1 · Masculin ». L'école se déduit de
@@ -26,6 +26,7 @@
    sport : le formulaire ne propose que le bon sport, la base le garantit.
 ═══════════════════════════════════════════════════════════════ */
 
+import { useEstRecruteurUniversitaire } from "@/lib/queries/shared/useEstRecruteurUniversitaire";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -40,10 +41,14 @@ import type { InvitationEtat } from "@/lib/cartes/invitationEtat";
 
 type Champ = "taille" | "poids" | "courriel" | "telephone" | "parentNom" | "parentCourriel" | "video";
 
-type Genre = "SCOLAIRE" | "CIVIL";
-/** Scolaire = les écoles (secondaire, et le collégial pour un transfert) ;
+type Genre = "SECONDAIRE" | "COLLEGIAL" | "CIVIL";
+/** Lot E5 (retour BP 2026-10-28, B4 et Q5) : trois types. Secondaire = les écoles secondaires ; Collégial = les cégeps,
+ *  RÉSERVÉ au recruteur universitaire (le recruteur collégial ne prospecte pas un cégépien — verrou C0 inchangé) ;
  *  Civil = les clubs (LIGUE_CIVILE, rangés dans schools pour la plomberie). */
-const TYPES: Record<Genre, string[]> = { SCOLAIRE: ["SECONDAIRE", "CEGEP"], CIVIL: ["LIGUE_CIVILE"] };
+const TYPES: Record<Genre, string[]> = { SECONDAIRE: ["SECONDAIRE"], COLLEGIAL: ["CEGEP"], CIVIL: ["LIGUE_CIVILE"] };
+const LIBELLES_GENRE: Record<Genre, string> = { SECONDAIRE: "Secondaire", COLLEGIAL: "Collégial", CIVIL: "Civil" };
+const genreInitial = (type: string | null | undefined, universitaire: boolean): Genre =>
+  type === "LIGUE_CIVILE" ? "CIVIL" : type === "CEGEP" && universitaire ? "COLLEGIAL" : "SECONDAIRE";
 
 interface Etablissement { id: string; name: string; city: string | null }
 interface Equipe { id: string; name: string; age_group: string | null; division: string | null; gender: string | null; libelle: string }
@@ -73,7 +78,9 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
 }) {
   const [prenom, setPrenom] = useState(prerempli?.prenom ?? "");
   const [nom, setNom] = useState("");
-  const [genre, setGenre] = useState<Genre>(prerempli?.etablissement?.type === "LIGUE_CIVILE" ? "CIVIL" : "SCOLAIRE");
+  const universitaire = useEstRecruteurUniversitaire();
+  const genres: Genre[] = universitaire ? ["SECONDAIRE", "COLLEGIAL", "CIVIL"] : ["SECONDAIRE", "CIVIL"];
+  const [genre, setGenre] = useState<Genre>(() => genreInitial(prerempli?.etablissement?.type, universitaire));
   // Le sport et l'équipe préremplis ne s'appliquent qu'UNE fois (au premier chargement).
   const prefill = useRef({ sport: prerempli?.sportAthleteId ?? null, equipe: prerempli?.teamId ?? null });
   const [recherche, setRecherche] = useState("");
@@ -387,19 +394,19 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
               </div>
             ) : (
               <>
-                <div className="flex gap-1.5 mb-2" role="radiogroup" aria-label="Scolaire ou civil">
-                  {(["SCOLAIRE", "CIVIL"] as Genre[]).map((g) => (
+                <div className="flex gap-1.5 mb-2" role="radiogroup" aria-label="Type d'équipe">
+                  {genres.map((g) => (
                     <button key={g} type="button" role="radio" aria-checked={genre === g}
                       onClick={() => { setGenre(g); setTousEtablissements(null); }}
                       className={`px-3 py-1.5 rounded-lg text-[12px] font-bold uppercase tracking-wider border transition-colors ${genre === g ? "bg-[#E63946]/15 border-[#E63946]/40 text-[#E63946]" : "border-[#2a2d36] text-[#6b7280] hover:text-white"}`}>
-                      {g === "SCOLAIRE" ? "Scolaire" : "Civil"}
+                      {LIBELLES_GENRE[g]}
                     </button>
                   ))}
                 </div>
-                <input id="carte-etablissement" aria-label={genre === "SCOLAIRE" ? "Nom de l'école" : "Nom du club"} className={champ} value={recherche} onChange={(e) => setRecherche(e.target.value)}
-                  placeholder={genre === "SCOLAIRE" ? "Nom de l'école (2 lettres minimum)" : "Nom du club (2 lettres minimum)"} autoComplete="off" />
+                <input id="carte-etablissement" aria-label={genre !== "CIVIL" ? "Nom de l'école" : "Nom du club"} className={champ} value={recherche} onChange={(e) => setRecherche(e.target.value)}
+                  placeholder={genre === "COLLEGIAL" ? "Nom du cégep (2 lettres minimum)" : genre !== "CIVIL" ? "Nom de l'école (2 lettres minimum)" : "Nom du club (2 lettres minimum)"} autoComplete="off" />
                 {etablissements.length > 0 && (
-                  <ul className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[#2D3748] bg-[#13151a] shadow-xl" role="listbox" aria-label={genre === "SCOLAIRE" ? "Écoles" : "Clubs"}>
+                  <ul className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[#2D3748] bg-[#13151a] shadow-xl" role="listbox" aria-label={genre !== "CIVIL" ? "Écoles" : "Clubs"}>
                     {etablissements.map((e) => (
                       <li key={e.id}>
                         <button type="button" role="option" aria-selected={false} onClick={() => { setEtablissement(e); setAvertissements(null); }} className="w-full text-left px-3 py-2 text-[13px] text-[#e0e0e0] hover:bg-white/5">
@@ -412,7 +419,7 @@ export default function CreerCarteModal({ sportId, onClose, onCreee, prerempli, 
                 )}
                 {recherche.trim().length >= 2 && tousEtablissements !== null && etablissements.length === 0 && (
                   <p className="text-[12px] text-[#6b7280] mt-1">
-                    {genre === "SCOLAIRE" ? "Aucune école ne correspond." : "Aucun club ne correspond."}
+                    {genre !== "CIVIL" ? "Aucune école ne correspond." : "Aucun club ne correspond."}
                   </p>
                 )}
               </>

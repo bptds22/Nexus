@@ -20,6 +20,7 @@
    muterait le cache — même précaution que sortPipelineCards).
 ═══════════════════════════════════════════════════════════════ */
 
+import { typeLigueDe } from "@/lib/pipeline/filterPipelineCards";
 import { gradeRank, type Grade } from "@/lib/config/grades";
 import type { PipelineSortMode } from "@/lib/pipeline/sortPipelineCards";
 
@@ -33,6 +34,8 @@ export interface CarteTriable {
   position?: string;
   graduation_year?: number;
   school?: string;
+  /** schools.type — colonne « Type de ligue » (lot E5). */
+  school_type?: string | null;
   noTeam?: boolean;
   division_equipe?: string | null;
   taille_pieds?: number | null;
@@ -70,6 +73,7 @@ export function valeurTri(cle: string, c: CarteTriable): string | number | null 
     case "position": return texte(c.position);
     case "promotion": return c.graduation_year && c.graduation_year > 0 ? c.graduation_year : null;
     case "ecole": return c.noTeam ? "Ligue civile" : texte(c.school);
+    case "type_ligue": return texte(typeLigueDe(c.school_type));
     case "division": return texte(c.division_equipe);
     case "taille": return c.taille_pieds ? c.taille_pieds * 12 + (c.taille_pouces ?? 0) : null;
     case "poids": return c.poids_lbs ? c.poids_lbs : null;
