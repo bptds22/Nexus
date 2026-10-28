@@ -23,6 +23,8 @@ import { CoachOnboardingMobileCivil } from "@/components/shared/CoachOnboardingM
 import { RecruiterOnboardingMobile } from "@/components/shared/RecruiterOnboardingMobile";
 import { SPORTS_PROPOSES } from "@/lib/config/sportsProposes";
 import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
+import { claimSignupRole, readSignupRole } from "@/lib/auth/claimSignupRole";
+import { destinationRecruteur, messageFinRecruteur, MESSAGE_UNIVERSITES_FERMEES } from "@/lib/auth/recruteurUniversitaire";
 
 // Canonical Nexus support inbox for user-driven contact (school-not-found, etc.).
 // Remplaçait `support@` : la constante partagée tient désormais l'adresse.
@@ -293,6 +295,8 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [slideDir, setSlideDir] = useState<"right" | "left">("right");
   const [showSuccess, setShowSuccess] = useState(false);
+  // Recruteur universitaire demandé mais refusé par la base (interrupteur OFF) : rien d'autre à montrer.
+  const [blocage, setBlocage] = useState<string | null>(null);
 
   /* ── Load user from Supabase Auth ── */
   useEffect(() => {
@@ -318,7 +322,7 @@ export default function OnboardingPage() {
 
       if (profile.onboarding_complete) {
         if (profile.role === "COACH") router.replace("/coach/tableau-de-bord");
-        else if (profile.role === "RECRUTEUR") router.replace("/recruteur/tableau-de-bord");
+        else if (profile.role === "RECRUTEUR") router.replace(destinationRecruteur(profile.context));
         else if (profile.role === "PARTNER") router.replace("/partenaire");
         else router.replace("/");
         return;
@@ -339,6 +343,20 @@ export default function OnboardingPage() {
       if (profile.role === "PARTNER") {
         router.replace("/partenaire");
         return;
+      }
+
+      // Recruteur universitaire (lot D2b) : /auth/pro a laissé la demande dans le stash ; le trigger
+      // d'inscription ne pose pas ce contexte. claim_signup_role le pose — la base le refuse sous OFF.
+      if (profile.role === "RECRUTEUR" && !profile.context && !profile.role_claimed_at) {
+        const demande = readSignupRole();
+        if (demande?.role === "RECRUTEUR" && demande.context === "universitaire") {
+          const res = await claimSignupRole(supabase, "RECRUTEUR", "universitaire");
+          if (!res.ok) {
+            setBlocage(MESSAGE_UNIVERSITES_FERMEES);
+            return;
+          }
+          profile.context = "universitaire";
+        }
       }
 
       // Map DB role to onboarding role
@@ -656,16 +674,22 @@ export default function OnboardingPage() {
         // les writes legacy (users update + admin_claims CÉGEP). PAS de
         // recruiter_preferences (retiré de l'onboarding — géré post-
         // onboarding via /recruteur/parametres).
+        // Recruteur universitaire (lot D2b) : l'id vient de universites_inscription — sa propre université
+        // ne lui est lisible qu'une fois inscrit (policy universites_masquees), d'où aucune relecture par nom.
+        const universitaire = localUser.context === "universitaire";
         const instName = (localUser.institution as { name?: string } | undefined)?.name;
-        if (!instName) {
-          setNavError("CÉGEP introuvable — réessaye.");
+        const instId = (localUser.institution as { id?: string } | undefined)?.id;
+        if (!instName || (universitaire && !instId)) {
+          setNavError(universitaire ? "Université introuvable — réessaye." : "CÉGEP introuvable — réessaye.");
           return;
         }
-        const { data: cegepRow } = await supabase
-          .from("schools")
-          .select("id")
-          .eq("name", instName)
-          .maybeSingle();
+        const { data: cegepRow } = universitaire
+          ? { data: { id: instId as string } }
+          : await supabase
+              .from("schools")
+              .select("id")
+              .eq("name", instName)
+              .maybeSingle();
         if (!cegepRow) {
           setNavError("CÉGEP introuvable — réessaye.");
           return;
@@ -707,22 +731,7 @@ export default function OnboardingPage() {
 
         if (recErr) {
           console.error("[Onboarding] finish_recruiter_onboarding:", recErr);
-          const msg = recErr.message || "";
-          let userMessage = "Erreur lors de la finalisation — réessaye.";
-          if (msg.includes("SCHOOL_REQUIRES_RESPONSABLE")) {
-            userMessage = "Ce CÉGEP n'a pas encore de responsable. Choisis « C'est moi » ou « Je serai intérimaire ».";
-          } else if (msg.includes("RPRP_REQUIRED")) {
-            userMessage = "L'attestation RPRP est obligatoire pour devenir responsable.";
-          } else if (msg.includes("INVALID_CEGEP")) {
-            userMessage = "CÉGEP invalide — réessaye.";
-          } else if (msg.includes("INVALID_DIRECTOR_CHOICE")) {
-            userMessage = "Choix de responsable invalide.";
-          } else if (msg.includes("NOT_AUTHENTICATED")) {
-            userMessage = "Session expirée — reconnecte-toi.";
-          } else if (msg.includes("WRONG_ROLE_OR_CONTEXT")) {
-            userMessage = "Ce flux est réservé aux recruteurs CÉGEP.";
-          }
-          setNavError(userMessage);
+          setNavError(messageFinRecruteur(recErr.message || "", universitaire));
           return;
         }
         // RPC OK — short-circuit le legacy path (users update + admin_claims
@@ -1121,10 +1130,22 @@ export default function OnboardingPage() {
       coach: "/coach/tableau-de-bord",
       recruiter: "/recruteur/tableau-de-bord",
     };
+    const destination = user?.role === "recruiter" ? destinationRecruteur(user.context) : dashMap[user?.role || "coach"];
     setTimeout(() => {
-      router.push(dashMap[user?.role || "coach"] || "/");
+      router.push(destination || "/");
     }, 1500);
   };
+
+  if (blocage) {
+    return (
+      <div className="hero-playbook bg-[#111317] min-h-screen flex flex-col items-center justify-center px-4 relative">
+        <PlaybookBackground />
+        <div className="relative z-10 w-full max-w-[520px] bg-[#1A1D24] border border-white/5 rounded-xl p-6 sm:p-8">
+          <p className="text-[14px] text-[#9CA3AF] leading-relaxed">{blocage}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) return null;
 
@@ -1172,7 +1193,9 @@ export default function OnboardingPage() {
     : ["Profil", "École", "Équipe", "Directeur", "Confirmation"];
   const stepLabelsMap: Record<string, string[]> = {
     coach: coachLabels,
-    recruiter: ["Profil", "CÉGEP", "Programme", "Directeur", "Confirmation"],
+    recruiter: user.context === "universitaire"
+      ? ["Profil", "Université", "Programme", "Directeur", "Confirmation"]
+      : ["Profil", "CÉGEP", "Programme", "Directeur", "Confirmation"],
     coordinator_league: ["Profil", "Ligue", "Invitations"],
   };
   const stepLabels = stepLabelsMap[user.role] || ["1", "2", "3"];
@@ -1334,9 +1357,13 @@ function CoachStep({ step, user, save, onNext }: { step: number; user: NexusUser
    Used by school coach (Step 3) and league coach (Step 3).
 ═══════════════════════════════════════════════════════════════ */
 
-function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "school" | "league" | "cegep" }) {
+function DirectorChoiceStep({ user, save, type, universite = false }: { user: NexusUser; save: (u: Partial<NexusUser>) => void; type: "school" | "league" | "cegep"; universite?: boolean }) {
   const isLeague = type === "league";
   const isCegep = type === "cegep";
+  // Recruteur universitaire (lot D2b) : même logique que le cégep, seuls les mots changent.
+  const org = universite
+    ? { nom: "université", ce: "cette université", Ce: "Cette université", un: "une université", mon: "mon université", du: "de l'université", au: "à l'université", tout: "toute l'université", admin: "Admin université" }
+    : { nom: "CÉGEP", ce: "ce CÉGEP", Ce: "Ce CÉGEP", un: "un CÉGEP", mon: "mon CÉGEP", du: "du CÉGEP", au: "au CÉGEP", tout: "tout le CÉGEP", admin: "Admin CÉGEP" };
   const isSchool = type === "school";
   // Civil-coach onboarding flow uses "coach principal" terminology
   // (the team's senior coach), not "coordonnateur" (which describes
@@ -1592,7 +1619,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
       <div>
         <h2 className="font-head text-xl font-black text-white uppercase">Qui est le {roleLabel}?</h2>
         <p className="text-sm text-[#9CA3AF] mt-1">
-          Chaque {isCegep ? "CÉGEP" : isLeague ? "ligue" : "école"} sur Nexus a besoin d&apos;un responsable. Le {roleLabel} supervise les {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"} et {isCegep ? "les résultats de recrutement" : "approuve les profils"}.
+          Chaque {isCegep ? org.nom : isLeague ? "ligue" : "école"} sur Nexus a besoin d&apos;un responsable. Le {roleLabel} supervise les {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"} et {isCegep ? "les résultats de recrutement" : "approuve les profils"}.
         </p>
       </div>
 
@@ -1612,9 +1639,9 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
           {civilSansEquipe ? (
             <>Tu ne coaches aucune équipe. {MSG_SANS_EQUIPE_RESPONSABLE} Ta demande sera vérifiée par l&apos;équipe Nexus avant que tu aies accès aux équipes et aux athlètes du club.</>
           ) : responsableLoading ? (
-            <>Vérification en cours… si {isCegep ? "ce CÉGEP" : isLeague ? "ce club" : "cette école"} n&apos;a pas encore de responsable sur Nexus, tu devras attester l&apos;être pour rejoindre la plateforme (Loi 25).</>
+            <>Vérification en cours… si {isCegep ? org.ce : isLeague ? "ce club" : "cette école"} n&apos;a pas encore de responsable sur Nexus, tu devras attester l&apos;être pour rejoindre la plateforme (Loi 25).</>
           ) : (
-            <>{isCegep ? "Ce CÉGEP" : isLeague ? "Ce club" : "Cette école"} n&apos;a pas encore de responsable sur Nexus. Pour qu&apos;{isCegep ? "un CÉGEP" : isLeague ? "un club" : "une école"} rejoigne la plateforme, un {isCegep ? "recruteur" : "coach"} doit attester être responsable du programme (Loi 25). Si c&apos;est toi, choisis «&nbsp;C&apos;est moi&nbsp;» ou «&nbsp;Je serai intérimaire&nbsp;». Sinon, demande à la personne responsable de s&apos;inscrire en premier.</>
+            <>{isCegep ? org.Ce : isLeague ? "Ce club" : "Cette école"} n&apos;a pas encore de responsable sur Nexus. Pour qu&apos;{isCegep ? org.un : isLeague ? "un club" : "une école"} rejoigne la plateforme, un {isCegep ? "recruteur" : "coach"} doit attester être responsable du programme (Loi 25). Si c&apos;est toi, choisis «&nbsp;C&apos;est moi&nbsp;» ou «&nbsp;Je serai intérimaire&nbsp;». Sinon, demande à la personne responsable de s&apos;inscrire en premier.</>
           )}
         </div>
       )}
@@ -1655,7 +1682,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             </svg>
           </div>
           <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">C&apos;est moi</span>
-          <span className="text-[11px] text-[#6B7280] leading-snug">Je supervise le {isCegep ? "programme de recrutement de mon CÉGEP" : `programme sportif de mon ${isLeague ? "club" : "école"}`}</span>
+          <span className="text-[11px] text-[#6B7280] leading-snug">Je supervise le {isCegep ? `programme de recrutement de ${org.mon}` : `programme sportif de mon ${isLeague ? "club" : "école"}`}</span>
         </button>
         )}
 
@@ -1705,7 +1732,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             <span className="font-head font-black text-[13px] uppercase tracking-[0.1em] text-white">Je serai intérimaire</span>
             <span className="text-[11px] text-[#6B7280] leading-snug">
               {isCegep
-                ? "Aucun responsable de sports n'est en place au CÉGEP — je vais assumer ce rôle temporairement"
+                ? `Aucun responsable de sports n'est en place ${org.au} — je vais assumer ce rôle temporairement`
                 : "Aucun responsable de sports n'est en place pour l'instant — je vais assumer ce rôle temporairement"}
             </span>
           </button>
@@ -1787,7 +1814,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             <span className="text-[11px] text-[#6B7280] leading-snug">
               {disableCoach
                 ? (civilSansEquipe ? "Indisponible — sans équipe, il faut être responsable du club."
-                  : responsableLoading ? `Vérification du responsable…` : `Indisponible — ${isCegep ? "CÉGEP" : isLeague ? "club" : "école"} sans responsable.`)
+                  : responsableLoading ? `Vérification du responsable…` : `Indisponible — ${isCegep ? org.nom : isLeague ? "club" : "école"} sans responsable.`)
                 : <>Je suis {isCegep ? "recruteur" : isLeague ? "coach" : "entraîneur"} — un autre est ou sera {roleLabel}.</>}
             </span>
           </button>
@@ -1800,7 +1827,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
       {choice === "self" && (
         <div className="animate-fade-slide-down space-y-4 bg-[#111317]/60 rounded-xl p-5 border border-white/5">
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-            Tu seras {isCegep ? "Recruteur" : "Entraîneur"} ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"}, voir les stats {isCegep ? "globales de recrutement" : "de recrutement"}, et superviser {isCegep ? "le processus de tout le CÉGEP" : "les profils athlètes"}.
+            Tu seras {isCegep ? "Recruteur" : "Entraîneur"} ET {RoleLabel} de {orgName}. Tu pourras gérer les autres {isCegep ? "recruteurs" : isLeague ? "entraîneurs" : "coachs"}, voir les stats {isCegep ? "globales de recrutement" : "de recrutement"}, et superviser {isCegep ? `le processus de ${org.tout}` : "les profils athlètes"}.
           </p>
           <RprpConsentCheckbox checked={rprpConsent} onChange={(v) => { setRprpConsent(v); save({ rprp_consent: v }); }} />
           {!rprpConsent && <RprpDeclineNotice />}
@@ -1836,7 +1863,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
             <p className="text-[10px] text-[#4a4d56] text-right mt-1">{inviteMessage.length}/300</p>
           </div>
           <p className="text-[12px] text-[#9CA3AF] leading-relaxed">
-            Le {roleLabel} recevra un lien pour créer son compte gratuit. En attendant, tu seras temporairement {isCegep ? "Admin CÉGEP" : isLeague ? "coach principal" : "Admin École"}.
+            Le {roleLabel} recevra un lien pour créer son compte gratuit. En attendant, tu seras temporairement {isCegep ? org.admin : isLeague ? "coach principal" : "Admin École"}.
           </p>
         </div>
       )}
@@ -1882,7 +1909,7 @@ function DirectorChoiceStep({ user, save, type }: { user: NexusUser; save: (u: P
               </p>
               <p className="text-[11px] text-[#9CA3AF] leading-relaxed mt-2">
                 {isCegep
-                  ? <>Tu auras les pleins pouvoirs administratifs (gérer les autres recruteurs du CÉGEP, voir les stats globales de recrutement, superviser le processus). Si un responsable de sports officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à recruteur et tu seras notifié.</>
+                  ? <>Tu auras les pleins pouvoirs administratifs (gérer les autres recruteurs {org.du}, voir les stats globales de recrutement, superviser le processus). Si un responsable de sports officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à recruteur et tu seras notifié.</>
                   : <>Tu auras les pleins pouvoirs administratifs (gérer les autres entraîneurs, voir les stats de l&apos;école, approuver les profils). Si un responsable de sports officiel s&apos;inscrit plus tard et choisit «&nbsp;C&apos;est moi&nbsp;», ton rôle sera automatiquement ramené à entraîneur et tu seras notifié.</>}
               </p>
             </div>
@@ -2791,7 +2818,7 @@ function RecruiterConfirmation({ user }: { user: NexusUser }) {
 
   const villeValue = cityRegion(inst.city as string, inst.region as string);
   const affiliationRows: ConfirmationRow[] = [
-    inst.name ? { label: "CÉGEP", value: inst.name as string } : null,
+    inst.name ? { label: localUser.context === "universitaire" ? "Université" : "CÉGEP", value: inst.name as string } : null,
     villeValue ? { label: "Ville", value: villeValue } : null,
     primaryTeam?.name ? { label: "Programme", value: primaryTeam.name } : null,
   ].filter(Boolean) as ConfirmationRow[];
@@ -3038,8 +3065,11 @@ function InviteStep({ role }: { role: string; onFinish: () => void }) {
    RECRUITER ONBOARDING STEPS
 ═══════════════════════════════════════════════════════════════ */
 function RecruiterStep({ step, user, save }: { step: number; user: NexusUser; save: (u: Partial<NexusUser>) => void; onFinish: () => void }) {
+  // Recruteur universitaire (lot D2b) : son université et ses programmes viennent des RPC d'inscription.
+  const universitaire = user.context === "universitaire";
   if (step === 0) return <RecruiterProfile user={user} save={save} />;
-  if (step === 1) return <RecruiterCegepStep user={user} save={save} />;
+  if (step === 1) return universitaire ? <RecruiterUniversiteStep user={user} save={save} /> : <RecruiterCegepStep user={user} save={save} />;
+  if (step === 2 && universitaire) return <RecruiterUniversiteProgramStep user={user} save={save} />;
   // Step 2 = Programme. Optional — canProceed() defaults to true here.
   // Recruiters pick a single team (program) under their CÉGEP. The
   // pick lives in localStorage as `primary_team` until finish() writes
@@ -3049,7 +3079,7 @@ function RecruiterStep({ step, user, save }: { step: number; user: NexusUser; sa
   // recruteur-seulement + attestation RPRP). N'est plus la dernière étape :
   // le footer y affiche "Suivant →" (totalSteps=5) et la logique
   // responsable/RPRP reste inchangée ici.
-  if (step === 3) return <DirectorChoiceStep user={user} save={save} type="cegep" />;
+  if (step === 3) return <DirectorChoiceStep user={user} save={save} type="cegep" universite={universitaire} />;
   // Step 4 = Confirmation (récap). C'est ici que le footer affiche "Terminer
   // et accéder à Nexus" → finish() (appel unique de finish_recruiter_onboarding,
   // mêmes paramètres qu'avant — seul le QUAND change : step 4 au lieu de 3).
@@ -3096,7 +3126,9 @@ function RecruiterProfile({ user, save }: { user: NexusUser; save: (u: Partial<N
 
       <div>
         <label className={`${label} text-[#9CA3AF] mb-1.5 block`}>Bio courte</label>
-        <textarea maxLength={300} rows={3} placeholder="Ex: Recruteur football au CÉGEP Garneau depuis 5 ans. Je cherche des joueurs de ligne et des demis défensifs." value={bio} onChange={(e) => setBio(e.target.value)} className={`${inputClass} h-auto py-3 resize-none`} />
+        <textarea maxLength={300} rows={3} placeholder={user.context === "universitaire"
+          ? "Ex: Recruteur football universitaire depuis 5 ans. Je cherche des joueurs de ligne et des demis défensifs au collégial."
+          : "Ex: Recruteur football au CÉGEP Garneau depuis 5 ans. Je cherche des joueurs de ligne et des demis défensifs."} value={bio} onChange={(e) => setBio(e.target.value)} className={`${inputClass} h-auto py-3 resize-none`} />
         <p className="text-[10px] text-[#6B7280] text-right mt-1">{bio.length}/300</p>
       </div>
 
@@ -3367,6 +3399,155 @@ function RecruiterProgramStep({ user, save }: { user: NexusUser; save: (u: Parti
           <p className="text-[12px] text-[#22C55E] font-bold">
             Programme sélectionné : {selected.name}.
           </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Recruteur universitaire : université (lot D2b cégep) ──
+   Liste par la RPC universites_inscription : elle ne répond que sous lancement_universitaire ON, à un
+   recruteur universitaire. Les policies, elles, ne lui montreront que SON université une fois inscrit. */
+type UniversiteInscription = { id: string; name: string; city: string | null; team_name: string | null; province: string | null };
+
+function RecruiterUniversiteStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
+  const inst = user.institution as Record<string, string> | null;
+  const [selected, setSelected] = useState(inst?.name || "");
+  const [search, setSearch] = useState("");
+  const [universites, setUniversites] = useState<UniversiteInscription[]>([]);
+  const [erreur, setErreur] = useState("");
+
+  const inputCls = "w-full bg-[#111317] border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-[#6B7280] focus:border-[#E63946] outline-none transition-colors";
+
+  useEffect(() => {
+    createClient().rpc("universites_inscription").then(({ data, error }) => {
+      if (error) { setErreur(messageFinRecruteur(error.message || "", true)); return; }
+      setUniversites((data ?? []) as UniversiteInscription[]);
+    });
+  }, []);
+
+  const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[-\s]+/g, " ").toLowerCase().trim();
+  const filtered = universites.filter((u) =>
+    norm(u.name).includes(norm(search)) || norm(u.city || "").includes(norm(search)) || norm(u.team_name || "").includes(norm(search))
+  );
+
+  const choisir = (u: UniversiteInscription) => {
+    setSelected(u.name);
+    save({ institution: { id: u.id, name: u.name, city: u.city || "", region: "" }, primary_team: null });
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Ton université</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">Associe-toi à ton université pour commencer le recrutement.</p>
+      </div>
+
+      {erreur && <p className="text-sm text-[#EF4444]">{erreur}</p>}
+
+      {!selected && !erreur && (
+        <>
+          <input type="text" placeholder="Rechercher une université..." value={search} onChange={(e) => setSearch(e.target.value)} className={inputCls} />
+          <div className="space-y-2 max-h-[280px] overflow-y-auto">
+            {filtered.map((u) => (
+              <button key={u.id} type="button" onClick={() => choisir(u)}
+                className="w-full text-left bg-[#111317] border border-white/5 rounded-lg px-4 py-3 hover:border-[#E63946]/30 transition-colors">
+                <p className="text-[14px] font-bold text-white">{u.name}</p>
+                <p className="text-[12px] text-[#6B7280]">{[u.team_name, u.city].filter(Boolean).join(" — ")}</p>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {selected && (
+        <div className="bg-[#111317] border border-[#22C55E]/30 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[15px] font-bold text-white">{selected}</p>
+              {inst?.city && <p className="text-[12px] text-[#6B7280]">{inst.city}</p>}
+            </div>
+            <span className="text-[12px] font-bold text-[#22C55E]">✓ Sélectionnée</span>
+          </div>
+          <button type="button" onClick={() => { setSelected(""); save({ institution: null, primary_team: null }); }} className="text-[11px] text-[#6B7280] hover:text-white mt-2 transition-colors">
+            Changer d&apos;université
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Recruteur universitaire : programme principal (lot D2b cégep) ──
+   Équipes de l'université choisie par la RPC equipes_universite_inscription, filtrées sur le sport du
+   Profil. Optionnel, comme au cégep ; la base refuse une équipe d'une autre université (INVALID_TEAM). */
+type EquipeInscription = { id: string; name: string; sport: string | null; gender: string | null; division: string | null; season: string | null };
+
+function RecruiterUniversiteProgramStep({ user, save }: { user: NexusUser; save: (u: Partial<NexusUser>) => void }) {
+  const raw = typeof window !== "undefined" ? localStorage.getItem("nexus_user") : null;
+  const localUser = raw ? (JSON.parse(raw) as NexusUser) : user;
+  const inst = (localUser.institution || {}) as Record<string, unknown>;
+  const universiteId = (inst.id as string) || "";
+  const universiteNom = (inst.name as string) || "";
+  const sportProfil = (((localUser.profile || {}) as Record<string, unknown>).sport_principal as string) || "";
+
+  const [equipes, setEquipes] = useState<EquipeInscription[] | null>(null);
+  const [erreur, setErreur] = useState("");
+  const [selected, setSelected] = useState<NexusUser["primary_team"]>((localUser.primary_team ?? null) as NexusUser["primary_team"]);
+
+  useEffect(() => {
+    if (!universiteId) return;
+    createClient().rpc("equipes_universite_inscription", { p_school_id: universiteId }).then(({ data, error }) => {
+      if (error) { setErreur(messageFinRecruteur(error.message || "", true)); return; }
+      setEquipes((data ?? []) as EquipeInscription[]);
+    });
+  }, [universiteId]);
+
+  if (!universiteId) {
+    return <p className="text-sm text-[#EF4444]">Ton université n&apos;a pas été reconnue. Reviens à l&apos;étape Université.</p>;
+  }
+  if (erreur) return <p className="text-sm text-[#EF4444]">{erreur}</p>;
+  if (!equipes) return <p className="text-sm text-[#6B7280]">Chargement des programmes…</p>;
+
+  const duSport = equipes.filter((e) => e.sport === sportProfil);
+  const liste = duSport.length > 0 ? duSport : equipes;
+
+  const choisir = (e: EquipeInscription) => {
+    const next = selected?.id === e.id ? null : { id: e.id, name: e.name, age_group: "Universitaire", gender: e.gender ?? "", division: e.division ?? "" };
+    setSelected(next as NexusUser["primary_team"]);
+    save({ primary_team: next as NexusUser["primary_team"] });
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-head text-xl font-black text-white uppercase">Sélectionne ton programme principal</h2>
+        <p className="text-sm text-[#9CA3AF] mt-1">
+          Le programme de {universiteNom} avec lequel tu travailles le plus. (Optionnel — tu peux passer cette étape.)
+        </p>
+      </div>
+      {sportProfil && duSport.length === 0 && (
+        <p className="text-[13px] text-[#9CA3AF]">Aucun programme de {sportProfil} à cette université : voici tous ses programmes.</p>
+      )}
+      {liste.length === 0 ? (
+        <p className="text-sm text-[#9CA3AF]">Aucun programme trouvé pour cette université.</p>
+      ) : (
+        <div className="space-y-2">
+          {liste.map((e) => {
+            const actif = selected?.id === e.id;
+            return (
+              <button key={e.id} type="button" onClick={() => choisir(e)}
+                className={`w-full text-left bg-[#111317] border rounded-lg px-4 py-3 transition-colors ${actif ? "border-[#22C55E]/50" : "border-white/5 hover:border-[#E63946]/30"}`}>
+                <p className="text-[14px] font-bold text-white">{e.name}</p>
+                <p className="text-[12px] text-[#6B7280]">{[e.sport, e.gender ? genderLabel(e.gender) : null, e.division].filter(Boolean).join(" · ")}</p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {selected && (
+        <div className="bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-lg p-3">
+          <p className="text-[12px] text-[#22C55E] font-bold">Programme sélectionné : {selected.name}.</p>
         </div>
       )}
     </div>

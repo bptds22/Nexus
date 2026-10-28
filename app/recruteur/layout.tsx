@@ -12,6 +12,7 @@ import PendingAdminClaimBanner from "@/components/auth/PendingAdminClaimBanner";
 import DevTierSwitcher from "@/components/dev/DevTierSwitcher";
 import MobileTabBar from "@/app/_components/mobile/MobileTabBar";
 import { AnimatedRoute } from "./_components/AnimatedRoute";
+import { destinationRecruteur } from "@/lib/auth/recruteurUniversitaire";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -70,7 +71,7 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
 
         const { data, error } = await supabase
           .from("users")
-          .select("role, onboarding_complete")
+          .select("role, onboarding_complete, context")
           .eq("id", session.user.id)
           .maybeSingle();
 
@@ -87,6 +88,12 @@ function RecruteurLayoutInner({ children }: { children: React.ReactNode }) {
         // Onboarding non terminé → wizard partagé /onboarding.
         if (data.onboarding_complete !== true && normalizedPath !== "/onboarding") {
           router.replace("/onboarding");
+          return;
+        }
+
+        // Recruteur universitaire (lot D2b) : pas de portail avant le lot D3 → page d'attente.
+        if (data.context === "universitaire") {
+          router.replace(destinationRecruteur(data.context));
           return;
         }
 

@@ -16,6 +16,7 @@ const LOTS = {
   d0: ["20261028000000", "cegep_lot_d0_base"],
   d1a: ["20261028010000", "cegep_lot_d1a_universites_masquees"],
   d1a2: ["20261028020000", "cegep_lot_d1a2_definer"],
+  d2a: ["20261028030000", "cegep_lot_d2a_recruteur_universitaire"],
 };
 if (!LOTS[lot]) throw new Error("lot inconnu : " + lot);
 const [VERSION, NOM] = LOTS[lot];
