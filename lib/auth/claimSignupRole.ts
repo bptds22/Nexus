@@ -16,7 +16,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type ClaimableRole = "ATHLETE" | "COACH" | "RECRUTEUR";
-export type ClaimableContext = "scolaire" | "collegial" | "ligue_civile";
+export type ClaimableContext = "scolaire" | "collegial" | "ligue_civile" | "universitaire";
 
 /**
  * Le compte doit-il encore reclamer un role ?

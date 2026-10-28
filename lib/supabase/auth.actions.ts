@@ -21,7 +21,7 @@ export async function signUp(
   firstName: string,
   lastName: string,
   extraMetadata?: Record<string, unknown>,
-  context?: 'scolaire' | 'collegial' | 'ligue_civile',
+  context?: 'scolaire' | 'collegial' | 'ligue_civile' | 'universitaire',
 ) {
   const supabase = createClient()
 

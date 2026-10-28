@@ -12,6 +12,9 @@ import {
   persistInitialConsents,
   buildConsentMetadata,
 } from "@/lib/legal/persistInitialConsents";
+import { createClient } from "@/lib/supabase/client";
+import { lireLancementUniversitaire } from "@/lib/config/lancementUniversitaire";
+import { stashSignupRole } from "@/lib/auth/claimSignupRole";
 
 /* ─────────────────────────────────────────────────────────────────
    Nexus — Pro Signup (Coach / Recruiter / Coordinator)
@@ -34,7 +37,16 @@ function EyeToggle({ show, onClick }: { show: boolean; onClick: () => void }) {
   );
 }
 
-type ProRole = "scolaire" | "collegial" | "ligue_civile";
+type ProRole = "scolaire" | "collegial" | "ligue_civile" | "universitaire";
+
+/* Lot D2b cégep (décision BP 2026-10-28) : le recruteur universitaire. Sous OFF, carte grisée
+   « bientôt disponible », non cliquable (comme le coach cégep) ; sous ON, carte sélectionnable. */
+const ICONE_UNIVERSITAIRE = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V10M19 21V10M9 21V10M15 21V10"/><path d="M12 3l9 5H3l9-5z"/></svg>;
+const CARTE_UNIVERSITAIRE = {
+  value: "universitaire" as const,
+  title: "Recruteur universitaire",
+  subtitle: "Trouve les meilleurs athlètes collégiaux pour ton programme universitaire",
+};
 
 const ROLE_CARDS: { value: ProRole; title: string; subtitle: string; icon: React.ReactNode }[] = [
   {
@@ -61,6 +73,7 @@ const CTA_LABELS: Record<ProRole, string> = {
   scolaire: "Créer mon compte entraîneur",
   collegial: "Créer mon compte recruteur",
   ligue_civile: "Créer mon compte",
+  universitaire: "Créer mon compte recruteur universitaire",
 };
 
 export default function ProSignupPage() {
@@ -77,6 +90,8 @@ function ProSignupContent() {
   const invitationToken = searchParams.get("invitation_token") ?? "";
   const lockedEmail = invitationToken ? searchParams.get("email") ?? "" : "";
   const [selectedRole, setSelectedRole] = useState<ProRole | "">("");
+  // Interrupteur lancement_universitaire : OFF tant que non lu (le doute cache).
+  const [universitaireOuvert, setUniversitaireOuvert] = useState(false);
 
   // Iter 7.50-a-bis-2a — pré-sélection role via query param (additif).
   // Lecture au mount : si ?role=scolaire|collegial|ligue_civile, on
@@ -89,6 +104,14 @@ function ProSignupContent() {
     if (r === "scolaire" || r === "collegial" || r === "ligue_civile") {
       setSelectedRole(r);
     }
+    // ?role=universitaire : présélection seulement si l'interrupteur est ON.
+    let annule = false;
+    lireLancementUniversitaire(createClient()).then((ouvert) => {
+      if (annule) return;
+      setUniversitaireOuvert(ouvert);
+      if (ouvert && r === "universitaire") setSelectedRole("universitaire");
+    });
+    return () => { annule = true; };
     // searchParams ne change pas après mount sur cette page (pas de
     // navigation interne qui le modifie) ; lecture one-shot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -130,6 +153,7 @@ function ProSignupContent() {
     scolaire: 'COACH',
     collegial: 'RECRUTEUR',
     ligue_civile: 'COACH',
+    universitaire: 'RECRUTEUR',
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -146,6 +170,9 @@ function ProSignupContent() {
 
     const { signUp } = await import('@/lib/supabase/auth.actions');
     const role = ROLE_MAP[selectedRole as ProRole];
+    // Recruteur universitaire (lot D2b) : le trigger d'inscription ne pose pas ce contexte ; /onboarding
+    // le réclame par claim_signup_role (refusé par la base sous OFF). Le stash porte la demande jusque-là.
+    if (selectedRole === "universitaire") stashSignupRole("RECRUTEUR", "universitaire");
 
     // Iter 7.53 (dette Loi 25) — consents transmis via extraMetadata pour
     // traçabilité raw_user_meta_data (preuve légale, garantie même si
@@ -263,6 +290,33 @@ function ProSignupContent() {
                   <p className="text-[11px] text-[#6B7280] leading-snug mt-0.5">La gestion des équipes collégiales arrive bientôt.</p>
                 </div>
               </div>
+              {/* Recruteur universitaire (lot D2b) : grisé sous OFF, sélectionnable sous ON. */}
+              {universitaireOuvert ? (
+                <button type="button" onClick={() => setSelectedRole("universitaire")}
+                  className={`w-full flex items-start gap-4 p-4 rounded-xl border text-left transition-all ${
+                    selectedRole === "universitaire"
+                      ? "border-[#E63946] bg-[rgba(230,57,70,0.06)]"
+                      : "border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  <div className={`shrink-0 mt-0.5 ${selectedRole === "universitaire" ? "text-[#E63946]" : "text-[#6B7280]"}`}>{ICONE_UNIVERSITAIRE}</div>
+                  <div>
+                    <p className={`font-head font-bold text-[13px] uppercase tracking-wide ${selectedRole === "universitaire" ? "text-white" : "text-[#9CA3AF]"}`}>{CARTE_UNIVERSITAIRE.title}</p>
+                    <p className="text-[11px] text-[#6B7280] leading-snug mt-0.5">{CARTE_UNIVERSITAIRE.subtitle}</p>
+                  </div>
+                </button>
+              ) : (
+                <div
+                  aria-disabled="true"
+                  className="w-full flex items-start gap-4 p-4 rounded-xl border border-white/5 text-left opacity-50 cursor-not-allowed select-none"
+                >
+                  <div className="shrink-0 mt-0.5 text-[#4B5563]">{ICONE_UNIVERSITAIRE}</div>
+                  <div>
+                    <p className="font-head font-bold text-[13px] uppercase tracking-wide text-[#6B7280]">Recruteur universitaire — bientôt disponible</p>
+                    <p className="text-[11px] text-[#6B7280] leading-snug mt-0.5">Le recrutement universitaire arrive bientôt sur Nexus.</p>
+                  </div>
+                </div>
+              )}
               {/* Accroche (décision BP 2026-10-26) : en attendant, le coach de cégep peut s'inscrire comme
                   recruteur collégial — le lien choisit la carte « Recruteur CÉGEP ». */}
               <p className="text-[12px] text-[#9CA3AF] leading-snug px-1">

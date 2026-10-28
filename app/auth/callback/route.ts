@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import { estRoleFige } from "@/lib/auth/rolesFiges";
+import { contexteRecruteurDemande } from "@/lib/auth/recruteurUniversitaire";
+import { lireLancementUniversitaire } from "@/lib/config/lancementUniversitaire";
 import {
   computeDispatchDestination,
   type DispatchProfile,
@@ -150,21 +152,11 @@ async function maybeApplySignupRole(
 
   // Garde 5 — context validé + cohérent avec le role :
   //   COACH     → context ∈ {scolaire, ligue_civile} (choix picker école/civil)
-  //   RECRUTEUR → collegial (dérivé, pas de choix utilisateur)
+  //   RECRUTEUR → universitaire si demandé ET lancement_universitaire ON (lot D2b), sinon collegial
   //   ATHLETE   → context ignoré ici (choisi à l'écran 2 / onboarding)
   //   toute autre combinaison → context non appliqué (role reste posé).
-  let context: string | null = null;
-  const c = searchParams.get("context");
-  if (role === "COACH" && (c === "scolaire" || c === "ligue_civile")) {
-    context = c;
-  } else if (role === "RECRUTEUR") {
-    context = "collegial";
-  }
-
-  // No-op si déjà à jour (role identique et pas de context à poser).
-  if (profile?.role === role && !context) return null;
-
   // service_role (bypass RLS) — même pattern que app/api/admin/partners/create.
+  // Créé avant la garde 5 : l'interrupteur universitaire se lit avec lui.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) {
@@ -174,6 +166,18 @@ async function maybeApplySignupRole(
   const sbAdmin = createSbClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+
+  let context: string | null = null;
+  const c = searchParams.get("context");
+  if (role === "COACH" && (c === "scolaire" || c === "ligue_civile")) {
+    context = c;
+  } else if (role === "RECRUTEUR") {
+    // service_role passe outre le verrou de la base (auth.uid() nul) : l'interrupteur est relu ici.
+    context = contexteRecruteurDemande(c, c === "universitaire" && (await lireLancementUniversitaire(sbAdmin)));
+  }
+
+  // No-op si déjà à jour (role identique et pas de context à poser).
+  if (profile?.role === role && !context) return null;
 
   // role_claimed_at : marqueur one-shot partagé avec la RPC claim_signup_role
   // (migration 20260713190000). Sans ce stamp, un coach inscrit ici mais dont
