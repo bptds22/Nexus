@@ -1,0 +1,59 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 17:46:05.636736+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 419
+DELETE 217
+INSERT 0 1
+ALTER TABLE
+UPDATE 203
+   role    | comptes_avec_ecole 
+-----------+--------------------
+ ADMIN     |                  1
+ ATHLETE   |                168
+ COACH     |                 16
+ RECRUTEUR |                 18
+(4 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 203
+SELECT 1
+DO
+SET
+SELECT 203
+SELECT 4
+   role    | comptes | creer_avant | creer_apres | modifier_avant | modifier_apres | supprimer_avant | supprimer_apres | comptes_changes 
+-----------+---------+-------------+-------------+----------------+----------------+-----------------+-----------------+-----------------
+ ADMIN     |       1 |           0 |           0 |              0 |              0 |               0 |               0 |               0
+ ATHLETE   |     168 |         168 |           0 |            168 |              0 |             168 |               0 |             168
+ COACH     |      16 |          16 |          16 |             16 |             16 |              16 |              16 |               0
+ RECRUTEUR |      18 |          18 |           0 |             18 |              0 |              18 |               0 |              18
+(4 rows)
+
+psql:docs/cegep-lot-d/prod/t-apply-20261028.sql:168: NOTICE:  NEXUS: VERDICT lot T — teams : seuls coachs et admins écrivent ; leurs droits réels sont identiques
+DO
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261028080000   | 2026-10-28 17:46:09.404108+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot T en prod (écriture de teams réservée aux coachs et admins).
