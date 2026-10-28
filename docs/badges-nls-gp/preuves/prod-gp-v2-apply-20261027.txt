@@ -1,0 +1,55 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_database | current_user |            nexus_attendu             
+-------------------------------+------------------+--------------+--------------------------------------
+ 2026-10-28 01:11:26.751737+00 | postgres         | postgres     | f3751302-cdce-44a6-ac0d-bf4802968637
+(1 row)
+
+DO
+SELECT 5
+DO
+SELECT 1
+    libelle    |                      icone_path                      
+---------------+------------------------------------------------------
+ GP · Prospect | f3751302-cdce-44a6-ac0d-bf4802968637/gp-prospect.png
+ GP · Top 50   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top50.png
+ GP · Top 25   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top25.png
+ GP · Top 10   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top10.png
+ GP · MVP      | f3751302-cdce-44a6-ac0d-bf4802968637/gp-mvp.png
+(5 rows)
+
+psql : psql:docs/badges-nls-gp/gp-v2/operation.sql:75: NOTICE:  NEXUS: 5 badges GP pointent sur les fichiers v2
+At line:3 char:1
++ psql "host=aws-1-ca-central-1.pooler.supabase.com port=5432 dbname=po ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/badge...les fichiers v2:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+DO
+DO
+    libelle    |                       icone_path                        
+---------------+---------------------------------------------------------
+ GP · Prospect | f3751302-cdce-44a6-ac0d-bf4802968637/gp-prospect-v2.png
+ GP · Top 50   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top50-v2.png
+ GP · Top 25   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top25-v2.png
+ GP · Top 10   | f3751302-cdce-44a6-ac0d-bf4802968637/gp-top10-v2.png
+ GP · MVP      | f3751302-cdce-44a6-ac0d-bf4802968637/gp-mvp-v2.png
+(5 rows)
+
+      operation      |              le               |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  changements                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
+---------------------+-------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ BADGES_GP_ICONES_V2 | 2026-10-28 01:11:26.751737+00 | [{"id": "656112b2-de30-40fd-b37a-2835acd042cc", "apres": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-prospect-v2.png", "avant": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-prospect.png", "libelle": "GP · Prospect"}, {"id": "0a847109-9bcd-4fde-b2c5-5cce8d03a315", "apres": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-top50-v2.png", "avant": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-top50.png", "libelle": "GP · Top 50"}, {"id": "ebadfe71-4917-4448-b3c6-6fac126a388b", "apres": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-top25-v2.png", "avant": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-top25.png", "libelle": "GP · Top 25"}, {"id": "daf89745-96fb-4a2c-8b39-19e863edd54e", "apres": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-top10-v2.png", "avant": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-top10.png", "libelle": "GP · Top 10"}, {"id": "339a7306-b8f7-4bbc-9262-7549251bfdaa", "apres": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-mvp-v2.png", "avant": "f3751302-cdce-44a6-ac0d-bf4802968637/gp-mvp.png", "libelle": "GP · MVP"}]
+(1 row)
+
+         avant_commit          
+-------------------------------
+ 2026-10-28 01:11:26.827884+00
+(1 row)
+
+COMMIT
+== COMMIT fait : les 5 badges GP pointent sur les fichiers v2.

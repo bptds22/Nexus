@@ -1,0 +1,8 @@
+﻿Cible : https://nrloizyemulbhujrqhgx.supabase.co — partner-badges/f3751302-cdce-44a6-ac0d-bf4802968637/ — mode RETIRER
+  aucun des 5 fichiers n'est cité par partner_badges
+  gp-prospect.png : retiré
+  gp-top50.png : retiré
+  gp-top25.png : retiré
+  gp-top10.png : retiré
+  gp-mvp.png : retiré
+Fait.

@@ -1,0 +1,18 @@
+﻿== Constat v2
+Cible : https://nrloizyemulbhujrqhgx.supabase.co — partner-badges/f3751302-cdce-44a6-ac0d-bf4802968637/ — mode constat
+  gp-prospect-v2.png : ABSENT (58661 o, md5 fd687418a296dde2579d121a8d71db2a)
+  gp-top50-v2.png : ABSENT (70189 o, md5 ff95d3f9503a32fcff548d4cde4a31b8)
+  gp-top25-v2.png : ABSENT (65027 o, md5 8932a283e7900235f9df5d91d2b53d34)
+  gp-top10-v2.png : ABSENT (95302 o, md5 db1f1113ab2d7bc95f471a4bdaf14fe2)
+  gp-mvp-v2.png : ABSENT (51386 o, md5 4b3a2391502219eb68e79a6fb339ff0e)
+OK : les fichiers présents sont identiques au dépôt.
+exit=0
+== Envoi v2
+Cible : https://nrloizyemulbhujrqhgx.supabase.co — partner-badges/f3751302-cdce-44a6-ac0d-bf4802968637/ — mode ENVOYER
+  gp-prospect-v2.png : déposé — servi 200 image/png 58661 o md5 fd687418a296dde2579d121a8d71db2a = dépôt
+  gp-top50-v2.png : déposé — servi 200 image/png 70189 o md5 ff95d3f9503a32fcff548d4cde4a31b8 = dépôt
+  gp-top25-v2.png : déposé — servi 200 image/png 65027 o md5 8932a283e7900235f9df5d91d2b53d34 = dépôt
+  gp-top10-v2.png : déposé — servi 200 image/png 95302 o md5 db1f1113ab2d7bc95f471a4bdaf14fe2 = dépôt
+  gp-mvp-v2.png : déposé — servi 200 image/png 51386 o md5 4b3a2391502219eb68e79a6fb339ff0e = dépôt
+OK : les fichiers présents sont identiques au dépôt.
+exit=0
