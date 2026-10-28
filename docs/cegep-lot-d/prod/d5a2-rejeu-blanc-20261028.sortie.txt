@@ -1,0 +1,63 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 17:50:13.027024+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | interrupteur_on 
+------------------+-----------------
+ 20261028080000   | f
+(1 row)
+
+SELECT 1
+DO
+SELECT 1
+DO
+SET
+CREATE FUNCTION
+SELECT 22
+ o  | interrupteur |        appelant         |                geste                 |       attendu       |       obtenu        | ?  
+----+--------------+-------------------------+--------------------------------------+---------------------+---------------------+----
+  1 | OFF          | recruteur universitaire | lire sa liste                        | 0 lue(s)            | 0 lue(s)            | ok
+  2 | OFF          | recruteur universitaire | remplacer sa liste (garde + 1 ajout) | refusé 42501        | refusé 42501        | ok
+  3 | ON           | recruteur universitaire | lire sa liste                        | 1 lue(s)            | 1 lue(s)            | ok
+  4 | ON           | recruteur universitaire | lire toutes les listes               | 1 lue(s)            | 1 lue(s)            | ok
+  5 | ON           | recruteur universitaire | remplacer sa liste (garde + 1 ajout) | 2 ; seed gardé seed | 2 ; seed gardé seed | ok
+  6 | ON           | recruteur universitaire | modifier une ligne pré-remplie       | 1 ; devient manuel  | 1 ; devient manuel  | ok
+  7 | ON           | recruteur universitaire | remplacer l'autre université         | refusé 42501        | refusé 42501        | ok
+  8 | ON           | recruteur universitaire | cycle invalide                       | refusé P0001        | refusé P0001        | ok
+  9 | ON           | recruteur universitaire | lien sans https                      | refusé P0001        | refusé P0001        | ok
+ 10 | ON           | recruteur universitaire | liste vide sans accord               | refusé P0001        | refusé P0001        | ok
+ 11 | ON           | recruteur universitaire | liste vide avec accord               | 0                   | 0                   | ok
+ 12 | ON           | recruteur universitaire | écrire directement chez lui          | écrit               | écrit               | ok
+ 13 | ON           | recruteur collégial     | lire toutes les listes               | 0 lue(s)            | 0 lue(s)            | ok
+ 14 | ON           | recruteur collégial     | remplacer sa liste (garde + 1 ajout) | refusé 42501        | refusé 42501        | ok
+ 15 | ON           | recruteur collégial     | écrire directement chez lui          | refusé 42501        | refusé 42501        | ok
+ 16 | ON           | athlète                 | lire toutes les listes               | 0 lue(s)            | 0 lue(s)            | ok
+ 17 | ON           | coach                   | lire toutes les listes               | 0 lue(s)            | 0 lue(s)            | ok
+ 18 | ON           | anon                    | lire toutes les listes               | refusé 42501        | refusé 42501        | ok
+ 19 | ON           | anon                    | remplacer sa liste (garde + 1 ajout) | refusé 42501        | refusé 42501        | ok
+ 20 | OFF          | admin                   | lire toutes les listes               | 2 lue(s)            | 2 lue(s)            | ok
+ 21 | OFF          | admin                   | remplacer sa liste (garde + 1 ajout) | 2 ; seed gardé seed | 2 ; seed gardé seed | ok
+ 22 | OFF          | postgres (import)       | programme sur un cégep               | refusé 23514        | refusé 23514        | ok
+(22 rows)
+
+psql:docs/cegep-lot-d/prod/d5a2-rejeu-blanc-20261028.sql:317: NOTICE:  NEXUS: VERDICT D5a étape 2 — programmes universitaires : admin, ou le recruteur universitaire de SA liste sous ON ; personne d'autre ne lit ni n'écrit
+DO
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+psql:docs/cegep-lot-d/prod/d5a2-rejeu-blanc-20261028.sql:328: NOTICE:  NEXUS: rollback D5a étape 2 vérifié (table, RPC et déclencheur retirés)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.
