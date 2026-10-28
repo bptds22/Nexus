@@ -1,0 +1,210 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user 
+-------------------------------+--------------
+ 2026-10-28 17:16:26.702083+00 | postgres
+(1 row)
+
+CREATE TABLE
+INSERT 0 47
+CREATE TABLE
+INSERT 0 345
+DO
+CREATE FUNCTION
+SELECT 6
+ moment |          objet           |   n   |               md5                
+--------+--------------------------+-------+----------------------------------
+ AVANT  | athletes                 |   218 | c9a6af4098e263351ad7f1b1e91355dc
+ AVANT  | games (côtés hors univ.) | 72129 | 09b4530a6c514591c3223c46bf191552
+ AVANT  | schools (hors lot)       |  1420 | 743e9aff53a4e5b70d3e634309f19c7d
+ AVANT  | team_athletes            |   130 | e88a267f84c857c5f921dbce79f7a635
+ AVANT  | teams (hors lot)         | 10433 | cccbbf04af9475205e44ba9464c44cc6
+ AVANT  | users                    |   419 | e492fce678dfbb4cd5efad5d28ab8f21
+(6 rows)
+
+SELECT 1
+SET
+SELECT 6
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 36
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+ banc 
+------
+ 
+(1 row)
+
+INSERT 0 47
+INSERT 0 345
+ province |               universite                |          programme           |      ville       | equipes |                                                            detail                                                            
+----------+-----------------------------------------+------------------------------+------------------+---------+------------------------------------------------------------------------------------------------------------------------------
+ AB       | MacEwan University                      | Griffins                     | Edmonton         |       8 | Basketball F, Basketball M, Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ AB       | Mount Royal University                  | Cougars                      | Calgary          |       8 | Basketball F, Basketball M, Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ AB       | University of Alberta                   | Golden Bears / Pandas        | Edmonton         |      10 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Soccer F, Soccer M, Volleyball F, Volleyball M
+ AB       | University of Calgary                   | Dinos                        | Calgary          |      10 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Soccer F, Soccer M, Volleyball F, Volleyball M
+ AB       | University of Lethbridge                | Pronghorns                   | Lethbridge       |       5 | Basketball F, Basketball M, Rugby F, Soccer F, Soccer M
+ BC       | Thompson Rivers University              | WolfPack                     | Kamloops         |       6 | Basketball F, Basketball M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ BC       | Trinity Western University              | Spartans                     | Langley          |       8 | Basketball F, Basketball M, Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ BC       | University of British Columbia          | Thunderbirds                 | Vancouver        |      10 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Soccer F, Soccer M, Volleyball F, Volleyball M
+ BC       | University of British Columbia Okanagan | Heat                         | Kelowna          |       6 | Basketball F, Basketball M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ BC       | University of Northern British Columbia | Timberwolves                 | Prince George    |       4 | Basketball F, Basketball M, Soccer F, Soccer M
+ BC       | University of the Fraser Valley         | Cascades                     | Abbotsford       |       6 | Basketball F, Basketball M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ BC       | University of Victoria                  | Vikes                        | Victoria         |       5 | Basketball F, Basketball M, Rugby F, Soccer F, Soccer M
+ MB       | Brandon University                      | Bobcats                      | Brandon          |       4 | Basketball F, Basketball M, Volleyball F, Volleyball M
+ MB       | University of Manitoba                  | Bisons                       | Winnipeg         |       8 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Soccer F, Volleyball F, Volleyball M
+ MB       | University of Winnipeg                  | Wesmen                       | Winnipeg         |       4 | Basketball F, Basketball M, Volleyball F, Volleyball M
+ NB       | Mount Allison University                | Mounties                     | Sackville        |       4 | Football M, Hockey F, Soccer F, Soccer M
+ NB       | St. Thomas University                   | Tommies                      | Fredericton      |       1 | Hockey F
+ NB       | Université de Moncton                   | Aigles Bleus / Aigles Bleues | Moncton          |       5 | Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F
+ NB       | University of New Brunswick             | Reds                         | Fredericton      |       8 | Basketball F, Basketball M, Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ NL       | Memorial University of Newfoundland     | Sea-Hawks                    | St. John's       |       5 | Basketball F, Basketball M, Soccer F, Soccer M, Volleyball F
+ NS       | Acadia University                       | Axemen / Axewomen            | Wolfville        |       8 | Basketball F, Basketball M, Football M, Hockey M, Rugby F, Soccer F, Soccer M, Volleyball F
+ NS       | Cape Breton University                  | Capers                       | Sydney           |       4 | Basketball F, Basketball M, Soccer F, Soccer M
+ NS       | Dalhousie University                    | Tigers                       | Halifax          |       8 | Basketball F, Basketball M, Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ NS       | Saint Mary's University                 | Huskies                      | Halifax          |       9 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Soccer F, Soccer M, Volleyball F
+ NS       | St. Francis Xavier University           | X-Men / X-Women              | Antigonish       |       8 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Soccer F, Soccer M
+ ON       | Algoma University                       | Thunderbirds                 | Sault Ste. Marie |       4 | Basketball F, Basketball M, Soccer F, Soccer M
+ ON       | Brock University                        | Badgers                      | St. Catharines   |      10 | Basketball F, Basketball M, Hockey F, Hockey M, Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | Carleton University                     | Ravens                       | Ottawa           |       8 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Soccer F, Soccer M
+ ON       | Lakehead University                     | Thunderwolves                | Thunder Bay      |       4 | Basketball F, Basketball M, Hockey M, Volleyball F
+ ON       | McMaster University                     | Marauders                    | Hamilton         |       9 | Basketball F, Basketball M, Football M, Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | Nipissing University                    | Lakers                       | North Bay        |       8 | Basketball F, Basketball M, Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | Ontario Tech University                 | Ridgebacks                   | Oshawa           |       6 | Basketball F, Basketball M, Hockey F, Hockey M, Soccer F, Soccer M
+ ON       | Queen's University                      | Gaels                        | Kingston         |      11 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | Toronto Metropolitan University         | Bold                         | Toronto          |       9 | Basketball F, Basketball M, Hockey F, Hockey M, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | Trent University                        | Excalibur                    | Peterborough     |       6 | Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | Université d'Ottawa                     | Gee-Gees                     | Ottawa           |       8 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Soccer F, Volleyball F
+ ON       | Université Laurentienne                 | Voyageurs                    | Sudbury          |       4 | Basketball F, Basketball M, Soccer F, Soccer M
+ ON       | University of Guelph                    | Gryphons                     | Guelph           |      11 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | University of Toronto                   | Varsity Blues                | Toronto          |      11 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | University of Waterloo                  | Warriors                     | Waterloo         |      11 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | University of Windsor                   | Lancers                      | Windsor          |       9 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | Western University                      | Mustangs                     | London           |      11 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ ON       | Wilfrid Laurier University              | Golden Hawks                 | Waterloo         |       9 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Rugby M, Soccer F, Soccer M
+ ON       | York University                         | Lions                        | Toronto          |      11 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Rugby F, Rugby M, Soccer F, Soccer M, Volleyball F, Volleyball M
+ PE       | University of Prince Edward Island      | Panthers                     | Charlottetown    |       7 | Basketball F, Basketball M, Hockey F, Hockey M, Rugby F, Soccer F, Soccer M
+ SK       | University of Regina                    | Cougars / Rams (football)    | Regina           |       7 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Soccer F, Volleyball F
+ SK       | University of Saskatchewan              | Huskies                      | Saskatoon        |       9 | Basketball F, Basketball M, Football M, Hockey F, Hockey M, Soccer F, Soccer M, Volleyball F, Volleyball M
+(47 rows)
+
+SELECT 6
+ moment |          objet           |   n   |               md5                | vs_avant 
+--------+--------------------------+-------+----------------------------------+----------
+ APRÈS  | athletes                 |   218 | c9a6af4098e263351ad7f1b1e91355dc | =
+ APRÈS  | games (côtés hors univ.) | 72129 | 09b4530a6c514591c3223c46bf191552 | =
+ APRÈS  | schools (hors lot)       |  1420 | 743e9aff53a4e5b70d3e634309f19c7d | =
+ APRÈS  | team_athletes            |   130 | e88a267f84c857c5f921dbce79f7a635 | =
+ APRÈS  | teams (hors lot)         | 10433 | cccbbf04af9475205e44ba9464c44cc6 | =
+ APRÈS  | users                    |   419 | e492fce678dfbb4cd5efad5d28ab8f21 | =
+(6 rows)
+
+CREATE FUNCTION
+SELECT 2
+                  essai                   |                                 resultat                                  
+------------------------------------------+---------------------------------------------------------------------------
+ fiche athlète → une université du lot    | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une un
+ fiche athlète → une équipe universitaire | REFUSÉ 42501 NEXUS: Une fiche athlète ne peut pas être rattachée à une éq
+(2 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 6
+        role         | écoles univ / équipes univ 
+---------------------+----------------------------
+ anon (site public)  | 0 / refusé
+ athlète             | 0 / 0
+ coach               | 0 / 0
+ recruteur collégial | 0 / 0
+ partenaire          | 0 / 0
+ admin               | 59 / 345
+(6 rows)
+
+ banc 
+------
+ 
+(1 row)
+
+CREATE FUNCTION
+SELECT 8
+SELECT 216
+ n  |                       objet                       |   athlete    |    parent    |    coach     | recruteur_collegial |  partenaire  |     anon     | alerte 
+----+---------------------------------------------------+--------------+--------------+--------------+---------------------+--------------+--------------+--------
+  1 | admin_cegeps_sans_programme()                     | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  2 | athletes_nom_proche(…, université)                | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  3 | cartes_par_ids(300 cartes)                        | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  4 | coachs_nommables_equipe(équipe univ.)             | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  5 | depistage_profils_match(prochain match)           | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | refusé 42501 | refusé 42501 | —
+  6 | get_my_children()                                 | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | ok 0 0       | —
+  7 | ids_universites() — /rpc public                   | absente      | absente      | absente      | absente             | absente      | absente      | —
+  8 | invitation_equipe_coach(dernière)                 | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+  9 | list_interested_recruiters()                      | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 10 | list_team_commits(équipe univ.)                   | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | ok 0 0       | —
+ 11 | lookup_civil_unclaimed_by_email('a')              | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 12 | matchs_recherche(31 jours)                        | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 8              | ok 0 8       | refusé 42501 | —
+ 13 | matchs_recherche(équipes univ.)                   | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 14 | matchs_recherche(texte « laval »)                 | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 15 | matchs_suggestions(« laval »)                     | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 16 | matchs_suggestions(« université »)                | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 17 | matchs_suggestions(« rouge et or »)               | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 18 | matchs_suggestions(« carabins »)                  | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 19 | partenaire_depistage_cartes(univ., équipes univ.) | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 20 | partenaire_mes_athletes()                         | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 21 | partenaire_prospects_terminees()                  | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 22 | partenaire_rapprochements()                       | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 23 | partenaire_rapprochements_refuses()               | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 24 | partner_athlete_profile(une fiche)                | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 25 | partner_newsroom_events()                         | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 26 | processus_cartes(université)                      | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 27 | processus_cartes(son cégep)                       | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 28 | rapprochements_refuses_unite()                    | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 29 | rapprochements_unite()                            | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | refusé 42501 | —
+ 30 | recruiter_athlete_cards(200 fiches)               | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 3              | refusé 42501 | refusé 42501 | —
+ 31 | recruiter_athlete_profile(une fiche)              | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | refusé 42501 | refusé 42501 | —
+ 32 | recruiter_search_athletes()                       | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 3              | refusé 42501 | refusé 42501 | —
+ 33 | recruiter_search_athletes(« laval »)              | refusé 42501 | refusé 42501 | refusé 42501 | ok 0 0              | refusé 42501 | refusé 42501 | —
+ 34 | team_record_hint(équipe univ.)                    | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 0       | ok 0 0       | —
+ 35 | vue top_athletes_view                             | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 3       | refusé 42501 | —
+ 36 | vue trending_athletes_view                        | ok 0 0       | ok 0 0       | ok 0 0       | ok 0 0              | ok 0 3       | refusé 42501 | —
+(36 rows)
+
+        role         |                           essai                           |                                      resultat                                       
+---------------------+-----------------------------------------------------------+-------------------------------------------------------------------------------------
+ athlète             | fiche : committed_school_id → université                  | refusé P0001 NEXUS: ces informations ne se modifient pas depuis ton profil (committ
+ coach               | compte : primary_team_id → équipe univ.                   | refusé 42501 NEXUS: Les universités ne sont pas encore ouvertes sur Nexus. Ça arriv
+ coach               | create_team_join_token(équipe univ.)                      | refusé 42501
+ coach               | team_coaches : se rattacher à une équipe univ.            | refusé P0001 NEXUS_COACH_CEGEP: Un compte coach ne peut pas être rattaché à un cége
+ recruteur collégial | carte prospect : school_id → université                   | refusé 22023 NEXUS: l'établissement suit l'équipe — change l'équipe
+ recruteur collégial | carte prospect : team_id → équipe univ.                   | refusé 22023 NEXUS: l'équipe doit être du sport de l'athlète
+ recruteur collégial | changer_rattachement_recruteur(université)                | refusé 42501 NEXUS: pour changer de cégep ou de sport, écris à info@nexussports.ca
+ partenaire          | partenaire_prospect_enregistrer(université, équipe univ.) | refusé 42501 NEXUS: cartes prospects non permises (permission, sport ou statut du p
+(8 rows)
+
+ appels_qui_fuient | appels_en_erreur | appels | ecritures_acceptees 
+-------------------+------------------+--------+---------------------
+                 0 |                0 |    216 |                   0
+(1 row)
+
+DO
+psql:docs/cegep-lot-d/prod/d1b-apply-20261028.sql:828: NOTICE:  NEXUS: VERDICT D1b — 47 universités hors Québec, 345 équipes, rien d'autre ne bouge, invisibles hors admin, verrou tenu
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+INSERT 0 1
+ universites_du_lot | equipes |         avant_commit          
+--------------------+---------+-------------------------------
+                 47 |     345 | 2026-10-28 17:16:41.982025+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot D1b cégep en prod (universités hors Québec et leurs équipes).
