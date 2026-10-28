@@ -28,7 +28,10 @@ export async function loadSchoolPageForRender(idOrSlug: string): Promise<RenderR
   // `logo_url` est lu comme REPLI d'affichage derrière school_page_content.logo_path
   // — voir dbToProgramPage. Sans lui, les écoles jamais configurées perdaient
   // leur logo d'import RSEQ et retombaient sur le monogramme.
-  const q = svc.from("schools").select("id, name, city, region, langue, reseau, lat, lng, geo_source, logo_url, type").limit(1);
+  // Lot D1a cégep : la clé service ne passe pas par la policy universites_masquees — une université n'a
+  // pas de page publique tant que le lancement universitaire n'est pas fait (vitrine : plus tard).
+  const q = svc.from("schools").select("id, name, city, region, langue, reseau, lat, lng, geo_source, logo_url, type")
+    .neq("type", "UNIVERSITE").limit(1);
   const { data: rows } = UUID.test(idOrSlug)
     ? await q.eq("id", idOrSlug)
     : await q.ilike("name", "%" + idOrSlug.replace(/-/g, "%") + "%");

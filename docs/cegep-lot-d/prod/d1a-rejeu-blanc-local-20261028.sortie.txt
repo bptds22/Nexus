@@ -1,0 +1,77 @@
+Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 02:07:02.118821+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version 
+------------------
+ 20261028000000
+(1 row)
+
+SELECT 1
+DO
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 7
+ recruteur_toutes_equipes_ms_avant 
+-----------------------------------
+                              25.2
+(1 row)
+
+ phase |             role             | univ / équipe univ / écoles / équipes 
+-------+------------------------------+---------------------------------------
+ AVANT | anon (site public, visiteur) | 1 / 0 / 1389 / 0
+ AVANT | athlète                      | 1 / 0 / 1389 / 3303
+ AVANT | parent                       | 1 / 0 / 1389 / 3303
+ AVANT | coach                        | 1 / 0 / 1389 / 3303
+ AVANT | recruteur collégial          | 1 / 1 / 1389 / 3303
+ AVANT | partenaire                   | 1 / 0 / 1389 / 3303
+ AVANT | admin                        | 1 / 1 / 1389 / 3303
+(7 rows)
+
+SELECT 1
+DO
+NOTICE:  NEXUS: lot D1a cégep — universités et équipes universitaires masquées (admin seulement)
+SET
+SELECT 7
+ phase |             role             | univ / équipe univ / écoles / équipes | hors_univ_vs_avant 
+-------+------------------------------+---------------------------------------+--------------------
+ APRÈS | anon (site public, visiteur) | 0 / 0 / 1389 / 0                      | =
+ APRÈS | athlète                      | 0 / 0 / 1389 / 3303                   | =
+ APRÈS | parent                       | 0 / 0 / 1389 / 3303                   | =
+ APRÈS | coach                        | 0 / 0 / 1389 / 3303                   | =
+ APRÈS | recruteur collégial          | 0 / 0 / 1389 / 3303                   | =
+ APRÈS | partenaire                   | 0 / 0 / 1389 / 3303                   | =
+ APRÈS | admin                        | 1 / 1 / 1389 / 3303                   | =
+(7 rows)
+
+ recruteur_toutes_equipes_ms_apres 
+-----------------------------------
+                              25.2
+(1 row)
+
+DO
+NOTICE:  NEXUS: VERDICT D1a — universités invisibles hors admin, écoles et équipes ordinaires identiques pour chaque rôle
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+NOTICE:  NEXUS: lot D1a cégep annulé
+SET
+SELECT 7
+NOTICE:  NEXUS: rollback D1a vérifié (matrice identique à AVANT)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.
