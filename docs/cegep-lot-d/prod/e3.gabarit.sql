@@ -1,0 +1,211 @@
+-- ════════════════════════════════════════════════════════════════════════════
+-- Lot E3 cégep (cycle libre des programmes universitaires) — @@TITRE@@, version @@VERSION@@.
+-- Fichier GÉNÉRÉ par scripts/cegep-lot-d/generer.mjs <date> <rejeu-blanc|apply> e3 (migration et rollback
+-- embarqués, LF, md5 gardés). Lancer SANS -1, en postgres.
+--
+-- UNE transaction : gardes → empreinte des programmes AVANT → migration → empreinte APRÈS (identique) → essais avec
+-- un recruteur universitaire témoin (compte neuf, sous ON) et l'admin, chaque essai défait aussitôt (NX000)
+-- → @@SUITE@@. Aucun nom affiché.
+-- ════════════════════════════════════════════════════════════════════════════
+
+\set ON_ERROR_STOP 1
+\pset pager off
+\pset null '·'
+
+begin;
+set local lock_timeout = '3s';
+set local statement_timeout = '180s';
+set local search_path = public, extensions;
+set local application_name = 'nexus-@@MODE@@-cegep-e3';
+select now() as debut, current_user, current_setting('server_version') as version;
+
+do $$
+declare v text;
+begin
+  if current_user <> 'postgres' then raise exception 'NEXUS: lancer en postgres, pas en %', current_user; end if;
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '@@VERSION@@') then
+    raise exception 'NEXUS: version @@VERSION@@ déjà inscrite';
+  end if;
+  select max(version) into v from supabase_migrations.schema_migrations;
+  if v >= '@@VERSION@@' then raise exception 'NEXUS: version @@VERSION@@ pas après la dernière (%) — régénérer', v; end if;
+  if exists (select 1 from public.admin_operations where operation in ('MIGRATION_CEGEP_LOT_E3', 'ROLLBACK_CEGEP_LOT_E3')) then
+    raise exception 'NEXUS: le lot E3 a déjà laissé une trace dans admin_operations';
+  end if;
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261028090000') then
+    raise exception 'NEXUS: préalable D5a étape 2 absent';
+  end if;
+end $$;
+select max(version) as derniere_version, public.lancement_universitaire_actif() as interrupteur_on
+  from supabase_migrations.schema_migrations;
+
+create temp table _t on commit drop as
+select (select up.school_id from public.university_programs up where up.source = 'seed' group by up.school_id order by up.school_id limit 1) as univ,
+       (select u.id from public.users u where u.role = 'ADMIN'::public.user_role and u.is_platform_admin order by u.id limit 1) as u_adm,
+       '00000000-0000-4000-8000-0000000e3001'::uuid as neuf,
+       public.lancement_universitaire_actif() as on_initial;
+alter table _t add column v_seed uuid;
+update _t set v_seed = (select up.id from public.university_programs up where up.school_id = univ and up.source = 'seed' order by up.id limit 1);
+do $$ begin
+  if exists (select 1 from _t where univ is null or u_adm is null or v_seed is null) then raise exception 'NEXUS: un témoin manque'; end if;
+end $$;
+
+create temp table _avant on commit drop as
+select count(*) n, md5(string_agg(id::text || school_id || name || cycle || coalesce(faculte, '') || coalesce(lien, '') || source, ',' order by id)) empreinte
+  from public.university_programs;
+
+-- ── La migration, texte gardé par son md5 ────────────────────────────────────
+create temp table _e3 on commit drop as
+select '@@VERSION@@'::text as version,
+       $nexus_mig$@@MIGRATION@@$nexus_mig$::text as contenu,
+       $nexus_rb$@@ROLLBACK@@$nexus_rb$::text as rollback;
+do $apply$
+begin
+  if (select md5(contenu) from _e3) <> '@@MD5_MIGRATION@@' then
+    raise exception 'NEXUS: texte de la migration altéré (md5 %)', (select md5(contenu) from _e3);
+  end if;
+  if (select md5(rollback) from _e3) <> '@@MD5_ROLLBACK@@' then
+    raise exception 'NEXUS: texte du rollback altéré (md5 %)', (select md5(rollback) from _e3);
+  end if;
+  execute (select contenu from _e3);
+end $apply$;
+set local search_path = public, extensions;
+
+create temp table _apres on commit drop as
+select count(*) n, md5(string_agg(id::text || school_id || name || cycle || coalesce(faculte, '') || coalesce(lien, '') || source, ',' order by id)) empreinte,
+       count(*) filter (where cycle_libelle is not null) avec_libelle
+  from public.university_programs;
+select a.n as programmes_avant, p.n as programmes_apres, a.empreinte = p.empreinte as identiques, p.avec_libelle
+  from _avant a, _apres p;
+
+-- ── Essais ───────────────────────────────────────────────────────────────────
+create function pg_temp.essai(p_on boolean, p_uid uuid, p_quoi text) returns text language plpgsql as $$
+declare t record; v text; n int;
+begin
+  select * into t from _t;
+  begin
+    update public.app_settings set value = case when p_on then 'true' else 'false' end where key = 'lancement_universitaire';
+    insert into auth.users (instance_id, id, aud, role, email, raw_user_meta_data, raw_app_meta_data, created_at, updated_at)
+    values ('00000000-0000-0000-0000-000000000000', t.neuf, 'authenticated', 'authenticated', 'e3-temoin@nexus.invalid', '{}', '{}', now(), now());
+    update public.users set role = 'RECRUTEUR'::public.user_role, context = 'universitaire', school_id = t.univ,
+           primary_team_id = null, onboarding_complete = true, role_claimed_at = now() where id = t.neuf;
+    perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
+    perform set_config('role', 'authenticated', true);
+    begin
+      if p_quoi = 'maîtrise, doctorat et « autre » libellé' then
+        n := public.replace_university_programs(t.univ, jsonb_build_array(
+               jsonb_build_object('id', t.v_seed, 'name', (select name from public.university_programs where id = t.v_seed),
+                                  'cycle', (select cycle from public.university_programs where id = t.v_seed),
+                                  'faculte', (select faculte from public.university_programs where id = t.v_seed),
+                                  'lien', (select lien from public.university_programs where id = t.v_seed)),
+               jsonb_build_object('name', 'Maîtrise essai', 'cycle', 'maitrise'),
+               jsonb_build_object('name', 'Doctorat essai', 'cycle', 'doctorat'),
+               jsonb_build_object('name', 'Programme essai', 'cycle', 'autre', 'cycle_libelle', 'Microprogramme')));
+        v := n || ' ; libellés ' || (select count(*) from public.university_programs where school_id = t.univ and cycle_libelle is not null)
+             || ' ; seed gardé ' || (select source from public.university_programs where id = t.v_seed);
+      elsif p_quoi = 'ligne pré-remplie passée en maîtrise' then
+        n := public.replace_university_programs(t.univ, jsonb_build_array(
+               jsonb_build_object('id', t.v_seed, 'name', (select name from public.university_programs where id = t.v_seed), 'cycle', 'maitrise')));
+        v := n || ' ; devient ' || (select source from public.university_programs where id = t.v_seed);
+      elsif p_quoi = '« autre » sans libellé' then
+        n := public.replace_university_programs(t.univ, jsonb_build_array(jsonb_build_object('name', 'X', 'cycle', 'autre')));
+        v := n::text;
+      elsif p_quoi = 'libellé sur un baccalauréat' then
+        n := public.replace_university_programs(t.univ, jsonb_build_array(jsonb_build_object('name', 'X', 'cycle', 'baccalaureat', 'cycle_libelle', 'Y')));
+        v := n::text;
+      elsif p_quoi = 'libellé de 61 caractères' then
+        n := public.replace_university_programs(t.univ, jsonb_build_array(jsonb_build_object('name', 'X', 'cycle', 'autre', 'cycle_libelle', repeat('a', 61))));
+        v := n::text;
+      elsif p_quoi = 'cycle inconnu' then
+        n := public.replace_university_programs(t.univ, jsonb_build_array(jsonb_build_object('name', 'X', 'cycle', 'postdoc')));
+        v := n::text;
+      elsif p_quoi = 'écriture directe « autre » sans libellé' then
+        insert into public.university_programs (school_id, name, cycle) values (t.univ, 'Direct', 'autre');
+        v := 'écrit';
+      elsif p_quoi = 'écriture directe « autre » libellé' then
+        insert into public.university_programs (school_id, name, cycle, cycle_libelle) values (t.univ, 'Direct', 'autre', 'Diplôme');
+        v := 'écrit';
+      end if;
+    exception
+      when insufficient_privilege then v := 'refusé 42501';
+      when check_violation then v := 'refusé 23514';
+      when raise_exception then v := 'refusé P0001';
+    end;
+    raise exception using errcode = 'NX000', message = v;
+  exception
+    when sqlstate 'NX000' then return sqlerrm;
+    when others then return 'ERREUR ' || sqlstate || ' ' || left(sqlerrm, 70);
+  end;
+end $$;
+create temp table _e on commit drop as
+select o, interrupteur, appelant, geste, attendu, pg_temp.essai(interrupteur = 'ON', uid, geste) as obtenu
+  from (select x.*, row_number() over () as o from _t t, lateral (values
+    ('ON',  'recruteur universitaire', t.neuf,  'maîtrise, doctorat et « autre » libellé', '4 ; libellés 1 ; seed gardé seed'),
+    ('ON',  'recruteur universitaire', t.neuf,  'ligne pré-remplie passée en maîtrise',     '1 ; devient manuel'),
+    ('ON',  'recruteur universitaire', t.neuf,  '« autre » sans libellé',                   'refusé P0001'),
+    ('ON',  'recruteur universitaire', t.neuf,  'libellé sur un baccalauréat',              'refusé P0001'),
+    ('ON',  'recruteur universitaire', t.neuf,  'libellé de 61 caractères',                 'refusé P0001'),
+    ('ON',  'recruteur universitaire', t.neuf,  'cycle inconnu',                            'refusé P0001'),
+    ('ON',  'recruteur universitaire', t.neuf,  'écriture directe « autre » sans libellé',  'refusé 23514'),
+    ('ON',  'recruteur universitaire', t.neuf,  'écriture directe « autre » libellé',       'écrit'),
+    ('OFF', 'recruteur universitaire', t.neuf,  'maîtrise, doctorat et « autre » libellé', 'refusé 42501'),
+    ('OFF', 'admin',                   t.u_adm, 'écriture directe « autre » libellé',       'écrit'),
+    ('OFF', 'admin',                   t.u_adm, 'écriture directe « autre » sans libellé',  'refusé 23514')
+  ) x(interrupteur, appelant, uid, geste, attendu)) e;
+select o, interrupteur, appelant, geste, attendu, obtenu, case when obtenu = attendu then 'ok' else 'ÉCART' end as "?"
+  from _e order by o;
+
+do $$
+begin
+  if exists (select 1 from _e where obtenu like 'ERREUR%') then raise exception 'NEXUS: un essai a échoué'; end if;
+  if exists (select 1 from _e where obtenu <> attendu) then raise exception 'NEXUS: % essai(s) hors attendu', (select count(*) from _e where obtenu <> attendu); end if;
+  if (select empreinte from _avant) is distinct from (select empreinte from _apres) or (select avec_libelle from _apres) <> 0 then
+    raise exception 'NEXUS: les programmes existants ont bougé';
+  end if;
+  if public.lancement_universitaire_actif() is distinct from (select on_initial from _t) then
+    raise exception 'NEXUS: l''interrupteur n''est pas revenu à son état initial';
+  end if;
+  if exists (select 1 from auth.users where id = (select neuf from _t)) then raise exception 'NEXUS: compte témoin resté'; end if;
+  raise notice 'NEXUS: VERDICT E3 — cycles baccalauréat, certificat, maîtrise, doctorat, autre (avec libellé) ; programmes existants intacts';
+end $$;
+select 'VERDICT' as verdict, 'conforme' as resultat;
+-- [[REJEU
+
+do $rb$ begin execute (select rollback from _e3); end $rb$;
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'university_programs' and column_name = 'cycle_libelle') then
+    raise exception 'NEXUS: après rollback, cycle_libelle existe encore';
+  end if;
+  raise notice 'NEXUS: rollback E3 vérifié (colonne retirée, contrainte et RPC d''origine par md5)';
+end $$;
+
+rollback;
+\echo '== ROLLBACK fait : rien n''est appliqué.'
+-- REJEU]]
+-- [[APPLY
+
+do $$
+begin
+  if public.lancement_universitaire_actif() then raise exception 'NEXUS: l''interrupteur doit rester OFF'; end if;
+end $$;
+insert into supabase_migrations.schema_migrations (version, name, statements, created_by)
+select version, 'cegep_lot_e3_cycle_libre', array[contenu], 'bptds22@gmail.com' from _e3;
+insert into public.admin_operations (operation, motif, details, par)
+select 'MIGRATION_CEGEP_LOT_E3',
+       'Chantier cégep, lot E3 : cycles des programmes universitaires — baccalauréat, certificat, maîtrise, doctorat, autre avec libellé (GO BP)',
+       jsonb_build_object('nom', 'cegep_lot_e3_cycle_libre', 'version', version,
+         'fichier', 'supabase/migrations/' || version || '_cegep_lot_e3_cycle_libre.sql',
+         'rollback', 'supabase/rollback/' || version || '_rollback_cegep_lot_e3_cycle_libre.sql',
+         'md5_fichier', '@@MD5_MIGRATION@@', 'md5_rollback', '@@MD5_ROLLBACK@@', 'voie', 'psql (session pooler)'),
+       (select id from public.users where id = 'f51384b5-a2c2-4827-9137-8aa8d29a1fe0')
+  from _e3;
+do $$
+begin
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '@@VERSION@@') then
+    raise exception 'NEXUS: inscription schema_migrations absente';
+  end if;
+end $$;
+select version as version_inscrite, clock_timestamp() as avant_commit from _e3;
+commit;
+\echo '== COMMIT fait : lot E3 cégep en prod (cycle libre, interrupteur OFF).'
+-- APPLY]]
