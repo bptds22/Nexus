@@ -891,17 +891,72 @@
       "faculte": "École des sciences de la gestion",
       "lien": "https://etudier.uqam.ca/programme?code=4657",
       "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat d'enseignement en formation professionnelle et technique, concentration formation technique au collégial",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": "https://etudier.uqam.ca/programme?code=7415",
+      "source": "https://etudier.uqam.ca/programme?code=7415"
+    },
+    {
+      "nom": "Baccalauréat d'intervention en activité physique, profil kinésiologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=7328",
+      "source": "https://etudier.uqam.ca/programme?code=7328"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire, concentration culture et citoyenneté québécoise",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": null,
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire, concentration mathématiques",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": null,
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire, concentration science et technologie",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": null,
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire, concentration univers social",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences de l'éducation",
+      "lien": null,
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques, concentration en statistique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": null,
+      "source": "https://etudier.uqam.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques, concentration informatique",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": "https://etudier.uqam.ca/programme?code=6682",
+      "source": "https://etudier.uqam.ca/programme?code=6682"
+    },
+    {
+      "nom": "Baccalauréat en sciences de la Terre et de l'atmosphère, concentration sciences de l'atmosphère : météo et climat",
+      "cycle": "baccalaureat",
+      "faculte": "Faculté des sciences",
+      "lien": null,
+      "source": "https://etudier.uqam.ca/programmes"
     }
   ],
   "exclus": [
-    {
-      "nom": "Baccalauréat d'enseignement en formation professionnelle et technique, concentration formation technique au collégial (7415)",
-      "raison": "Concentration : regroupé sous « Baccalauréat d'enseignement en formation professionnelle et technique » (code 7414)"
-    },
-    {
-      "nom": "Baccalauréat d'intervention en activité physique, profil kinésiologie (7328)",
-      "raison": "Profil : regroupé sous « Baccalauréat d'intervention en activité physique » (code 7236)"
-    },
     {
       "nom": "Baccalauréat en éducation préscolaire et en enseignement primaire, cheminement intégré Diplôme d'études collégiales/Baccalauréat (6778)",
       "raison": "Cheminement (temps partiel / DEC-BAC intégré) : regroupé sous « Baccalauréat en éducation préscolaire et en enseignement primaire » (code 6776)"
@@ -909,34 +964,6 @@
     {
       "nom": "Baccalauréat en éducation préscolaire et enseignement primaire (cheminement à temps partiel) (6777)",
       "raison": "Cheminement (temps partiel / DEC-BAC intégré) : regroupé sous « Baccalauréat en éducation préscolaire et en enseignement primaire » (code 6776)"
-    },
-    {
-      "nom": "Baccalauréat en enseignement secondaire, concentration culture et citoyenneté québécoise (6669)",
-      "raison": "Concentration : regroupé sous « Baccalauréat en enseignement secondaire » (code 7651)"
-    },
-    {
-      "nom": "Baccalauréat en enseignement secondaire, concentration mathématiques (7654)",
-      "raison": "Concentration : regroupé sous « Baccalauréat en enseignement secondaire » (code 7651)"
-    },
-    {
-      "nom": "Baccalauréat en enseignement secondaire, concentration science et technologie (6701)",
-      "raison": "Concentration : regroupé sous « Baccalauréat en enseignement secondaire » (code 7651)"
-    },
-    {
-      "nom": "Baccalauréat en enseignement secondaire, concentration univers social (7665)",
-      "raison": "Concentration : regroupé sous « Baccalauréat en enseignement secondaire » (code 7651)"
-    },
-    {
-      "nom": "Baccalauréat en mathématiques, concentration en statistique (7421)",
-      "raison": "Concentration : regroupé sous « Baccalauréat en mathématiques » (code 7721)"
-    },
-    {
-      "nom": "Baccalauréat en mathématiques, concentration informatique (6682)",
-      "raison": "Concentration : regroupé sous « Baccalauréat en mathématiques » (code 7721)"
-    },
-    {
-      "nom": "Baccalauréat en sciences de la Terre et de l'atmosphère, concentration sciences de l'atmosphère : météo et climat (7459)",
-      "raison": "Concentration : regroupé sous « Baccalauréat en sciences de la Terre et de l'atmosphère » (code 7442)"
     },
     {
       "nom": "Certificat en enseignement de l'anglais langue seconde (4851)",
@@ -950,5 +977,6 @@
       "nom": "Cheminement DEC/Baccalauréat en gestion du tourisme et de l'hôtellerie, concentration gestion hôtelière et de restauration (7589)",
       "raison": "Cheminement DEC/BAC avec concentration : regroupé sous « Baccalauréat en gestion du tourisme et de l'hôtellerie » (code 7317)"
     }
-  ]
+  ],
+  "regle_1": "Concentrations et profils à nom propre réintégrés (décision BP 2026-10-28) : 9 ligne(s)"
 }

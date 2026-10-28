@@ -369,6 +369,34 @@
       "faculte": null,
       "lien": "https://www.uqar.ca/programmes-domaines-detudes/certificat-en-trouble-du-spectre-de-lautisme/",
       "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=106"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire profil Français",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://www.uqar.ca/wp-json/wp/v2/programmes?Categorie=109"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire profil Mathématique",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-mathematique/",
+      "source": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-mathematique/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire profil Science et technologie",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-science-et-technologie/",
+      "source": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-science-et-technologie/"
+    },
+    {
+      "nom": "Baccalauréat en enseignement secondaire profil Univers social",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-univers-social/",
+      "source": "https://www.uqar.ca/programmes-domaines-detudes/baccalaureat-en-enseignement-secondaire-profil-univers-social/"
     }
   ],
   "exclus": [
@@ -399,22 +427,6 @@
     {
       "nom": "Baccalauréat avec majeure en transport maritime",
       "raison": "Combinaison majeure + certificat/mineure (admission à la majeure, sans code de programme propre) ; couverte par la ligne « Baccalauréat par cumul et baccalauréat avec majeure »"
-    },
-    {
-      "nom": "Baccalauréat en enseignement secondaire profil Français",
-      "raison": "Profil du Baccalauréat en enseignement secondaire (page sans contenu ni catégorie) ; une seule ligne pour le programme parent"
-    },
-    {
-      "nom": "Baccalauréat en enseignement secondaire profil Mathématique",
-      "raison": "Profil du Baccalauréat en enseignement secondaire (page sans contenu ni catégorie) ; une seule ligne pour le programme parent"
-    },
-    {
-      "nom": "Baccalauréat en enseignement secondaire profil Science et technologie",
-      "raison": "Profil du Baccalauréat en enseignement secondaire (page sans contenu ni catégorie) ; une seule ligne pour le programme parent"
-    },
-    {
-      "nom": "Baccalauréat en enseignement secondaire profil Univers social",
-      "raison": "Profil du Baccalauréat en enseignement secondaire (page sans contenu ni catégorie) ; une seule ligne pour le programme parent"
     },
     {
       "nom": "Baccalauréat en génie civil (Base DEC techniques ou l’équivalent)",
@@ -448,5 +460,6 @@
       "nom": "Doctorat de 1ᵉʳ cycle en médecine vétérinaire de l’Université de Montréal",
       "raison": "Doctorat de premier cycle (hors périmètre ; programme d’une autre université offert en extension)"
     }
-  ]
+  ],
+  "regle_1": "Concentrations et profils à nom propre réintégrés (décision BP 2026-10-28) : 4 ligne(s)"
 }

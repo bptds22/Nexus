@@ -593,6 +593,13 @@
       "faculte": null,
       "lien": "https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=4001",
       "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
+    },
+    {
+      "nom": "Baccalauréat en mathématiques (double baccalauréat informatique)",
+      "cycle": "baccalaureat",
+      "faculte": "Mathématiques et informatique",
+      "lien": null,
+      "source": "https://oraprdnt.uqtr.uquebec.ca/portail/triw084.afficher?owa_TOUT"
     }
   ],
   "exclus": [
@@ -837,10 +844,6 @@
       "raison": "à vérifier — double baccalauréat (mathématiques + enseignement au secondaire, déjà listés) ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6721"
     },
     {
-      "nom": "Baccalauréat en mathématiques (double baccalauréat informatique) - 6722",
-      "raison": "à vérifier — double baccalauréat mathématiques-informatique (variante de Baccalauréat en mathématiques, déjà listé) ; https://oraprdnt.uqtr.uquebec.ca/portail/triw082.afficher?owa_cd_pgm=6722"
-    },
-    {
       "nom": "Certificat en éducation préscolaire et en enseignement primaire (Drummondville) - 4880",
       "raison": "Variante de lieu / à distance regroupée sous « Certificat en éducation préscolaire et en enseignement primaire »"
     },
@@ -928,5 +931,6 @@
       "nom": "Microprogrammes, programmes courts, années préparatoires, auditeur/libre, actualisation de formation (catégorie « Certificats et microprogrammes » du répertoire)",
       "raison": "Hors périmètre"
     }
-  ]
+  ],
+  "regle_1": "Concentrations et profils à nom propre réintégrés (décision BP 2026-10-28) : 1 ligne(s)"
 }

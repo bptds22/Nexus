@@ -409,6 +409,48 @@
       "faculte": null,
       "lien": "https://etudier.uqo.ca/programmes/4917",
       "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en enseignement en adaptation scolaire (profil secondaire et jeunes adultes)",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration en économique",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration développement international",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration science politique",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration sociologie",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://etudier.uqo.ca/programmes"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales, concentration histoire",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://etudier.uqo.ca/programmes"
     }
   ],
   "exclus": [
@@ -423,30 +465,6 @@
     {
       "nom": "Baccalauréat en informatique - régime coopératif (6627)",
       "raison": "Variante (régime coopératif) regroupée sous « Baccalauréat en informatique » (code de lien 7833)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration communication) (6671)",
-      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration développement international) (6672)",
-      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration en économique) (6673)",
-      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration histoire) (6674)",
-      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration science politique) (6675)",
-      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration sociologie) (6676)",
-      "raison": "Variante (concentration / régime coopératif) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
     },
     {
       "nom": "Baccalauréat en administration - régime coopératif (66J5)",
@@ -465,32 +483,8 @@
       "raison": "Variante (campus de Saint-Jérôme) regroupée sous « Baccalauréat en administration » (code de lien 7127)"
     },
     {
-      "nom": "Baccalauréat en enseignement en adaptation scolaire (profil secondaire et jeunes adultes) (7213)",
-      "raison": "Variante (profil secondaire et jeunes adultes) regroupée sous « Baccalauréat en enseignement en adaptation scolaire » (code de lien 7180)"
-    },
-    {
       "nom": "Baccalauréat en sciences infirmières (cheminement DEC-BAC) (7455)",
       "raison": "Variante (cheminement DEC-BAC) regroupée sous « Baccalauréat en sciences infirmières » (code de lien 7456)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales, concentration en économique (7623)",
-      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales, concentration développement international (7631)",
-      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales, concentration science politique (7645)",
-      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales, concentration sociologie (7646)",
-      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
-    },
-    {
-      "nom": "Baccalauréat en sciences sociales, concentration histoire (7648)",
-      "raison": "Variante (concentration) regroupée sous « Baccalauréat en sciences sociales » (code de lien 7649)"
     },
     {
       "nom": "Baccalauréat en sciences comptables (776J)",
@@ -527,6 +521,31 @@
     {
       "nom": "Baccalauréat en administration - régime coopératif (6625, 66J5)",
       "raison": "Note : page officielle annonce la suspension des admissions au trimestre d'hiver à partir de l'hiver 2028 — programme toujours ouvert, gardé via le parent 7127"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration communication)",
+      "raison": "Variante coop regroupée sous la concentration de même nom (règle 1, BP 2026-10-28)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration développement international)",
+      "raison": "Variante coop regroupée sous la concentration de même nom (règle 1, BP 2026-10-28)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration en économique)",
+      "raison": "Variante coop regroupée sous la concentration de même nom (règle 1, BP 2026-10-28)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration histoire)",
+      "raison": "Variante coop regroupée sous la concentration de même nom (règle 1, BP 2026-10-28)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration science politique)",
+      "raison": "Variante coop regroupée sous la concentration de même nom (règle 1, BP 2026-10-28)"
+    },
+    {
+      "nom": "Baccalauréat en sciences sociales - régime coopératif (concentration sociologie)",
+      "raison": "Variante coop regroupée sous la concentration de même nom (règle 1, BP 2026-10-28)"
     }
-  ]
+  ],
+  "regle_1": "Concentrations et profils à nom propre réintégrés (décision BP 2026-10-28) : 6 ligne(s)"
 }
