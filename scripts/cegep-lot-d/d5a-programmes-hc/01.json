@@ -1,19 +1,23 @@
 {
- "universite": "Brock University",
- "date_releve": "2026-10-28",
- "sources_generales": [],
- "blocages": [
-  "https://brocku.ca/programs/ : HTTP 403 (refus du serveur) — aucune source de remplacement atteignable",
-  "https://brocku.ca/webcal/current/undergrad/ (calendrier officiel) : HTTP 403",
-  "https://calendar.brocku.ca/ (calendrier officiel 2026-2027) : HTTP 403",
-  "https://brocku.ca/admissions/certificate-programs : HTTP 403",
-  "Tout le domaine brocku.ca refuse l'accès ; aucun autre domaine officiel trouvé portant la liste des programmes. Non contourné (règle BP). Les sites tiers (ApplyBoard, etc.) ne sont pas des sources officielles et n'ont pas été utilisés."
- ],
- "attendu": {
-  "baccalaureat": null,
-  "certificat": null,
-  "comment": "Non déterminable : toutes les sources officielles de Brock (répertoire, calendrier, page des certificats) répondent HTTP 403. Aucun programme relevé, aucun deviné. À reprendre par BP (accès manuel) ou par une autre voie officielle."
- },
- "programmes": [],
- "exclus": []
+  "universite": "Brock University",
+  "date_releve": "2026-10-28",
+  "sources_generales": [],
+  "blocages": [
+    "https://brocku.ca/programs/ : HTTP 403 (refus du serveur) — aucune source de remplacement atteignable",
+    "https://brocku.ca/webcal/current/undergrad/ (calendrier officiel) : HTTP 403",
+    "https://calendar.brocku.ca/ (calendrier officiel 2026-2027) : HTTP 403",
+    "https://brocku.ca/admissions/certificate-programs : HTTP 403",
+    "Tout le domaine brocku.ca refuse l'accès ; aucun autre domaine officiel trouvé portant la liste des programmes. Non contourné (règle BP). Les sites tiers (ApplyBoard, etc.) ne sont pas des sources officielles et n'ont pas été utilisés.",
+    "2026-10-28 (recherche d'une autre source officielle, décision BP) : https://www.ouac.on.ca/ et https://www.ouinfo.ca/universities/brock (OUAC / guide officiel ontarien) : HTTP 403 ; https://discover.brocku.ca/ et https://calendar.brocku.ca/index.php?catoid=24 : HTTP 403 ; dépôt institutionnel officiel brocku.scholaris.ca accessible mais ne contient que des calendriers anciens (≤ 2009-2010), inutilisables pour l'offre actuelle. Aucune source officielle courante atteignable : fichier laissé vide."
+  ],
+  "attendu": {
+    "baccalaureat": null,
+    "certificat": null,
+    "comment": "Non déterminable : toutes les sources officielles de Brock (répertoire, calendrier, page des certificats) répondent HTTP 403. Aucun programme relevé, aucun deviné. À reprendre par BP (accès manuel) ou par une autre voie officielle."
+  },
+  "programmes": [],
+  "exclus": [],
+  "corrections": [
+    "2026-10-28 : recherche d'une source officielle de remplacement (OUAC, ouinfo, sous-domaines, dépôt institutionnel) — aucune atteignable, fichier laissé vide"
+  ]
 }

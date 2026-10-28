@@ -1,0 +1,72 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+            debut             | current_user | version 
+------------------------------+--------------+---------
+ 2026-10-28 21:15:37.71555+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | interrupteur_on 
+------------------+-----------------
+ 20261028130000   | f
+(1 row)
+
+SELECT 1
+ALTER TABLE
+UPDATE 1
+DO
+CREATE FUNCTION
+SELECT 498
+SELECT 1
+DO
+SET
+SELECT 498
+ droits_releves | vrais_avant | vrais_apres | droits_changes 
+----------------+-------------+-------------+----------------
+            498 |         360 |         360 |              0
+(1 row)
+
+CREATE FUNCTION
+SELECT 15
+ o  | interrupteur |        appelant         |          geste           |   attendu    |    obtenu    | ?  
+----+--------------+-------------------------+--------------------------+--------------+--------------+----
+  1 | OFF          | recruteur universitaire | page équipe              | non          | non          | ok
+  2 | OFF          | recruteur universitaire | écrire team_page_content | refusé 42501 | refusé 42501 | ok
+  3 | ON           | recruteur universitaire | page équipe              | oui          | oui          | ok
+  4 | ON           | recruteur universitaire | écrire team_page_content | écrit        | écrit        | ok
+  5 | ON           | recruteur universitaire | page équipe              | non          | non          | ok
+  6 | ON           | recruteur universitaire | écrire team_page_content | refusé 42501 | refusé 42501 | ok
+  7 | ON           | recruteur universitaire | page équipe              | non          | non          | ok
+  8 | ON           | recruteur universitaire | page école               | oui          | oui          | ok
+  9 | ON           | recruteur collégial     | page équipe              | non          | non          | ok
+ 10 | ON           | recruteur collégial     | écrire team_page_content | refusé 42501 | refusé 42501 | ok
+ 11 | ON           | recruteur collégial     | page équipe              | oui          | oui          | ok
+ 12 | ON           | coach                   | page équipe              | oui          | oui          | ok
+ 13 | ON           | coach                   | page équipe              | non          | non          | ok
+ 14 | OFF          | admin                   | page équipe              | oui          | oui          | ok
+ 15 | OFF          | admin                   | écrire team_page_content | écrit        | écrit        | ok
+(15 rows)
+
+DO
+psql:docs/cegep-lot-d/prod/e2-apply-20261028.sql:280: NOTICE:  NEXUS: VERDICT E2 — équipe universitaire : admin, ou le recruteur universitaire de SON université sous ON ; rien ne change ailleurs
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261028140000   | 2026-10-28 21:15:38.602493+00
+(1 row)
+
+COMMIT
+== COMMIT fait : lot E2 cégep en prod (pages d'équipes universitaires sous ON, interrupteur OFF).

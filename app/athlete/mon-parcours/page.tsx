@@ -1,5 +1,6 @@
 "use client";
 
+import { useParcoursUniversitaire, CRITERES_UNIVERSITE_COGNE } from "@/lib/athlete/parcoursUniversitaire";
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -14,7 +15,7 @@ import {
 } from "@/lib/config/badgeCatalogue";
 import { useBadgeCatalogue } from "@/lib/config/useBadgeCatalogue";
 import BadgeVignette from "@/components/shared/badges/BadgeVignette";
-import { CIBLE_DIVULGATION_LISTE } from "@/lib/cibles/divulgation";
+import { CIBLE_DIVULGATION_LISTE, CIBLE_DIVULGATION_LISTE_UNIVERSITE } from "@/lib/cibles/divulgation";
 import { toPng } from "html-to-image";
 import { OPTIONS_IMAGE_INJOIGNABLE } from "@/lib/partage/imageInjoignable";
 import MonParcoursMobile from "@/components/shared/MonParcoursMobile";
@@ -113,8 +114,11 @@ type ManualKey =
   | "knows_how_to_respond"
   | "coach_knows_goals"
   | "knows_numbers"
-  | "contacted_program";
+  | "contacted_program"
+  /** Lot E6 : les 8 critères « Quand l'université cogne » (cégépien sous ON), clés univ_<critère>. */
+  | `univ_${string}`;
 type Readiness = {
+  [cle: `univ_${string}`]: boolean | undefined;
   instagram_ready?: boolean;
   knows_how_to_respond?: boolean;
   coach_knows_goals?: boolean;
@@ -180,6 +184,8 @@ function MonParcoursPageDesktop() {
   const [athleteId, setAthleteId] = useState<string | null>(null);
   const [targets, setTargets] = useState<TargetRow[]>([]);
   const [cegeps, setCegeps] = useState<Cegep[]>([]);
+  // Lot E6 (C2 à C4) : cégépien sous lancement_universitaire ON → parcours vers l'UNIVERSITÉ.
+  const univ = useParcoursUniversitaire() === true;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
@@ -224,7 +230,7 @@ function MonParcoursPageDesktop() {
         return {
           id: r.id as string,
           schoolId: r.school_id as string,
-          name: school?.name ?? "CÉGEP",
+          name: school?.name ?? "Établissement",
           city: school?.city ?? null,
           region: school?.region ?? null,
         };
@@ -310,6 +316,18 @@ function MonParcoursPageDesktop() {
     })();
   }, [loadTargets]);
 
+  // Parcours universitaire : le sélecteur de cibles propose les universités (lisibles par le cégépien sous ON, lot E1).
+  useEffect(() => {
+    if (!univ) return;
+    let annule = false;
+    (async () => {
+      const { data: rows } = await createClient()
+        .from("schools").select("id, name, city, region").eq("type", "UNIVERSITE").order("name", { ascending: true });
+      if (!annule) setCegeps((rows as Cegep[] | null) ?? []);
+    })();
+    return () => { annule = true; };
+  }, [univ]);
+
   async function downloadCard() {
     if (!captureRef.current || !cardAthlete) return;
     setDownloading(true);
@@ -359,7 +377,7 @@ function MonParcoursPageDesktop() {
         return;
       }
       await loadTargets(athleteId);
-      showToast("success", "CÉGEP ajouté à tes cibles");
+      showToast("success", univ ? "Université ajoutée à tes cibles" : "CÉGEP ajouté à tes cibles");
     } finally {
       setBusy(false);
     }
@@ -490,7 +508,13 @@ function MonParcoursPageDesktop() {
     .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
 
   // ── Module 3 — the 12 readiness items (7 auto + 5 manual) ──
-  const checklist: ChecklistItem[] = [
+  // Parcours universitaire (lot E6, C4) : les 8 critères validés par BP, cochés à la main.
+  const checklistUniversite: ChecklistItem[] = CRITERES_UNIVERSITE_COGNE.map((c) => ({
+    key: `univ_${c.cle}`, type: "manual" as const, manualKey: `univ_${c.cle}` as ManualKey,
+    label: c.titre, done: readiness[`univ_${c.cle}`] === true, why: c.detail,
+    how: "Coche quand c'est fait. Tes recruteurs universitaires ne voient pas cette liste : elle est pour toi.",
+  }));
+  const checklistCegep: ChecklistItem[] = [
     {
       key: "highlight", type: "auto", label: "Highlight reel", tag: "Vitrine",
       done: !!highlightUrl && highlightUrl.trim() !== "",
@@ -568,6 +592,7 @@ function MonParcoursPageDesktop() {
       how: "Choisis un CÉGEP dans tes cibles, trouve le coach, envoie un courriel court et poli. Ou va voir un match, une pratique, un camp.",
     },
   ];
+  const checklist = univ ? checklistUniversite : checklistCegep;
   const completedCount = checklist.filter((i) => i.done).length;
   const ringPct = Math.round((completedCount / checklist.length) * 100);
   const remaining = checklist.length - completedCount;
@@ -598,14 +623,14 @@ function MonParcoursPageDesktop() {
         </h1>
         <p className="text-[14px] sm:text-[15px] text-[#9CA3AF] leading-relaxed mt-4 max-w-2xl">
           {firstName ? `${firstName}, la saison` : "La saison"} où tout se joue. Prépare ta saison,
-          construis ta vitrine et sois prêt quand le CÉGEP cogne à ta porte.
+          construis ta vitrine et sois prêt quand {univ ? "l'université" : "le CÉGEP"} cogne à ta porte.
         </p>
       </div>
 
       {/* ── Timeline spine ── */}
       <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 sm:p-8">
         <h2 className="font-head text-lg sm:text-xl font-black text-white uppercase tracking-tight mb-9">
-          Ta ligne du temps vers le CÉGEP
+          Ta ligne du temps vers {univ ? "l'université" : "le CÉGEP"}
         </h2>
 
         {/* Spine — 3 stacked rows: markers · track+nodes · labels */}
@@ -861,7 +886,9 @@ function MonParcoursPageDesktop() {
             comme un plan personnel. Une seule vérité, partout — décision BP :
             cibler un cégep le lui fait savoir. */}
         <p className="text-[14px] text-[#9CA3AF] leading-relaxed mb-6 max-w-2xl">
-          Choisis les CÉGEPs où tu veux jouer. {CIBLE_DIVULGATION_LISTE}
+          {univ
+            ? <>Choisis les universités où tu veux jouer et étudier. {CIBLE_DIVULGATION_LISTE_UNIVERSITE}</>
+            : <>Choisis les CÉGEPs où tu veux jouer. {CIBLE_DIVULGATION_LISTE}</>}
         </p>
 
         <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 sm:p-8">
@@ -873,7 +900,7 @@ function MonParcoursPageDesktop() {
                 </svg>
               </div>
               <p className="text-[14px] text-[#9CA3AF]">
-                Tu n&apos;as pas encore de cibles — ajoute ton premier CÉGEP.
+                Tu n&apos;as pas encore de cibles — ajoute {univ ? "ta première université" : "ton premier CÉGEP"}.
               </p>
             </div>
           ) : (
@@ -915,7 +942,7 @@ function MonParcoursPageDesktop() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14" /><path d="M5 12h14" />
             </svg>
-            Ajouter un CÉGEP
+            {univ ? "Ajouter une université" : "Ajouter un CÉGEP"}
           </button>
         </div>
       </section>
@@ -926,12 +953,14 @@ function MonParcoursPageDesktop() {
           <span className="font-head text-base font-black text-[#E63946]">03</span>
           <span className="text-[#3a3d46]">·</span>
           <h2 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight">
-            Quand le CÉGEP cogne
+            {univ ? "Quand l'université cogne" : "Quand le CÉGEP cogne"}
           </h2>
         </div>
         <p className="text-[14px] text-[#9CA3AF] leading-relaxed mb-6 max-w-2xl">
-          Un recruteur peut t&apos;écrire demain. Sois prêt à répondre comme un pro. Coche chaque
-          élément avant que la saison commence.
+          {univ
+            ? <>Un recruteur universitaire peut t&apos;écrire demain. Avant de dire oui, assure-toi que le programme, l&apos;admission, les bourses et le budget tiennent la route.</>
+            : <>Un recruteur peut t&apos;écrire demain. Sois prêt à répondre comme un pro. Coche chaque
+          élément avant que la saison commence.</>}
         </p>
 
         <div className="bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 sm:p-8">
@@ -1131,7 +1160,7 @@ function MonParcoursPageDesktop() {
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#2D3748]">
               <h3 className="font-head text-base font-black text-white uppercase tracking-tight">
-                Ajouter un CÉGEP
+                {univ ? "Ajouter une université" : "Ajouter un CÉGEP"}
               </h3>
               <button
                 type="button"
@@ -1150,8 +1179,8 @@ function MonParcoursPageDesktop() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un CÉGEP…"
-                aria-label="Rechercher un CÉGEP"
+                placeholder={univ ? "Rechercher une université…" : "Rechercher un CÉGEP…"}
+                aria-label={univ ? "Rechercher une université" : "Rechercher un CÉGEP"}
                 className="w-full bg-[#13151a] border border-[#2a2d36] rounded-lg px-4 py-2.5 text-[14px] text-[#e0e0e0] placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none transition-colors"
               />
             </div>
@@ -1160,8 +1189,8 @@ function MonParcoursPageDesktop() {
               {addableCegeps.length === 0 ? (
                 <p className="text-[13px] text-[#6b7280] text-center py-8">
                   {cegeps.length > 0 && targetedIds.size >= cegeps.length
-                    ? "Tu as ajouté tous les CÉGEPs disponibles."
-                    : "Aucun CÉGEP trouvé."}
+                    ? (univ ? "Tu as ajouté toutes les universités disponibles." : "Tu as ajouté tous les CÉGEPs disponibles.")
+                    : (univ ? "Aucune université trouvée." : "Aucun CÉGEP trouvé.")}
                 </p>
               ) : (
                 addableCegeps.map((c) => {

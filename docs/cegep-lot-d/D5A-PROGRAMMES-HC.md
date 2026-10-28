@@ -7,7 +7,13 @@ appliquée : aucun contournement, aucun navigateur ; un site bloqué est noté e
 officielle (PDF d'annuaire, plan de site, flux JSON public) ou laissé vide. Données :
 `scripts/cegep-lot-d/d5a-programmes-hc/NN.json` (NN = rang dans d1b-universites.json ; `exclus` et `blocages` par fichier).
 
-**Total obtenu : 3861 baccalauréats, 796 certificats (4657 programmes), 1068 lignes écartées et justifiées.**
+**Total obtenu : 3865 baccalauréats, 740 certificats (4605 programmes), 1122 lignes écartées et justifiées.**
+
+**Décisions BP (2026-10-28) appliquées :** Brock et St. Francis Xavier : aucune autre source officielle accessible
+(OUAC, ouinfo, annuaires : 403) → vides, l'université remplira ; Western : noms remis en casse normale (sigles
+gardés) ; certificats de métiers exclus (UFV : 10) ; formation continue : seulement les certificats crédités (TMU : 8
+gardés sur 56, crédit non confirmé pour les autres ; UFV : 2 réintégrés ; McMaster et York confirmés) ; « General
+Studies » gardés (TRU 2, Laurier 2 réintégrés).
 
 | Université | Prov. | Bacc. att. | Bacc. obt. | Cert. att. | Cert. obt. | Écartés | Source principale | Blocages |
 |---|---|---|---|---|---|---|---|---|
@@ -22,12 +28,12 @@ officielle (PDF d'annuaire, plan de site, flux JSON public) ou laissé vide. Don
 | Ontario Tech University | ON | 146 | 110 | 0 | 0 | 36 | https://ontariotechu.ca/programs/undergraduate/index.php | https://calendar.ontariotechu.ca/content.php?catoid=92&navoid=4144 (calendrier 2026-2027, Programs by degree) : réponse HTTP 202 vide (défi anti-robot) — non contourné.; https://ontariotechu.ca/programs/undergraduate/... |
 | Université d'Ottawa | ON | 235 | 171 | 10 | 10 | 64 | https://catalogue.uottawa.ca/fr/premier-cycle/ | https://www.uottawa.ca/etudes/programmes : HTTP 402 (refus du serveur) — non contourné ; remplacé par le catalogue officiel https://catalogue.uottawa.ca/fr/premier-cycle/. |
 | Queen's University | ON | 88 | 85 | 30 | 15 | 24 | https://www.queensu.ca/admission/undergraduate-programs | — |
-| Toronto Metropolitan University | ON | 72 | 68 | 61 | 56 | 16 | https://www.torontomu.ca/calendar/2026-2027/programs/ | https://continuing.torontomu.ca/certificates/ : pas bloqué, mais la liste des certificats est chargée en JavaScript (« loading certificates ») et la recherche publique ne rend aucun résultat côté serveur ; remplacé par l |
+| Toronto Metropolitan University | ON | 72 | 68 | 61 | 8 | 64 | https://www.torontomu.ca/calendar/2026-2027/programs/ | https://continuing.torontomu.ca/certificates/ : pas bloqué, mais la liste des certificats est chargée en JavaScript (« loading certificates ») et la recherche publique ne rend aucun résultat côté serveur ; remplacé par l |
 | University of Toronto | ON | 376 | 270 | 17 | 17 | 110 | https://www.utoronto.ca/academics/programs-directory | — |
 | Trent University | ON | 70 | 66 | 0 | 0 | 9 | https://www.trentu.ca/advising/course-selection-and-registration/course-selection/first-year-course-suggestions-major | https://www.trentu.ca/futurestudents/programs (et /futurestudents/undergraduate/programs, /futurestudents/program/<programme>, /registrar/academic-calendar/past-academic-calendars) : HTTP 500 Internal Server Error, non c |
 | University of Waterloo | ON | 113 | 99 | 3 | 1 | 13 | https://uwaterloo.ca/future-students/programs | https://uwaterloo.ca/academic-calendar/undergraduate-studies/catalog : catalogue chargé en JavaScript (non bloqué, mais illisible) ; certificats relevés sur la page officielle Future Students « Minors and specializations |
 | Western University | ON | 357 | 270 | 34 | 32 | 171 | https://westerncalendar.uwo.ca/Modules.cfm?ArchiveID=&SelectedCalendar=Live | — |
-| Wilfrid Laurier University | ON | 63 | 61 | 18 | 15 | 14 | https://academic-calendar.wlu.ca/index_old.php?cal=1&y=93 | https://www.wlu.ca/programs/index.html : pas bloqué, mais le contenu récupéré est tronqué après « Faith and Community » (lettre F) ; filtres côté client. Remplacé par le calendrier officiel 2026/2027 (sections de faculté |
+| Wilfrid Laurier University | ON | 68 | 63 | 18 | 15 | 14 | https://academic-calendar.wlu.ca/index_old.php?cal=1&y=93 | https://www.wlu.ca/programs/index.html : pas bloqué, mais le contenu récupéré est tronqué après « Faith and Community » (lettre F) ; filtres côté client. Remplacé par le calendrier officiel 2026/2027 (sections de faculté |
 | University of Windsor | ON | 150 | 139 | 26 | 19 | 69 | https://www.uwindsor.ca/secretariat/sites/uwindsor.ca.secretariat/files/undergraduate_calendar_winter_2027.pdf | https://www.future.uwindsor.ca/program-listing/ (répertoire Future Students) : liste chargée en JavaScript, aucune entrée lisible (pas un blocage) ; remplacé par le calendrier officiel de premier cycle Winter 2027 (PDF d |
 | York University | ON | 139 | 123 | 62 | 59 | 10 | https://futurestudents.yorku.ca/programs/ | — |
 | Acadia University | NS | 32 | 32 | 7 | 5 | 9 | https://www2.acadiau.ca/academics.html | — |
@@ -46,7 +52,7 @@ officielle (PDF d'annuaire, plan de site, flux JSON public) ou laissé vide. Don
 | University of British Columbia | BC | 141 | 131 | 0 | 0 | 11 | https://you.ubc.ca/programs/ | https://you.ubc.ca/programs/ — liste des programmes chargée en JavaScript (vide à la lecture) ; remplacée par le sitemap officiel des pages programmes (ubc_programs-sitemap.xml, 197 URL, deux campus) et la lecture de cha |
 | University of British Columbia Okanagan | BC | 58 | 55 | 0 | 0 | 4 | https://you.ubc.ca/programs/ | https://you.ubc.ca/programs/ — liste des programmes chargée en JavaScript (vide à la lecture) ; remplacée par le sitemap officiel des pages programmes (ubc_programs-sitemap.xml, 197 URL, deux campus) et la lecture de cha |
 | University of Calgary | AB | 99 | 86 | 0 | 0 | 14 | https://www.ucalgary.ca/future-students/undergraduate/explore-programs?items_per_page=All | — |
-| University of the Fraser Valley | BC | 53 | 52 | 66 | 46 | 22 | https://www.ufv.ca/programs/ | — |
+| University of the Fraser Valley | BC | 53 | 52 | 66 | 38 | 30 | https://www.ufv.ca/programs/ | — |
 | University of Lethbridge | AB | 89 | 80 | 1 | 1 | 10 | https://www.ulethbridge.ca/future-student/programs | — |
 | University of Manitoba | MB | 236 | 215 | 1 | 1 | 23 | https://catalog.umanitoba.ca/undergraduate-studies/academic-programs/ | — |
 | MacEwan University | AB | 50 | 45 | 17 | 9 | 14 | https://calendar.macewan.ca/programs/ | https://www.macewan.ca/academics/programs/ — page d'accueil « Browse Programs » sans liste lisible (contenu dynamique) ; remplacée par l'annuaire officiel calendar.macewan.ca/programs/ (Programs A-Z) |
@@ -54,7 +60,7 @@ officielle (PDF d'annuaire, plan de site, flux JSON public) ou laissé vide. Don
 | University of Northern British Columbia | BC | 49 | 49 | 15 | 12 | 3 | https://www.unbc.ca/programs-and-admissions/undergraduate/programs | — |
 | University of Regina | SK | 109 | 89 | 68 | 59 | 29 | https://www.uregina.ca/academics/programs/index.html | — |
 | University of Saskatchewan | SK | 95 | 89 | 68 | 62 | 12 | https://admissions.usask.ca/programs/find-a-program.php | — |
-| Thompson Rivers University | BC | 80 | 59 | 61 | 36 | 46 | https://www.tru.ca/programs.html | — |
+| Thompson Rivers University | BC | 80 | 61 | 61 | 36 | 44 | https://www.tru.ca/programs.html | — |
 | Trinity Western University | BC | 29 | 29 | 7 | 7 | 6 | https://www.twu.ca/academics/programs | — |
 | University of Victoria | BC | 92 | 84 | 13 | 13 | 8 | https://www.uvic.ca/undergraduate/programs/undergraduate-programs/programs.php | https://www.uvic.ca/undergraduate/programs/ (répertoire nu, sans page d'index) renvoie 403 à une requête simple ; aucune tentative de contournement — la même liste officielle a été lue sur https://www.uvic.ca/undergradua |
 | University of Winnipeg | MB | 63 | 60 | 17 | 12 | 15 | https://www.uwinnipeg.ca/academics/calendar/docs/degreeandmajorrequirements.pdf | https://www.uwinnipeg.ca/ (toutes les pages HTML essayées : /, /academics/programs/index.html, /programs/index.html, /academics/calendar/, /future-student/index.html) ainsi que https://library.uwinnipeg.ca/ et https://ne |

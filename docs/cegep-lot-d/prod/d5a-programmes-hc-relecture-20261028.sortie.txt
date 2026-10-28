@@ -1,0 +1,16 @@
+﻿  qc  |  hc  | universites | seed 
+------+------+-------------+------
+ 1292 | 4605 |          57 | 5897
+(1 row)
+
+          operation          
+-----------------------------
+ CEGEP_LOT_D5A_PROGRAMMES_QC
+ CEGEP_LOT_D5A_PROGRAMMES_HC
+(2 rows)
+
+ value 
+-------
+ false
+(1 row)
+

@@ -142,9 +142,9 @@ export function libelleSportGenre(
 /** Groupe les équipes d'une école par sport et construit « L'affiche ».
  *  Le libellé d'une équipe est DÉRIVÉ (sport + genre) : `teams.name` porte le
  *  nom de l'établissement, il ne distingue pas les équipes entre elles.
- *  Chaque équipe pointe vers sa route publique `/college/<école>/<équipe>`, sauf `avecLiens` faux
- *  (université, lot D5b : pas encore de page d'équipe universitaire, Q5) — le chip n'ouvre rien. */
-export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[], nomClub: string | null = null, avecLiens = true): Sport[] {
+ *  Chaque équipe pointe vers sa route publique `/college/<école>/<équipe>` ; `/universite/<école>/<équipe>` pour une
+ *  université (lot E4 : pages d'équipes universitaires). */
+export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[], nomClub: string | null = null, racine: "college" | "universite" = "college"): Sport[] {
   /* FUSION MULTI-SAISON — une équipe qui existe sur deux saisons est UNE
      équipe, donc UN chip ; le sélecteur de saison de la page d'équipe fait
      naviguer entre elles. Sans cette fusion, « L'affiche » montrait deux
@@ -207,7 +207,7 @@ export function sportsFromTeams(schoolId: string, teams: TeamRowForGrid[], nomCl
         nom: nomClub !== null && nommee(t) ? (t.name ?? "").trim() : libelleSportGenre(sport, t.gender),
         division: t.division && t.division.trim() ? t.division : null,
         genre: genreCourt(t.gender),
-        url: avecLiens ? `/college/${schoolId}/${t.id}` : "",
+        url: `/${racine}/${schoolId}/${t.id}`,
         ...(nomClub !== null && nommee(t) ? { detail: attributsEquipe(brut(t)) } : {}),
       })),
     });
@@ -283,7 +283,7 @@ export function dbToProgramPage(
   // Noms d'équipe seulement pour un CLUB civil : 90 % des équipes RSEQ portent
   // une abréviation de leur école (« Poly. St-Georges ») — la page d'une école
   // reste donc dérivée (sport + genre), inchangée.
-  const affiche = sportsFromTeams(school.id, teams, school.type === "LIGUE_CIVILE" ? school.name : null, !universite);
+  const affiche = sportsFromTeams(school.id, teams, school.type === "LIGUE_CIVILE" ? school.name : null, universite ? "universite" : "college");
   // « Le nombre d'équipes et la région sont AUTO » (libellé de l'éditeur, §6) :
   // le compte vient donc des équipes RÉELLES, jamais d'une constante. Il compte
   // ce que « L'affiche » montre — une équipe au sport orphelin n'est ni listée

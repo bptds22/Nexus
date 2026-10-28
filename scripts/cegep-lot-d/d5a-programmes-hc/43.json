@@ -1,866 +1,875 @@
 {
- "universite": "Thompson Rivers University",
- "date_releve": "2026-10-28",
- "sources_generales": [
-  "https://www.tru.ca/programs.html"
- ],
- "blocages": [],
- "attendu": {
-  "baccalaureat": 80,
-  "certificat": 61,
-  "comment": "Répertoire officiel « All Programs » (attribut type). Baccalauréat = entrées type « bachelor » (80, une par campus/mode). Certificat = entrées type « certificate » (59) + 2 « Post-Bacc Certificate » (type post-baccalaureate). Une ligne par nom ; doublons de campus (Kamloops, Williams Lake, en ligne Open Learning) fusionnés. Post-Bacc Diplomas, diplômes, apprentissages, maîtrises et JD hors compte. Faculté = intitulé de section du répertoire."
- },
- "programmes": [
-  {
-   "nom": "Adventure Guide Certificate",
-   "cycle": "certificat",
-   "faculte": "Adventure, Culinary Arts and Tourism",
-   "lien": "https://www.tru.ca/programs/catalogue/adventure-guide-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Tourism Management",
-   "cycle": "baccalaureat",
-   "faculte": "Adventure, Culinary Arts and Tourism",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-tourism-management",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Tourism Management, Major in Adventure Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Adventure, Culinary Arts and Tourism",
-   "lien": "https://www.tru.ca/programs/catalogue/adventure-studies-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Tourism Management, Major in Entrepreneurship",
-   "cycle": "baccalaureat",
-   "faculte": "Adventure, Culinary Arts and Tourism",
-   "lien": "https://www.tru.ca/programs/catalogue/btm-entrepreneurship-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Tourism Management, Major in Tourism Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Adventure, Culinary Arts and Tourism",
-   "lien": "https://www.tru.ca/programs/catalogue/tourism-studies-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Event Management Certificate",
-   "cycle": "certificat",
-   "faculte": "Adventure, Culinary Arts and Tourism",
-   "lien": "https://www.tru.ca/distance/programs/event-management-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Sociocultural Dynamics of Wildfire Certificate",
-   "cycle": "certificat",
-   "faculte": "Adventure, Culinary Arts and Tourism",
-   "lien": "https://www.tru.ca/wildfire/education/sociocultural-dynamics-of-wildfire-certificate.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Advanced Certificate in Liberal Arts",
-   "cycle": "certificat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/distance/programs/advanced-certificate-liberal-arts",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, General Program",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-arts",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Applied Creative Arts",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/applied-creative-arts-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Criminology",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-of-arts-criminology",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Economic and Political Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/economic-and-political-studies-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Economics",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/economics-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Economics and Mathematics",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/mathematics-and-economics-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in English",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/english-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Geography and Environmental Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/geography-and-environmental-studies-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in History",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/history-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Mathematics",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/mathematics-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Philosophy",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/philosophy-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Psychology",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/psychology-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Sociology",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/sociology-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Communication and Digital Journalism",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-communication-digital-journalism.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Design",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-of-design",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Fine Arts",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-of-fine-art",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Interdisciplinary Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-interdisciplinary-studies",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Music, Performance",
-   "cycle": "baccalaureat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-of-music-performance",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Certificate in General Studies",
-   "cycle": "certificat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/distance/programs/certificate-in-general-studies.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Certificate in World Languages and Cultures",
-   "cycle": "certificat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/world-languages-and-cultures",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Indigenous Studies Certificate",
-   "cycle": "certificat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/programs/catalogue/indigenous-studies",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Post-Bacc Certificate in Liberal Arts",
-   "cycle": "certificat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/distance/programs/post-baccalaureate-certificate-liberal-arts",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Technical Theatre Certificate",
-   "cycle": "certificat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/arts/programs/technical-theatre-certificate.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Wildfire Communication and Media Certificate",
-   "cycle": "certificat",
-   "faculte": "Arts",
-   "lien": "https://www.tru.ca/wildfire/education/wildfire-communication-and-media-certificate.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Advanced Certificate in Management Studies",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/distance/programs/advanced-certificate-management",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration (General)",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-business-administration-general",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration, Major in Accounting",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/accounting-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration, Major in Economics",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/bba-economics-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration, Major in Entrepreneurship",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/entrepreneurship-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration, Major in Finance",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/finance-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration, Major in Human Resource Management",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/human-resource-management-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration, Major in International Business",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/international-business-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration, Major in Marketing",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/marketing-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Business Administration, Major in Supply Chain Management",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/supply-chain-management-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Real Estate Management",
-   "cycle": "baccalaureat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-real-estate-management",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Business Foundations Certificate",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/programs/catalogue/business-foundations-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Business Skills Certificate",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/distance/programs/certificate-business-skills",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Certificate in Entrepreneurial Skills",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/distance/programs/certificate-in-entrepreneurial-skills-1",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Certificate in Entrepreneurial Skills 2",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/distance/programs/certificate-in-entrepreneurial-skills-2",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Certificate in Management Studies",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/distance/programs/certificate-management-studies",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "First Nation Applied Economics Certificate",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/gaglardi/certificates-diplomas/first-nation-applied-economics-certificate.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "First Nation Taxation Administration Certificate",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/gaglardi/certificates-diplomas/first-nation-taxation.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Post-Bacc Certificate in Commerce",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/distance/programs/post-baccalaureate-certificate-commerce",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Wildfire Leadership Certificate",
-   "cycle": "certificat",
-   "faculte": "Bob Gaglardi School of Business and Economics",
-   "lien": "https://www.tru.ca/wildfire/education/leadership-certificate.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Education, Elementary",
-   "cycle": "baccalaureat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-education",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Education, Secondary",
-   "cycle": "baccalaureat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-education-secondary-stem",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Education, Trades and Technology",
-   "cycle": "baccalaureat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-education-in-trades-and-technology.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Social Work",
-   "cycle": "baccalaureat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-social-work",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Education Assistant and Community Support Certificate",
-   "cycle": "certificat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/education-assistant-and-community-support-williams-lake",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Education and Skills Training Certificate",
-   "cycle": "certificat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/education-and-skills-training-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Inclusive Practices Specialization Certificate",
-   "cycle": "certificat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/special-needs-educator",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Infant and Toddler Specialization Certificate",
-   "cycle": "certificat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/infant-and-toddler-education",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Social Service Worker Certificate",
-   "cycle": "certificat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/distance/programs/social-service-worker-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Teaching English to Speakers of Other Languages Certificate",
-   "cycle": "certificat",
-   "faculte": "Education and Social Work",
-   "lien": "https://www.tru.ca/programs/catalogue/teaching-english-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science in Nursing",
-   "cycle": "baccalaureat",
-   "faculte": "Nursing",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-science-in-nursing",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Health Care Assistant Certificate",
-   "cycle": "certificat",
-   "faculte": "Nursing",
-   "lien": "https://www.tru.ca/distance/programs/health-care-assistant-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Return to Registered Nurse Practice Certificate",
-   "cycle": "certificat",
-   "faculte": "Nursing",
-   "lien": "https://www.tru.ca/distance/programs/registered-nurse-practice-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Animal Welfare Certificate",
-   "cycle": "certificat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/animal-welfare",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Computing Science",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-computing-science",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Engineering in Computer Engineering",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-engineering-in-computer-engineering.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Engineering in Software Engineering",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-software-engineering",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Health Science",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-health-science",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Natural Resource Science",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-natural-resource-science",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-science",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Biology/Life Sciences",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-of-science-major-program.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, General program",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-of-science-general-program.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Animal Biology",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/animal-biology-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Biology",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/biology-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Cellular, Molecular and Microbial Biology",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/cellular-molecular-and-microbial-biology-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Computing Science",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/computing-science-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Computing Science and Mathematics",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/computing-science-and-mathematics-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Data Science",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/data-science-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Ecology and Environmental Biology",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/ecology-and-environmental-biology-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Economics and Mathematics",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/economics-and-mathematics-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Environmental Chemistry",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/environmental-chemistry-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in General Science",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/general-science-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Mathematics",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/mathematics-major-science",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Science, Major in Physics",
-   "cycle": "baccalaureat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/physics-major",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Certificate in First Nations Applied Land Management",
-   "cycle": "certificat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/science/programs/applied-lands-management.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Certificate in Information Technology",
-   "cycle": "certificat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/distance/programs/certificate-information-technology",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Medical Laboratory Assistant Certificate",
-   "cycle": "certificat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/distance/programs/medical-laboratory-assistant",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Polysomnography Certificate",
-   "cycle": "certificat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/distance/programs/polysomnography",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Pre-Health Science Certificate",
-   "cycle": "certificat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/distance/programs/pre-health-science-certificate",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Regenerative Agriculture Certificate",
-   "cycle": "certificat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/programs/catalogue/regenerative-agriculture-certificate.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Wildfire Science Certificate",
-   "cycle": "certificat",
-   "faculte": "Science",
-   "lien": "https://www.tru.ca/wildfire/education/wildfire-science-certificate.html",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Technology",
-   "cycle": "baccalaureat",
-   "faculte": "Trades and Technology",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-of-technology",
-   "source": "https://www.tru.ca/programs.html"
-  },
-  {
-   "nom": "Bachelor of Technology, Trades and Technology Leadership",
-   "cycle": "baccalaureat",
-   "faculte": "Trades and Technology",
-   "lien": "https://www.tru.ca/distance/programs/bachelor-technology-leadership",
-   "source": "https://www.tru.ca/programs.html"
-  }
- ],
- "exclus": [
-  {
-   "nom": "Bachelor of Tourism Management [kamloops]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Tourism Management »"
-  },
-  {
-   "nom": "Meat Processing, Retail Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Professional Cook Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Bachelor of Arts, General Studies [online]",
-   "raison": "Grade par accumulation de crédits (Open Learning, études générales) — à vérifier"
-  },
-  {
-   "nom": "Bachelor of Arts, General program [online]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, General Program »"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in English [online]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, Major in English »"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in History [online]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, Major in History »"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Psychology [online]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, Major in Psychology »"
-  },
-  {
-   "nom": "Bachelor of Arts, Major in Sociology [online]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, Major in Sociology »"
-  },
-  {
-   "nom": "Bachelor of General Studies [online]",
-   "raison": "Grade par accumulation de crédits (Open Learning, études générales) — à vérifier"
-  },
-  {
-   "nom": "Pre-Education Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Pre-Social Work Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Education Assistant and Community Support Certificate [kamloops]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Education Assistant and Community Support Certificate »"
-  },
-  {
-   "nom": "Bachelor of Science in Nursing [williams lake]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Science in Nursing »"
-  },
-  {
-   "nom": "Health Care Assistant Certificate [kamloops]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Health Care Assistant Certificate »"
-  },
-  {
-   "nom": "Health Care Assistant Certificate [williams lake]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Health Care Assistant Certificate »"
-  },
-  {
-   "nom": "Bachelor of Computing Science [online]",
-   "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Computing Science »"
-  },
-  {
-   "nom": "Engineering Transfer Program [kamloops]",
-   "raison": "Programme de transfert (deux premières années, poursuite ailleurs), pas un baccalauréat de TRU"
-  },
-  {
-   "nom": "Medical Laboratory Assistant National Certificate Program [online]",
-   "raison": "Admission fermée : « Applications will reopen at a future date »"
-  },
-  {
-   "nom": "Pre-Chiropractic Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Pre-Dentistry Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Pre-Medicine Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Pre-Naturopathic Medicine Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Pre-Optometry Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Pre-Pharmaceutical Sciences Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Pre-Rehabilitation Sciences Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Pre-Veterinary Medicine Pathway [kamloops]",
-   "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
-  },
-  {
-   "nom": "Automotive Service Technician Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Electrical Trades Foundation Certificate [williams lake]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Electrical Trades Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Heavy Mechanical Foundation Certificate [williams lake]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Heavy Mechanical Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Horticulture Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Industrial Mechanic (Millwright)/Machinist Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Instrumentation and Control Technician Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Meat Processing, Retail Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Plumbing Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Power Engineering Technology Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Professional Cook Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Refrigeration and Air Conditioning Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Residential Construction — Carpenter Enhanced Program [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Residential Construction — Carpenter Enhanced Program [williams lake]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Water Treatment Operations Certificate [online]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Water and Wastewater Utilities Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Welder Foundation Certificate [kamloops]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  },
-  {
-   "nom": "Welder Foundation Certificate [williams lake]",
-   "raison": "Certificat de métier / formation professionnelle (School of Trades and Technology), pas un certificat universitaire de premier cycle — à vérifier"
-  }
- ]
+  "universite": "Thompson Rivers University",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://www.tru.ca/programs.html"
+  ],
+  "blocages": [],
+  "attendu": {
+    "baccalaureat": 80,
+    "certificat": 61,
+    "comment": "Répertoire officiel « All Programs » (attribut type). Baccalauréat = entrées type « bachelor » (80, une par campus/mode). Certificat = entrées type « certificate » (59) + 2 « Post-Bacc Certificate » (type post-baccalaureate). Une ligne par nom ; doublons de campus (Kamloops, Williams Lake, en ligne Open Learning) fusionnés. Post-Bacc Diplomas, diplômes, apprentissages, maîtrises et JD hors compte. Faculté = intitulé de section du répertoire. Correction 2026-10-28 (décisions BP) : Bachelor of General Studies et Bachelor of Arts, General Studies (Open Learning) réintégrés (grades d'études générales conservés) ; certificats de métier (School of Trades and Technology) maintenus en exclus avec la raison BP."
+  },
+  "programmes": [
+    {
+      "nom": "Adventure Guide Certificate",
+      "cycle": "certificat",
+      "faculte": "Adventure, Culinary Arts and Tourism",
+      "lien": "https://www.tru.ca/programs/catalogue/adventure-guide-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Tourism Management",
+      "cycle": "baccalaureat",
+      "faculte": "Adventure, Culinary Arts and Tourism",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-tourism-management",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Tourism Management, Major in Adventure Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Adventure, Culinary Arts and Tourism",
+      "lien": "https://www.tru.ca/programs/catalogue/adventure-studies-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Tourism Management, Major in Entrepreneurship",
+      "cycle": "baccalaureat",
+      "faculte": "Adventure, Culinary Arts and Tourism",
+      "lien": "https://www.tru.ca/programs/catalogue/btm-entrepreneurship-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Tourism Management, Major in Tourism Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Adventure, Culinary Arts and Tourism",
+      "lien": "https://www.tru.ca/programs/catalogue/tourism-studies-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Event Management Certificate",
+      "cycle": "certificat",
+      "faculte": "Adventure, Culinary Arts and Tourism",
+      "lien": "https://www.tru.ca/distance/programs/event-management-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Sociocultural Dynamics of Wildfire Certificate",
+      "cycle": "certificat",
+      "faculte": "Adventure, Culinary Arts and Tourism",
+      "lien": "https://www.tru.ca/wildfire/education/sociocultural-dynamics-of-wildfire-certificate.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Advanced Certificate in Liberal Arts",
+      "cycle": "certificat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/advanced-certificate-liberal-arts",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, General Program",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-arts",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Applied Creative Arts",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/applied-creative-arts-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Criminology",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-arts-criminology",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Economic and Political Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/economic-and-political-studies-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Economics",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/economics-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Economics and Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/mathematics-and-economics-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in English",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/english-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Geography and Environmental Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/geography-and-environmental-studies-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in History",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/history-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/mathematics-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Philosophy",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/philosophy-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Psychology",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/psychology-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Sociology",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/sociology-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Communication and Digital Journalism",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-communication-digital-journalism.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Design",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-design",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Fine Arts",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-fine-art",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Interdisciplinary Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-interdisciplinary-studies",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Music, Performance",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-music-performance",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Certificate in General Studies",
+      "cycle": "certificat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/certificate-in-general-studies.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Certificate in World Languages and Cultures",
+      "cycle": "certificat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/world-languages-and-cultures",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Indigenous Studies Certificate",
+      "cycle": "certificat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/programs/catalogue/indigenous-studies",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Post-Bacc Certificate in Liberal Arts",
+      "cycle": "certificat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/post-baccalaureate-certificate-liberal-arts",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Technical Theatre Certificate",
+      "cycle": "certificat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/arts/programs/technical-theatre-certificate.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Wildfire Communication and Media Certificate",
+      "cycle": "certificat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/wildfire/education/wildfire-communication-and-media-certificate.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Advanced Certificate in Management Studies",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/distance/programs/advanced-certificate-management",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration (General)",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-business-administration-general",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration, Major in Accounting",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/accounting-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration, Major in Economics",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/bba-economics-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration, Major in Entrepreneurship",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/entrepreneurship-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration, Major in Finance",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/finance-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration, Major in Human Resource Management",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/human-resource-management-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration, Major in International Business",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/international-business-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration, Major in Marketing",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/marketing-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Business Administration, Major in Supply Chain Management",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/supply-chain-management-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Real Estate Management",
+      "cycle": "baccalaureat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-real-estate-management",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Business Foundations Certificate",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/programs/catalogue/business-foundations-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Business Skills Certificate",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/distance/programs/certificate-business-skills",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Certificate in Entrepreneurial Skills",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/distance/programs/certificate-in-entrepreneurial-skills-1",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Certificate in Entrepreneurial Skills 2",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/distance/programs/certificate-in-entrepreneurial-skills-2",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Certificate in Management Studies",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/distance/programs/certificate-management-studies",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "First Nation Applied Economics Certificate",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/gaglardi/certificates-diplomas/first-nation-applied-economics-certificate.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "First Nation Taxation Administration Certificate",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/gaglardi/certificates-diplomas/first-nation-taxation.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Post-Bacc Certificate in Commerce",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/distance/programs/post-baccalaureate-certificate-commerce",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Wildfire Leadership Certificate",
+      "cycle": "certificat",
+      "faculte": "Bob Gaglardi School of Business and Economics",
+      "lien": "https://www.tru.ca/wildfire/education/leadership-certificate.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Education, Elementary",
+      "cycle": "baccalaureat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-education",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Education, Secondary",
+      "cycle": "baccalaureat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-education-secondary-stem",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Education, Trades and Technology",
+      "cycle": "baccalaureat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-education-in-trades-and-technology.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Social Work",
+      "cycle": "baccalaureat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-social-work",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Education Assistant and Community Support Certificate",
+      "cycle": "certificat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/education-assistant-and-community-support-williams-lake",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Education and Skills Training Certificate",
+      "cycle": "certificat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/education-and-skills-training-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Inclusive Practices Specialization Certificate",
+      "cycle": "certificat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/special-needs-educator",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Infant and Toddler Specialization Certificate",
+      "cycle": "certificat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/infant-and-toddler-education",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Social Service Worker Certificate",
+      "cycle": "certificat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/distance/programs/social-service-worker-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Teaching English to Speakers of Other Languages Certificate",
+      "cycle": "certificat",
+      "faculte": "Education and Social Work",
+      "lien": "https://www.tru.ca/programs/catalogue/teaching-english-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science in Nursing",
+      "cycle": "baccalaureat",
+      "faculte": "Nursing",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-science-in-nursing",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Health Care Assistant Certificate",
+      "cycle": "certificat",
+      "faculte": "Nursing",
+      "lien": "https://www.tru.ca/distance/programs/health-care-assistant-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Return to Registered Nurse Practice Certificate",
+      "cycle": "certificat",
+      "faculte": "Nursing",
+      "lien": "https://www.tru.ca/distance/programs/registered-nurse-practice-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Animal Welfare Certificate",
+      "cycle": "certificat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/animal-welfare",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Computing Science",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-computing-science",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Engineering in Computer Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-engineering-in-computer-engineering.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Engineering in Software Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-software-engineering",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Health Science",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-health-science",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Natural Resource Science",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-natural-resource-science",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/bachelor-of-science",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Biology/Life Sciences",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-science-major-program.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, General program",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-science-general-program.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Animal Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/animal-biology-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/biology-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Cellular, Molecular and Microbial Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/cellular-molecular-and-microbial-biology-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Computing Science",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/computing-science-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Computing Science and Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/computing-science-and-mathematics-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Data Science",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/data-science-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Ecology and Environmental Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/ecology-and-environmental-biology-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Economics and Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/economics-and-mathematics-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Environmental Chemistry",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/environmental-chemistry-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in General Science",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/general-science-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/mathematics-major-science",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Science, Major in Physics",
+      "cycle": "baccalaureat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/physics-major",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Certificate in First Nations Applied Land Management",
+      "cycle": "certificat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/science/programs/applied-lands-management.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Certificate in Information Technology",
+      "cycle": "certificat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/distance/programs/certificate-information-technology",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Medical Laboratory Assistant Certificate",
+      "cycle": "certificat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/distance/programs/medical-laboratory-assistant",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Polysomnography Certificate",
+      "cycle": "certificat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/distance/programs/polysomnography",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Pre-Health Science Certificate",
+      "cycle": "certificat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/distance/programs/pre-health-science-certificate",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Regenerative Agriculture Certificate",
+      "cycle": "certificat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/programs/catalogue/regenerative-agriculture-certificate.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Wildfire Science Certificate",
+      "cycle": "certificat",
+      "faculte": "Science",
+      "lien": "https://www.tru.ca/wildfire/education/wildfire-science-certificate.html",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Technology",
+      "cycle": "baccalaureat",
+      "faculte": "Trades and Technology",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-technology",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Technology, Trades and Technology Leadership",
+      "cycle": "baccalaureat",
+      "faculte": "Trades and Technology",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-technology-leadership",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of Arts, General Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-arts-general-studies",
+      "source": "https://www.tru.ca/programs.html"
+    },
+    {
+      "nom": "Bachelor of General Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Arts",
+      "lien": "https://www.tru.ca/distance/programs/bachelor-of-general-studies.html",
+      "source": "https://www.tru.ca/programs.html"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Bachelor of Tourism Management [kamloops]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Tourism Management »"
+    },
+    {
+      "nom": "Meat Processing, Retail Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Professional Cook Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Bachelor of Arts, General program [online]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, General Program »"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in English [online]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, Major in English »"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in History [online]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, Major in History »"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Psychology [online]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, Major in Psychology »"
+    },
+    {
+      "nom": "Bachelor of Arts, Major in Sociology [online]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Arts, Major in Sociology »"
+    },
+    {
+      "nom": "Pre-Education Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Pre-Social Work Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Education Assistant and Community Support Certificate [kamloops]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Education Assistant and Community Support Certificate »"
+    },
+    {
+      "nom": "Bachelor of Science in Nursing [williams lake]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Science in Nursing »"
+    },
+    {
+      "nom": "Health Care Assistant Certificate [kamloops]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Health Care Assistant Certificate »"
+    },
+    {
+      "nom": "Health Care Assistant Certificate [williams lake]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Health Care Assistant Certificate »"
+    },
+    {
+      "nom": "Bachelor of Computing Science [online]",
+      "raison": "Même programme sur un autre campus / en ligne : fusionné dans « Bachelor of Computing Science »"
+    },
+    {
+      "nom": "Engineering Transfer Program [kamloops]",
+      "raison": "Programme de transfert (deux premières années, poursuite ailleurs), pas un baccalauréat de TRU"
+    },
+    {
+      "nom": "Medical Laboratory Assistant National Certificate Program [online]",
+      "raison": "Admission fermée : « Applications will reopen at a future date »"
+    },
+    {
+      "nom": "Pre-Chiropractic Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Pre-Dentistry Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Pre-Medicine Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Pre-Naturopathic Medicine Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Pre-Optometry Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Pre-Pharmaceutical Sciences Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Pre-Rehabilitation Sciences Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Pre-Veterinary Medicine Pathway [kamloops]",
+      "raison": "Cheminement préparatoire (pathway) vers un programme professionnel, pas un baccalauréat propre"
+    },
+    {
+      "nom": "Automotive Service Technician Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Electrical Trades Foundation Certificate [williams lake]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Electrical Trades Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Heavy Mechanical Foundation Certificate [williams lake]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Heavy Mechanical Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Horticulture Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Industrial Mechanic (Millwright)/Machinist Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Instrumentation and Control Technician Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Meat Processing, Retail Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Plumbing Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Power Engineering Technology Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Professional Cook Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Refrigeration and Air Conditioning Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Residential Construction — Carpenter Enhanced Program [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Residential Construction — Carpenter Enhanced Program [williams lake]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Water Treatment Operations Certificate [online]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Water and Wastewater Utilities Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Welder Foundation Certificate [kamloops]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    },
+    {
+      "nom": "Welder Foundation Certificate [williams lake]",
+      "raison": "certificat de métier (décision BP 2026-10-28) (School of Trades and Technology)"
+    }
+  ],
+  "corrections": [
+    "2026-10-28 : grades General Studies réintégrés (2) ; raison des certificats de métier alignée sur la décision BP"
+  ]
 }

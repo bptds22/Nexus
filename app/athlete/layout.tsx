@@ -1,5 +1,6 @@
 "use client";
 
+import { useParcoursUniversitaire } from "@/lib/athlete/parcoursUniversitaire";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import NexusLogo from "@/components/ui/NexusLogo";
@@ -165,6 +166,8 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
   const pathname = usePathname();
   const router = useRouter();
   const [badges, setBadges] = useState<Record<string, number>>({});
+  // Lot E6 : cégépien sous lancement_universitaire ON → « Trouver mon université ».
+  const parcoursUniversitaire = useParcoursUniversitaire() === true;
   const [userInfo, setUserInfo] = useState<{ firstName: string; lastName: string; school: string; sport: string; position: string; verified: boolean }>({ firstName: "", lastName: "", school: "", sport: "", position: "", verified: false });
 
   const loadBadges = useCallback(async () => {
@@ -287,7 +290,7 @@ function AthleteSidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
               }`}
             >
               <span className={isActive ? "text-[#E63946]" : "text-[#6b7280]"}>{item.icon}</span>
-              <span className="flex-1">{item.label}</span>
+              <span className="flex-1">{parcoursUniversitaire && item.href === "/athlete/recherche" ? "Trouver mon université" : item.label}</span>
               {(item as any).badgeKey && badges[(item as any).badgeKey] > 0 && (
                 <span
                   className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-white text-[10px] font-black"

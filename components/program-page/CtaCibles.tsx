@@ -24,10 +24,13 @@ import { divulgationCible } from "@/lib/cibles/divulgation";
 
 export default function CtaCibles({
   ctaTitle,
+  universite = false,
   inTargets,
   onToggleTargets,
 }: {
   ctaTitle: string;
+  /** Lot E4 : la phrase de ciblage parle des recruteurs de l'université. */
+  universite?: boolean;
   inTargets: boolean;
   onToggleTargets: () => void;
 }) {
@@ -72,7 +75,7 @@ export default function CtaCibles({
           marginTop: 14,
         }}
       >
-        {divulgationCible(inTargets)}
+        {divulgationCible(inTargets, false, universite)}
         {inTargets ? (
           <>
             {" "}· le programme est dans{" "}

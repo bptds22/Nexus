@@ -1,5 +1,6 @@
 "use client";
 
+import { useParcoursUniversitaire } from "@/lib/athlete/parcoursUniversitaire";
 import Link from "next/link";
 import useAthleteVisibility, { useAthleteVisibilityPro } from "@/hooks/useAthleteVisibility";
 
@@ -44,6 +45,7 @@ function InterestBadge({ level }: { level: "fort" | "interesse" | "nouveau" }) {
 }
 
 export default function VisibilitePage() {
+  const univ = useParcoursUniversitaire() === true;
   const { stats, weeklyViews, regionBreakdown, percentile, sportName, loading } = useAthleteVisibility();
 
   const trend = stats.viewsLastMonth > 0
@@ -151,7 +153,7 @@ export default function VisibilitePage() {
               );
             })}
           </div>
-          <p className="text-[11px] text-[#4a4d56] mt-4 italic">Les noms des recruteurs et des CÉGEPs restent confidentiels pour protéger le processus de recrutement.</p>
+          <p className="text-[11px] text-[#4a4d56] mt-4 italic">Les noms des recruteurs et des {univ ? "universités" : "CÉGEPs"} restent confidentiels pour protéger le processus de recrutement.</p>
         </div>
       )}
 
@@ -230,6 +232,8 @@ export default function VisibilitePage() {
 
 function CegepDetailsSection() {
   const { cegepDetails, loading } = useAthleteVisibilityPro();
+  // Lot E6 (C5) : cégépien sous lancement_universitaire ON → les UNIVERSITÉS qui consultent.
+  const univ = useParcoursUniversitaire() === true;
 
   if (loading) {
     return <div className="h-40 bg-[#1A1D24] rounded-xl animate-pulse" />;
@@ -238,7 +242,7 @@ function CegepDetailsSection() {
   return (
     <div>
       <div className="flex items-center mb-4">
-        <h2 className={sectionTitle}>Quels CÉGEPs consultent ton profil</h2>
+        <h2 className={sectionTitle}>{univ ? "Quelles universités consultent ton profil" : "Quels CÉGEPs consultent ton profil"}</h2>
       </div>
       {cegepDetails.length > 0 ? (
         <div className="space-y-3">

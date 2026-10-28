@@ -216,6 +216,8 @@ export interface TeamData {
   // depuis une page équipe cible le cégep. Absent (fixtures) → le CTA reste
   // décoratif, aucune écriture.
   schoolId?: string | null;
+  /** Lot E4 : équipe universitaire — la phrase de ciblage parle de l'université. */
+  universite?: boolean;
   schoolInitial: string;       // monogramme (fallback si pas de crest)
   logoUrl?: string | null;     // crest école (PNG transparent) ; null → monogramme
   // ── Couleurs de l'équipe. La primaire éclaircie est STOCKÉE (pas dérivée) :

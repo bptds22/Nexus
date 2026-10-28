@@ -1,5 +1,6 @@
 "use client";
 
+import { useParcoursUniversitaire } from "@/lib/athlete/parcoursUniversitaire";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import EntraineurChefLecture from "@/components/athlete/EntraineurChefLecture";
@@ -60,6 +61,8 @@ export default function ParametresPage() {
 }
 
 function ParametresPageDesktop() {
+  // Lot E6 (C6) : cégépien sous lancement_universitaire ON → ce sont des recruteurs universitaires qui le voient.
+  const univ = useParcoursUniversitaire() === true;
   const router = useRouter();
   const [section, setSection] = useState<SectionKey>("compte");
   const [toast, setToast] = useState<string | null>(null);
@@ -369,7 +372,7 @@ function ParametresPageDesktop() {
               <div>
                 <h2 className="font-head text-lg font-black text-white uppercase tracking-tight mb-4">Visibilité du profil</h2>
                 <div className="bg-[#13151a] border border-white/5 rounded-lg p-4">
-                  <p className="text-[13px] text-[#9CA3AF] leading-relaxed">Ton profil est visible par les recruteurs CÉGEP vérifiés sur la plateforme Nexus. Seul ton coach peut modifier la visibilité de ton profil.</p>
+                  <p className="text-[13px] text-[#9CA3AF] leading-relaxed">Ton profil est visible par les recruteurs {univ ? "universitaires" : "CÉGEP"} vérifiés sur la plateforme Nexus. Seul ton coach peut modifier la visibilité de ton profil.</p>
                   <div className="flex items-center gap-2 mt-3">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2" strokeLinecap="round"><path d="M20 6L9 17l-5-5" /></svg>
                     <span className="text-[13px] font-bold text-[#22C55E]">Profil visible</span>

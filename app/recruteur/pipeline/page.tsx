@@ -32,6 +32,8 @@ import {
   FACETS,
   FACET_ECOLE,
   FACET_EQUIPE,
+  FACET_TYPE_LIGUE,
+  typeLigueDe,
   nettoyerEquipes,
   basculerTout,
   EMPTY_FILTERS,
@@ -483,6 +485,12 @@ const DraggableKanbanCard = memo(function DraggableKanbanCard({
               <span className="truncate">{card.school}</span>
             )}
             {card.graduation_year > 0 && <><span className="text-[#4a4d56] shrink-0">·</span><span className="shrink-0">{card.graduation_year}</span></>}
+            {/* Lot E5 : type de ligue (Secondaire, Collégial, Civil). */}
+            {typeLigueDe(card.school_type) && !card.noTeam && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold uppercase tracking-wider text-[#9CA3AF] shrink-0">
+                {typeLigueDe(card.school_type)}
+              </span>
+            )}
           </p>
 
           {/* Global recruitment status + pill « visite planifiée » ─────────
@@ -637,6 +645,8 @@ const COLONNES_TABLEAU: { cle: string; libelle: string; bloc: BlocTableau }[] = 
   { cle: "position", libelle: "Position", bloc: "identification" },
   { cle: "promotion", libelle: "Promotion", bloc: "identification" },
   { cle: "ecole", libelle: "École / Club", bloc: "identification" },
+  // Lot E5 (B5) : Secondaire, Collégial ou Civil — recruteurs collégial et universitaire.
+  { cle: "type_ligue", libelle: "Type de ligue", bloc: "identification" },
   { cle: "division", libelle: "Division", bloc: "identification" },
   { cle: "taille", libelle: "Taille", bloc: "evaluation" },
   { cle: "poids", libelle: "Poids", bloc: "evaluation" },
@@ -698,7 +708,7 @@ const COLONNES_EXPORT: { cle: string; libelle: string }[] = COLONNES_TABLEAU.fla
   c.cle === "division" ? [c, { cle: "telephone", libelle: "Téléphone" }] : [c]);
 
 const LARGEUR_EXPORT: Record<string, number> = {
-  nom: 24, numero: 5, position: 10, promotion: 11, ecole: 32, division: 10, telephone: 14, taille: 8, poids: 10, cote: 11,
+  nom: 24, numero: 5, position: 10, promotion: 11, ecole: 32, type_ligue: 13, division: 10, telephone: 14, taille: 8, poids: 10, cote: 11,
   grade: 11, etape: 18, relance: 12, visite: 17, video: 15, note: 70,
 };
 
@@ -708,6 +718,7 @@ function valeurExport(cle: string, card: PipelineKanbanCard, notes: string): Cel
     case "nom": return texte(card.full_name);
     case "numero": return texte(card.jersey);
     case "ecole": return texte(card.noTeam ? "Ligue civile" : card.school);
+    case "type_ligue": return texte(typeLigueDe(card.school_type));
     case "position": return texte(card.position);
     case "promotion": return card.graduation_year > 0 ? { t: "nombre", v: card.graduation_year } : null;
     case "division": return texte(card.division_equipe);
@@ -777,6 +788,8 @@ function celluleTableau(cle: string, card: PipelineKanbanCard, now: number): Rea
       return card.noTeam
         ? <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Ligue Civile</span>
         : card.school ? <span className="line-clamp-2 leading-snug text-[#c8c8cc]" title={card.school}>{card.school}</span> : VIDE;
+    case "type_ligue":
+      return typeLigueDe(card.school_type) ? <span className="text-[#c8c8cc]">{typeLigueDe(card.school_type)}</span> : VIDE;
     case "cote":
       /* Compacte (★ 4.5) : cinq étoiles pour un chiffre prenaient 120 px.
          Une cote ABSENTE n'est pas une cote de ZÉRO (lib/evaluations/presence). */
@@ -2205,6 +2218,11 @@ function PipelinePageContent() {
     () => ({ options: facetOptions(cards, "team", filters, extra), offerte: isFacetOffered(cards, "team", filters) }),
     [cards, filters, extra],
   );
+  // TYPE DE LIGUE (lot E5) — même règle « grisée quand rien à choisir ».
+  const facetTypeLigue = useMemo(
+    () => ({ options: facetOptions(cards, "type_ligue", filters, extra), offerte: isFacetOffered(cards, "type_ligue", filters) }),
+    [cards, filters, extra],
+  );
   // La pastille Type ne choisit rien si toutes les cartes sont du même type : grisée.
 
   const nActiveFilters = activeFilterCount(filters, extra);
@@ -2541,6 +2559,13 @@ function PipelinePageContent() {
               onToggle={(v) => setFilters((f) => toggleFacetValue(f, def.key, v))}
             />
           ))}
+          <FacetDropdown
+            def={FACET_TYPE_LIGUE}
+            options={facetTypeLigue.options}
+            selected={filters.type_ligue}
+            onToggle={(v) => setFilters((f) => toggleFacetValue(f, "type_ligue", v))}
+            disabled={!facetTypeLigue.offerte}
+          />
           <FacetDropdown
             def={FACET_ECOLE}
             options={facetEcole.options}

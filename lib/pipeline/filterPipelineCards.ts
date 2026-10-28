@@ -49,7 +49,7 @@ import { estCarte } from "@/lib/cartes/carteProspect";
 import type { PipelineKanbanCard } from "@/app/recruteur/pipeline/_data/mockKanbanData";
 import { libelleEquipe } from "@/lib/teams/teamLabel";
 
-export type FacetKey = "sport" | "position" | "graduation_year" | "school" | "region" | "league" | "team";
+export type FacetKey = "sport" | "position" | "graduation_year" | "school" | "region" | "league" | "team" | "type_ligue";
 
 /** Sentinelle « Non renseigné ». Encadrée de doubles tirets bas : aucune
  *  valeur venue de la base (nom d'école, position, région) ne prend cette
@@ -98,10 +98,25 @@ export const FACET_ECOLE: FacetDef = { key: "school", label: "École / Club", al
    Décocher une école retire ses équipes cochées : nettoyerEquipes(). */
 export const FACET_EQUIPE: FacetDef = { key: "team", label: "Équipe", allLabel: "Toutes les équipes" };
 
+/* TYPE DE LIGUE — lot E5 (retour du test de bout en bout de BP, 2026-10-28 : B5), web, pour les recruteurs
+   collégial ET universitaire, tout de suite (Q4). Dérivé de schools.type de l'école de la fiche ou de la carte :
+   Secondaire, Collégial, Civil. Hors de FACETS, comme École / Club. */
+export const FACET_TYPE_LIGUE: FacetDef = { key: "type_ligue", label: "Type de ligue", allLabel: "Tous les types" };
+
+/** Secondaire / Collégial / Civil depuis schools.type ; "" quand le type est inconnu (« Non renseigné »). */
+export function typeLigueDe(schoolType: string | null | undefined): string {
+  switch (schoolType) {
+    case "SECONDAIRE": return "Secondaire";
+    case "CEGEP": return "Collégial";
+    case "LIGUE_CIVILE": return "Civil";
+    default: return "";
+  }
+}
+
 /** Libellé de la valeur « pas d'équipe » dans le menu Équipe. */
 export const SANS_EQUIPE_LABEL = "Sans équipe";
 
-const TOUTES_FACETTES: readonly FacetKey[] = [...FACETS.map((f) => f.key), "school", "league", "team"];
+const TOUTES_FACETTES: readonly FacetKey[] = [...FACETS.map((f) => f.key), "school", "league", "team", "type_ligue"];
 
 /** Les seuls champs que le filtre lit. Tout est optionnel — voir l'en-tête. */
 export interface FilterablePipelineCard {
@@ -308,6 +323,7 @@ export const EMPTY_FILTERS: PipelineFilters = {
   region: [],
   league: [],
   team: [],
+  type_ligue: [],
 };
 
 /** Valeur de facette d'une carte. Chaîne vide, 0 et absence donnent tous
@@ -331,6 +347,8 @@ export function facetValue(card: FilterablePipelineCard, key: FacetKey): string 
       return card.ligue?.trim() || UNSET_VALUE;
     case "team":
       return card.equipe?.id || UNSET_VALUE;
+    case "type_ligue":
+      return typeLigueDe(card.school_type) || UNSET_VALUE;
   }
 }
 

@@ -40,6 +40,9 @@ export const CIBLE_DIVULGATION_APRES =
  */
 export const CIBLE_DIVULGATION_LISTE =
   "Les recruteurs de chaque cégep de ta liste voient que tu les as ciblés.";
+/** Lot E6 : la liste du cégépien (universités). */
+export const CIBLE_DIVULGATION_LISTE_UNIVERSITE =
+  "Les recruteurs de chaque université de ta liste voient que tu les as ciblés.";
 
 /* Club civil 18+ (lot 7 civil, décision BP 2026-10-27 : le cœur réutilise athlete_targets).
    Un club n'a pas de recruteur : AUCUN compte ne lit la cible d'un club (athletes_targeting_my_cegep
@@ -54,8 +57,16 @@ export const CIBLE_DIVULGATION_CLUB_APRES =
  * La bonne phrase selon l'état du bouton. À préférer à un ternaire écrit
  * sur place : c'est le point unique où le temps du verbe se décide.
  */
-export function divulgationCible(dansLesCibles: boolean, club = false): string {
+/* Université (lot E4, sous lancement_universitaire ON) : seul le cégépien cible une université (E1) ; les recruteurs
+   universitaires de l'université lisent la cible (athletes_targeting_my_cegep rend les cibles de l'école du recruteur). */
+export const CIBLE_DIVULGATION_UNIVERSITE_AVANT =
+  "Les recruteurs de cette université verront que tu les as ciblés.";
+export const CIBLE_DIVULGATION_UNIVERSITE_APRES =
+  "Les recruteurs de cette université voient que tu les as ciblés.";
+
+export function divulgationCible(dansLesCibles: boolean, club = false, universite = false): string {
   if (club) return dansLesCibles ? CIBLE_DIVULGATION_CLUB_APRES : CIBLE_DIVULGATION_CLUB_AVANT;
+  if (universite) return dansLesCibles ? CIBLE_DIVULGATION_UNIVERSITE_APRES : CIBLE_DIVULGATION_UNIVERSITE_AVANT;
   return dansLesCibles ? CIBLE_DIVULGATION_APRES : CIBLE_DIVULGATION_AVANT;
 }
 

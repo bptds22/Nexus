@@ -1,609 +1,626 @@
 {
- "universite": "Wilfrid Laurier University",
- "date_releve": "2026-10-28",
- "sources_generales": [
-  "https://academic-calendar.wlu.ca/index_old.php?cal=1&y=93",
-  "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93",
-  "https://www.wlu.ca/programs/index.html"
- ],
- "blocages": [
-  "https://www.wlu.ca/programs/index.html : pas bloqué, mais le contenu récupéré est tronqué après « Faith and Community » (lettre F) ; filtres côté client. Remplacé par le calendrier officiel 2026/2027 (sections de faculté, academic-calendar.wlu.ca)"
- ],
- "attendu": {
-  "baccalaureat": 63,
-  "certificat": 18,
-  "comment": "Calendrier officiel 2026/2027 : unité = entrée département/programme de chaque section de faculté portant au moins une désignation de baccalauréat (BA/BSc/CombBA/CombBSc Honours, BBA, BBTM, BEd, BMus, BMT, BSW, BDes, BKin, BASc, BEng). Certificats : recherche par titre « Certificate » (32 résultats = 14 départements + 18 certificats)."
- },
- "programmes": [
-  {
-   "nom": "Ancient Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3231&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Anthropology Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3208&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Archaeology and Heritage Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3209&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Communication Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3210&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Cultural Studies Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3211&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "English",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3212&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Film Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3213&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "French (Lang/Lit)",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3234&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Global Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3214&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "History",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3215&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "International Education Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3237&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Languages and Literatures",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3217&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Medieval and Medievalism Studies Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3218&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Multidisciplinary Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts / Faculty of Human and Social Sciences",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3241&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "North American Studies Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3220&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Philosophy",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3202&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Political Science",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3203&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Religion and Culture",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3204&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Sociology",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3205&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Spanish (Lang/Lit)",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3206&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Women and Gender Studies Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3207&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
-  },
-  {
-   "nom": "Biology",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3247&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Chemistry and Biochemistry",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3248&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Computer Science and Physics",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3253&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Data Science Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3262&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Environmental Science Programs",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3261&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Environmental Studies (GG/ES)",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3242&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Geography (GG/ES)",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3243&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Health Sciences",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3258&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Honours Science Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3263&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Kinesiology and Physical Education",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3250&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Mathematics",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3251&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Paramedicine",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3267&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Psychology",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3246&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Software Engineering",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3354&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
-  },
-  {
-   "nom": "Digital Media and Journalism Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3272&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "English Programs at Brantford",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3274&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "History Programs at Brantford",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3275&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "Human Rights Programs",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3270&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "Humanities with Leadership Foundations Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3282&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "Indigenous Studies Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3271&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "Labour Studies and Career Development",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3280&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "Law and Society Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3277&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "Social and Environmental Justice Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3269&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "User Experience Design Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3281&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "Youth and Children's Studies Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3279&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
-  },
-  {
-   "nom": "Business (Waterloo Campus)",
-   "cycle": "baccalaureat",
-   "faculte": "Lazaridis School of Business and Economics",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3285&s=1172&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1172&y=93"
-  },
-  {
-   "nom": "Business (Milton Campus)",
-   "cycle": "baccalaureat",
-   "faculte": "Lazaridis School of Business and Economics",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3288&s=1172&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1172&y=93"
-  },
-  {
-   "nom": "Economics",
-   "cycle": "baccalaureat",
-   "faculte": "Lazaridis School of Business and Economics",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3286&s=1172&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1172&y=93"
-  },
-  {
-   "nom": "Criminology",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Human and Social Sciences",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3309&s=1183&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
-  },
-  {
-   "nom": "Game Design and Development Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Human and Social Sciences",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3315&s=1183&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
-  },
-  {
-   "nom": "Health Studies",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Human and Social Sciences",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3310&s=1183&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
-  },
-  {
-   "nom": "Leadership Program",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Human and Social Sciences",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3308&s=1183&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
-  },
-  {
-   "nom": "Psychology Programs at Brantford",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Human and Social Sciences",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3311&s=1183&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
-  },
-  {
-   "nom": "Public Safety Programs",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Human and Social Sciences",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3316&s=1183&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
-  },
-  {
-   "nom": "Christian Studies and Global Citizenship Program",
-   "cycle": "baccalaureat",
-   "faculte": "Martin Luther University College",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3307&s=1182&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1182&y=93"
-  },
-  {
-   "nom": "Bachelor of Education",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Education",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3303&s=1179&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1179&y=93"
-  },
-  {
-   "nom": "Honours Bachelor of Music",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Music",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3295&s=1173&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1173&y=93"
-  },
-  {
-   "nom": "Honours Bachelor of Music and Randolph College for the Performing Arts",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Music",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3300&s=1173&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1173&y=93"
-  },
-  {
-   "nom": "Honours Bachelor of Music Therapy",
-   "cycle": "baccalaureat",
-   "faculte": "Faculty of Music",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3293&s=1173&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1173&y=93"
-  },
-  {
-   "nom": "Social Work - Undergraduate Program",
-   "cycle": "baccalaureat",
-   "faculte": "Lyle S Hallman Faculty of Social Work",
-   "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3319&s=1184&y=93",
-   "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1184&y=93"
-  },
-  {
-   "nom": "Certificate in Data Analytics",
-   "cycle": "certificat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3264&p=7613&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Digital Media Production",
-   "cycle": "certificat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3272&p=7633&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Digital Media Skills I",
-   "cycle": "certificat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3272&p=7637&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Digital Media Skills II",
-   "cycle": "certificat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3272&p=7638&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Ethics",
-   "cycle": "certificat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3202&p=7838&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Geomatics",
-   "cycle": "certificat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3243&p=7525&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Global Crime and Justice",
-   "cycle": "certificat",
-   "faculte": "Faculty of Human and Social Sciences",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3317&p=7763&s=1183&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Intermediate Economics 1",
-   "cycle": "certificat",
-   "faculte": "Lazaridis School of Business and Economics",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3286&p=7683&s=1172&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Intermediate Economics 2",
-   "cycle": "certificat",
-   "faculte": "Lazaridis School of Business and Economics",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3286&p=7684&s=1172&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Navigating the Music Industry Ecosystem",
-   "cycle": "certificat",
-   "faculte": "Faculty of Music",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3301&p=7706&s=1173&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Non-Profit Career Foundations",
-   "cycle": "certificat",
-   "faculte": "Faculty of Liberal Arts",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3270&p=7628&s=1171&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Certificate in Quantitative Finance",
-   "cycle": "certificat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3251&p=7599&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Undergraduate Certificate in International Migration and Governance",
-   "cycle": "certificat",
-   "faculte": "School of International Policy and Governance",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3355&p=7831&s=1202&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Undergraduate Certificate in Food and Sustainability",
-   "cycle": "certificat",
-   "faculte": "Faculty of Science",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3242&p=7512&s=1170&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  },
-  {
-   "nom": "Undergraduate Certificate in Generative AI",
-   "cycle": "certificat",
-   "faculte": "Faculty of Arts",
-   "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3228&p=7485&s=1169&y=93",
-   "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
-  }
- ],
- "exclus": [
-  {
-   "nom": "Multidisciplinary Studies (Faculty of Human and Social Sciences)",
-   "raison": "même nom listé dans deux facultés, fusionné"
-  },
-  {
-   "nom": "Honours BA International Education Studies (Faculty of Arts) — section Faculty of Education",
-   "raison": "doublon de « International Education Studies » (Faculty of Arts)"
-  },
-  {
-   "nom": "General BA / General BSc without Designation (Arts, Science, Liberal Arts, HSS)",
-   "raison": "grade général sans spécialisation (accumulation), exclu"
-  },
-  {
-   "nom": "Honours Bachelor of Music with Metalworks Institute Programs and Courses",
-   "raison": "à vérifier : aucune désignation de grade affichée (partenariat Metalworks)"
-  },
-  {
-   "nom": "Honours BMus/BMus Therapy with Management Option (LSBE)",
-   "raison": "option (Management Option), pas un programme distinct"
-  },
-  {
-   "nom": "Sussex Law",
-   "raison": "à vérifier : BA + LLB de l'University of Sussex, aucune désignation affichée ; LLB étranger exclu"
-  },
-  {
-   "nom": "Options, mineures, cours (Management Option, Applied Mathematics Program, Medical Foundations, Water Science and Environmental Health, Teaching Option, Legal Studies, Muslim Studies, Media Studies Option, Politics and Public Policy Option, Arabic, German, Italian, etc.)",
-   "raison": "options / mineures / pages de cours seulement"
-  },
-  {
-   "nom": "Diploma in Business Administration ; Diploma in Chamber Music ; Diploma in Opera",
-   "raison": "diplômes"
-  },
-  {
-   "nom": "Non-Profit Career Foundations (Certificate)",
-   "raison": "doublon de « Certificate in Non-Profit Career Foundations » (même certificat listé sous deux départements)"
-  },
-  {
-   "nom": "Undergraduate Certificate in Food and Sustainability (Geography)",
-   "raison": "même certificat listé sous Environmental Studies et Geography, fusionné"
-  },
-  {
-   "nom": "Post-Baccalaureate Certificate in Computer Science",
-   "raison": "certificat post-baccalauréat (réservé aux diplômés), exclu ; à vérifier"
-  },
-  {
-   "nom": "14 résultats-départements de la recherche « Certificate » (Computer Science, Data Analytics, Digital Humanities, Economics, etc.)",
-   "raison": "pages de département, pas des certificats (les certificats eux-mêmes sont listés)"
-  },
-  {
-   "nom": "Undergradaute Certificate in International Migration and Governance",
-   "raison": "coquille du calendrier corrigée (« Undergraduate »)"
-  },
-  {
-   "nom": "Faith and Community (BA, Martin Luther University College) ; Arts Degree + MBA / + Master's (Cardiff, Sussex) ; Criminology + Master's ; Business Administration + Computer Science / + Mathematics (Waterloo) ; Applied Health Sciences (BASc) ; Criminology and Policing (Online)",
-   "raison": "vus dans le répertoire wlu.ca/programs (partie lisible) : programmes intégrés menant à une maîtrise exclus ; doubles grades et variantes non listés comme départements au calendrier — à vérifier"
-  }
- ]
+  "universite": "Wilfrid Laurier University",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://academic-calendar.wlu.ca/index_old.php?cal=1&y=93",
+    "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93",
+    "https://www.wlu.ca/programs/index.html"
+  ],
+  "blocages": [
+    "https://www.wlu.ca/programs/index.html : pas bloqué, mais le contenu récupéré est tronqué après « Faith and Community » (lettre F) ; filtres côté client. Remplacé par le calendrier officiel 2026/2027 (sections de faculté, academic-calendar.wlu.ca)"
+  ],
+  "attendu": {
+    "baccalaureat": 68,
+    "certificat": 18,
+    "comment": "Calendrier officiel 2026/2027 : unité = entrée département/programme de chaque section de faculté portant au moins une désignation de baccalauréat (BA/BSc/CombBA/CombBSc Honours, BBA, BBTM, BEd, BMus, BMT, BSW, BDes, BKin, BASc, BEng). Certificats : recherche par titre « Certificate » (32 résultats = 14 départements + 18 certificats). Correction 2026-10-28 (décision BP : grades généraux conservés) : les 5 entrées « General BA/BSc without Designation » du calendrier (BA (General) en Arts, Science, Liberal Arts, HSS ; BSc (General) en Science) sont désormais comptées (attendu 63 → 68) et fusionnées en 2 lignes."
+  },
+  "programmes": [
+    {
+      "nom": "Ancient Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3231&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Anthropology Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3208&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Archaeology and Heritage Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3209&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Communication Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3210&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Cultural Studies Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3211&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "English",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3212&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Film Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3213&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "French (Lang/Lit)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3234&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Global Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3214&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "History",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3215&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "International Education Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3237&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Languages and Literatures",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3217&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Medieval and Medievalism Studies Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3218&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Multidisciplinary Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts / Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3241&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "North American Studies Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3220&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Philosophy",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3202&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Political Science",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3203&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Religion and Culture",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3204&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Sociology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3205&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Spanish (Lang/Lit)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3206&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Women and Gender Studies Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3207&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1169&y=93"
+    },
+    {
+      "nom": "Biology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3247&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Chemistry and Biochemistry",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3248&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Computer Science and Physics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3253&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Data Science Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3262&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Environmental Science Programs",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3261&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Environmental Studies (GG/ES)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3242&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Geography (GG/ES)",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3243&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Health Sciences",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3258&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Honours Science Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3263&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Kinesiology and Physical Education",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3250&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Mathematics",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3251&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Paramedicine",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3267&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Psychology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3246&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Software Engineering",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3354&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1170&y=93"
+    },
+    {
+      "nom": "Digital Media and Journalism Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3272&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "English Programs at Brantford",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3274&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "History Programs at Brantford",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3275&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "Human Rights Programs",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3270&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "Humanities with Leadership Foundations Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3282&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "Indigenous Studies Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3271&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "Labour Studies and Career Development",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3280&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "Law and Society Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3277&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "Social and Environmental Justice Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3269&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "User Experience Design Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3281&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "Youth and Children's Studies Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3279&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1171&y=93"
+    },
+    {
+      "nom": "Business (Waterloo Campus)",
+      "cycle": "baccalaureat",
+      "faculte": "Lazaridis School of Business and Economics",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3285&s=1172&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1172&y=93"
+    },
+    {
+      "nom": "Business (Milton Campus)",
+      "cycle": "baccalaureat",
+      "faculte": "Lazaridis School of Business and Economics",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3288&s=1172&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1172&y=93"
+    },
+    {
+      "nom": "Economics",
+      "cycle": "baccalaureat",
+      "faculte": "Lazaridis School of Business and Economics",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3286&s=1172&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1172&y=93"
+    },
+    {
+      "nom": "Criminology",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3309&s=1183&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
+    },
+    {
+      "nom": "Game Design and Development Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3315&s=1183&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
+    },
+    {
+      "nom": "Health Studies",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3310&s=1183&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
+    },
+    {
+      "nom": "Leadership Program",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3308&s=1183&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
+    },
+    {
+      "nom": "Psychology Programs at Brantford",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3311&s=1183&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
+    },
+    {
+      "nom": "Public Safety Programs",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3316&s=1183&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1183&y=93"
+    },
+    {
+      "nom": "Christian Studies and Global Citizenship Program",
+      "cycle": "baccalaureat",
+      "faculte": "Martin Luther University College",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3307&s=1182&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1182&y=93"
+    },
+    {
+      "nom": "Bachelor of Education",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Education",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3303&s=1179&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1179&y=93"
+    },
+    {
+      "nom": "Honours Bachelor of Music",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Music",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3295&s=1173&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1173&y=93"
+    },
+    {
+      "nom": "Honours Bachelor of Music and Randolph College for the Performing Arts",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Music",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3300&s=1173&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1173&y=93"
+    },
+    {
+      "nom": "Honours Bachelor of Music Therapy",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Music",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3293&s=1173&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1173&y=93"
+    },
+    {
+      "nom": "Social Work - Undergraduate Program",
+      "cycle": "baccalaureat",
+      "faculte": "Lyle S Hallman Faculty of Social Work",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3319&s=1184&y=93",
+      "source": "https://academic-calendar.wlu.ca/section.php?cal=1&s=1184&y=93"
+    },
+    {
+      "nom": "Certificate in Data Analytics",
+      "cycle": "certificat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3264&p=7613&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Digital Media Production",
+      "cycle": "certificat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3272&p=7633&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Digital Media Skills I",
+      "cycle": "certificat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3272&p=7637&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Digital Media Skills II",
+      "cycle": "certificat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3272&p=7638&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Ethics",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3202&p=7838&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Geomatics",
+      "cycle": "certificat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3243&p=7525&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Global Crime and Justice",
+      "cycle": "certificat",
+      "faculte": "Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3317&p=7763&s=1183&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Intermediate Economics 1",
+      "cycle": "certificat",
+      "faculte": "Lazaridis School of Business and Economics",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3286&p=7683&s=1172&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Intermediate Economics 2",
+      "cycle": "certificat",
+      "faculte": "Lazaridis School of Business and Economics",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3286&p=7684&s=1172&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Navigating the Music Industry Ecosystem",
+      "cycle": "certificat",
+      "faculte": "Faculty of Music",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3301&p=7706&s=1173&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Non-Profit Career Foundations",
+      "cycle": "certificat",
+      "faculte": "Faculty of Liberal Arts",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3270&p=7628&s=1171&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Certificate in Quantitative Finance",
+      "cycle": "certificat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3251&p=7599&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Undergraduate Certificate in International Migration and Governance",
+      "cycle": "certificat",
+      "faculte": "School of International Policy and Governance",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3355&p=7831&s=1202&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Undergraduate Certificate in Food and Sustainability",
+      "cycle": "certificat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3242&p=7512&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "Undergraduate Certificate in Generative AI",
+      "cycle": "certificat",
+      "faculte": "Faculty of Arts",
+      "lien": "https://academic-calendar.wlu.ca/program.php?cal=1&d=3228&p=7485&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&s_pdt=43&y=93"
+    },
+    {
+      "nom": "General BA without Designation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Arts / Faculty of Science / Faculty of Liberal Arts / Faculty of Human and Social Sciences",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3221&s=1169&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&y=93"
+    },
+    {
+      "nom": "General BSc without Designation",
+      "cycle": "baccalaureat",
+      "faculte": "Faculty of Science",
+      "lien": "https://academic-calendar.wlu.ca/department.php?cal=1&d=3256&s=1170&y=93",
+      "source": "https://academic-calendar.wlu.ca/search.php?cal=1&s_items=departments+programs&y=93"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Multidisciplinary Studies (Faculty of Human and Social Sciences)",
+      "raison": "même nom listé dans deux facultés, fusionné"
+    },
+    {
+      "nom": "Honours BA International Education Studies (Faculty of Arts) — section Faculty of Education",
+      "raison": "doublon de « International Education Studies » (Faculty of Arts)"
+    },
+    {
+      "nom": "Honours Bachelor of Music with Metalworks Institute Programs and Courses",
+      "raison": "à vérifier : aucune désignation de grade affichée (partenariat Metalworks)"
+    },
+    {
+      "nom": "Honours BMus/BMus Therapy with Management Option (LSBE)",
+      "raison": "option (Management Option), pas un programme distinct"
+    },
+    {
+      "nom": "Sussex Law",
+      "raison": "à vérifier : BA + LLB de l'University of Sussex, aucune désignation affichée ; LLB étranger exclu"
+    },
+    {
+      "nom": "Options, mineures, cours (Management Option, Applied Mathematics Program, Medical Foundations, Water Science and Environmental Health, Teaching Option, Legal Studies, Muslim Studies, Media Studies Option, Politics and Public Policy Option, Arabic, German, Italian, etc.)",
+      "raison": "options / mineures / pages de cours seulement"
+    },
+    {
+      "nom": "Diploma in Business Administration ; Diploma in Chamber Music ; Diploma in Opera",
+      "raison": "diplômes"
+    },
+    {
+      "nom": "Non-Profit Career Foundations (Certificate)",
+      "raison": "doublon de « Certificate in Non-Profit Career Foundations » (même certificat listé sous deux départements)"
+    },
+    {
+      "nom": "Undergraduate Certificate in Food and Sustainability (Geography)",
+      "raison": "même certificat listé sous Environmental Studies et Geography, fusionné"
+    },
+    {
+      "nom": "Post-Baccalaureate Certificate in Computer Science",
+      "raison": "certificat post-baccalauréat (réservé aux diplômés), exclu ; à vérifier"
+    },
+    {
+      "nom": "14 résultats-départements de la recherche « Certificate » (Computer Science, Data Analytics, Digital Humanities, Economics, etc.)",
+      "raison": "pages de département, pas des certificats (les certificats eux-mêmes sont listés)"
+    },
+    {
+      "nom": "Undergradaute Certificate in International Migration and Governance",
+      "raison": "coquille du calendrier corrigée (« Undergraduate »)"
+    },
+    {
+      "nom": "Faith and Community (BA, Martin Luther University College) ; Arts Degree + MBA / + Master's (Cardiff, Sussex) ; Criminology + Master's ; Business Administration + Computer Science / + Mathematics (Waterloo) ; Applied Health Sciences (BASc) ; Criminology and Policing (Online)",
+      "raison": "vus dans le répertoire wlu.ca/programs (partie lisible) : programmes intégrés menant à une maîtrise exclus ; doubles grades et variantes non listés comme départements au calendrier — à vérifier"
+    },
+    {
+      "nom": "General BA without Designation (Faculty of Science ; Faculty of Liberal Arts ; Faculty of Human and Social Sciences)",
+      "raison": "même nom listé dans quatre facultés (BA (General)), fusionné dans « General BA without Designation »"
+    }
+  ],
+  "corrections": [
+    "2026-10-28 : General BA / General BSc without Designation réintégrés (décision BP, grades généraux conservés)"
+  ]
 }

@@ -1,680 +1,683 @@
 {
- "universite": "McMaster University",
- "date_releve": "2026-10-28",
- "sources_generales": [
-  "https://future.mcmaster.ca/programs/",
-  "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
- ],
- "blocages": [
-  "https://academiccalendars.romcmaster.ca/content.php?catoid=65&navoid=14803 (Programs by Degree) et navoid=14835 (Certificate and Diploma Programs) : réponse HTTP 202 vide (défi anti-robot) — non contourné ; remplacé par le PDF officiel du calendrier 2026-2027 (édition « Academic Advising », même domaine, servi librement) pour les certificats."
- ],
- "attendu": {
-  "baccalaureat": 25,
-  "certificat": 71,
-  "comment": "Baccalauréats : 25 entrées du répertoire officiel future.mcmaster.ca/programs ; McMaster admet par programme d'entrée de niveau I (Gateway, Science, Humanities I, etc.), unité = entrée du répertoire. Les nombreux programmes Honours/Combined Honours de niveau II+ du calendrier ne sont PAS listés (calendrier web bloqué ; le PDF ne permet pas une extraction fiable) — doute à signaler. Certificats : 41 « Concurrent Certificates » + 2 certificats de technologie + 28 certificats de McMaster Continuing Education listés dans le calendrier PDF (11 « Certificate », 15 « Certificate of Professional Learning », STEP et MERGE). Les certificats MCE portent une mention « Maximum Credit Toward Degree Studies » (crédit reconnu) — à valider par BP. Pas de lien par certificat (calendrier web bloqué) : lien null, source = PDF."
- },
- "programmes": [
-  {
-   "nom": "Arts & Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/arts-science/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Bachelor of Technology",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/bachelor-of-technology/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Business",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/business/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Chemical & Physical Sciences Gateway",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/chemical-and-physical-sciences-gateway/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Computer Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/computer-science/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Honours Economics I",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/economics/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Engineering",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/engineering/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Environmental & Earth Sciences Gateway",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/environmental-earth-sciences-gateway/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Health and Society I",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/health-and-society/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Honours Health Sciences Program",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/health-sciences/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Honours Integrated Science",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/honours-integrated-science/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Honours Kinesiology",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/kinesiology/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Humanities I",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/humanities/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "iArts (Integrated Arts)",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/iarts/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Integrated Biomedical Engineering & Health Sciences",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/ibiomed/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Integrated Business & Humanities",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/ibh/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Leadership & Civic Studies I (Wilson College)",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/wilson-college/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Life Sciences Gateway",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/lifesci/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Mathematics & Statistics Gateway",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/math-stats/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Medical Radiation Sciences",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/medical-radiation-services/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Midwifery",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/midwifery/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Nursing",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Social Sciences I",
-   "cycle": "baccalaureat",
-   "faculte": null,
-   "lien": "https://future.mcmaster.ca/programs/social-sciences/",
-   "source": "https://future.mcmaster.ca/programs/"
-  },
-  {
-   "nom": "Concurrent Certificate in Acting",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Anti-Racism, Inclusion and Equity (ARIE) in Science",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Applied Linguistics",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Applied Social Sciences Research",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Art & Social Change",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Biomedical Sciences (BMS)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Child and Youth Education for Social Sciences",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Cinema Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Creative Writing and Narrative Arts (CWNA)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Criminology",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Critical Curatorial Studies (CCCS)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Critical Heritage Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Critical Practice in Child Welfare",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Cultural Perceptions of Death",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Environmental Sustainability (ES)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Essential French",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Geographic Information Science (GIS)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Health Humanities and Social Sciences",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in History and Education",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Human Anatomy (CCHA)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Immunology, Microbiology, & Virology (IMV)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Indigenous Knowledges, Ecosystems & Society",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in International Engagement",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Kinesiology",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Leadership, Equity & Social Change",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Music",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Professional French",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Public Relations",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Quantum Science and Technology",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Rehabilitation Sciences (RS)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Science Communication",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Scientific Computing",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Social Innovation",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Stage Design",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Studio Art",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Sustainability",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in the Language of Medicine and Health",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Urban Studies and Planning (USP)",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Visual Studies",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Concurrent Certificate in Work and Labour Relations",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "The Humanities Concurrent Certificate: Skills for Life",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Technology Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Technology Leadership Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Advanced Accounting, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Applied Clinical Research, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Big Data Programming & Architecture, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Business Administration, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Business of Golf and Resort Management, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Data Analytics, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Data Science, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Digital Marketing, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Management Principles and Practices, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Marketing, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Professional Addiction Studies, Certificate",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Adult Critical Care Nursing, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Back-End Development, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Big Data Programming & Architecture, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Creative, Critical and Design Thinking, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Data Analytics, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Data Science, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Foundations in Management of Human Resources, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Foundations in Talent Planning and Acquisition, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Foundations in Workplace Health and Safety, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Front-End Development, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Nursing Concepts in Continence Care, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Nutrition, Health and Wellness, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Retirement Community Management, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "Risk Management, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  },
-  {
-   "nom": "User Experience and User Interface (UX/UI) Design, Certificate of Professional Learning",
-   "cycle": "certificat",
-   "faculte": null,
-   "lien": null,
-   "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
-  }
- ],
- "exclus": [
-  {
-   "nom": "Medicine",
-   "raison": "M.D., doctorat professionnel, exclu"
-  },
-  {
-   "nom": "Physician Assistant",
-   "raison": "la page indique « now a graduate level program » : plus de premier cycle"
-  },
-  {
-   "nom": "STEP Certificate (Summer Transition through English Prep)",
-   "raison": "programme passerelle d'anglais intensif, non crédité vers un grade"
-  },
-  {
-   "nom": "McMaster English Readiness for Graduate Excellence (MERGE) Certificate",
-   "raison": "le calendrier précise : ne peut servir de crédit vers un grade"
-  }
- ]
+  "universite": "McMaster University",
+  "date_releve": "2026-10-28",
+  "sources_generales": [
+    "https://future.mcmaster.ca/programs/",
+    "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+  ],
+  "blocages": [
+    "https://academiccalendars.romcmaster.ca/content.php?catoid=65&navoid=14803 (Programs by Degree) et navoid=14835 (Certificate and Diploma Programs) : réponse HTTP 202 vide (défi anti-robot) — non contourné ; remplacé par le PDF officiel du calendrier 2026-2027 (édition « Academic Advising », même domaine, servi librement) pour les certificats."
+  ],
+  "attendu": {
+    "baccalaureat": 25,
+    "certificat": 71,
+    "comment": "Baccalauréats : 25 entrées du répertoire officiel future.mcmaster.ca/programs ; McMaster admet par programme d'entrée de niveau I (Gateway, Science, Humanities I, etc.), unité = entrée du répertoire. Les nombreux programmes Honours/Combined Honours de niveau II+ du calendrier ne sont PAS listés (calendrier web bloqué ; le PDF ne permet pas une extraction fiable) — doute à signaler. Certificats : 41 « Concurrent Certificates » + 2 certificats de technologie + 28 certificats de McMaster Continuing Education listés dans le calendrier PDF (11 « Certificate », 15 « Certificate of Professional Learning », STEP et MERGE). Les certificats MCE portent une mention « Maximum Credit Toward Degree Studies » (crédit reconnu). Pas de lien par certificat (calendrier web bloqué) : lien null, source = PDF. Vérifié 2026-10-28 dans le PDF officiel 2026-2027 : « Courses within MCE's academic programs are Senate-approved undergraduate-level courses. In particular, they have been approved for advanced credit toward McMaster undergraduate degrees » ; chaque certificat MCE porte « Maximum Credit Toward Degree Studies » (sauf Back-End Development, couvert par la mention générale). Les 2 certificats de Nursing (Adult Critical Care, Continence Care) relèvent de la School of Nursing, pas de la formation continue : inchangés."
+  },
+  "programmes": [
+    {
+      "nom": "Arts & Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/arts-science/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Bachelor of Technology",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/bachelor-of-technology/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Business",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/business/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Chemical & Physical Sciences Gateway",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/chemical-and-physical-sciences-gateway/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Computer Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/computer-science/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Honours Economics I",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/economics/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Engineering",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/engineering/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Environmental & Earth Sciences Gateway",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/environmental-earth-sciences-gateway/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Health and Society I",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/health-and-society/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Honours Health Sciences Program",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/health-sciences/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Honours Integrated Science",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/honours-integrated-science/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Honours Kinesiology",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/kinesiology/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Humanities I",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/humanities/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "iArts (Integrated Arts)",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/iarts/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Integrated Biomedical Engineering & Health Sciences",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/ibiomed/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Integrated Business & Humanities",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/ibh/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Leadership & Civic Studies I (Wilson College)",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/wilson-college/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Life Sciences Gateway",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/lifesci/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Mathematics & Statistics Gateway",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/math-stats/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Medical Radiation Sciences",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/medical-radiation-services/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Midwifery",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/midwifery/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Nursing",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Social Sciences I",
+      "cycle": "baccalaureat",
+      "faculte": null,
+      "lien": "https://future.mcmaster.ca/programs/social-sciences/",
+      "source": "https://future.mcmaster.ca/programs/"
+    },
+    {
+      "nom": "Concurrent Certificate in Acting",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Anti-Racism, Inclusion and Equity (ARIE) in Science",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Applied Linguistics",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Applied Social Sciences Research",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Art & Social Change",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Biomedical Sciences (BMS)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Child and Youth Education for Social Sciences",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Cinema Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Creative Writing and Narrative Arts (CWNA)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Criminology",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Critical Curatorial Studies (CCCS)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Critical Heritage Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Critical Practice in Child Welfare",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Cultural Perceptions of Death",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Environmental Sustainability (ES)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Essential French",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Geographic Information Science (GIS)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Health Humanities and Social Sciences",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in History and Education",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Human Anatomy (CCHA)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Immunology, Microbiology, & Virology (IMV)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Indigenous Knowledges, Ecosystems & Society",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in International Engagement",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Kinesiology",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Leadership, Equity & Social Change",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Music",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Professional French",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Public Relations",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Quantum Science and Technology",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Rehabilitation Sciences (RS)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Science Communication",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Scientific Computing",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Social Innovation",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Stage Design",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Studio Art",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Sustainability",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in the Language of Medicine and Health",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Urban Studies and Planning (USP)",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Visual Studies",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Concurrent Certificate in Work and Labour Relations",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "The Humanities Concurrent Certificate: Skills for Life",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Technology Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Technology Leadership Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Advanced Accounting, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Applied Clinical Research, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Big Data Programming & Architecture, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Business Administration, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Business of Golf and Resort Management, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Data Analytics, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Data Science, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Digital Marketing, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Management Principles and Practices, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Marketing, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Professional Addiction Studies, Certificate",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Adult Critical Care Nursing, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Back-End Development, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Big Data Programming & Architecture, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Creative, Critical and Design Thinking, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Data Analytics, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Data Science, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Foundations in Management of Human Resources, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Foundations in Talent Planning and Acquisition, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Foundations in Workplace Health and Safety, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Front-End Development, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Nursing Concepts in Continence Care, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Nutrition, Health and Wellness, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Retirement Community Management, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "Risk Management, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    },
+    {
+      "nom": "User Experience and User Interface (UX/UI) Design, Certificate of Professional Learning",
+      "cycle": "certificat",
+      "faculte": null,
+      "lien": null,
+      "source": "https://academiccalendars.romcmaster.ca/mime/media/view/65/14891/ug-book-2026+pdf.pdf"
+    }
+  ],
+  "exclus": [
+    {
+      "nom": "Medicine",
+      "raison": "M.D., doctorat professionnel, exclu"
+    },
+    {
+      "nom": "Physician Assistant",
+      "raison": "la page indique « now a graduate level program » : plus de premier cycle"
+    },
+    {
+      "nom": "STEP Certificate (Summer Transition through English Prep)",
+      "raison": "programme passerelle d'anglais intensif, non crédité vers un grade"
+    },
+    {
+      "nom": "McMaster English Readiness for Graduate Excellence (MERGE) Certificate",
+      "raison": "le calendrier précise : ne peut servir de crédit vers un grade"
+    }
+  ],
+  "corrections": [
+    "2026-10-28 : caractère crédité des certificats McMaster Continuing Education confirmé (calendrier officiel) — aucun déplacement"
+  ]
 }

@@ -69,7 +69,7 @@ export default function StatRows({
             <div className="hf-note"><b>{`${followers} athlètes`}</b> suivent {cetEtablissement(etablissement)}</div>
             {/* Divulgation — source unique `lib/cibles/divulgation.ts`. Cibler
                 n'est pas un signet privé : le cégep le voit. */}
-            <div className="hf-disc">{divulgationCible(inTargets)}</div>
+            <div className="hf-disc">{divulgationCible(inTargets, false, etablissement === "universite")}</div>
           </div>}
         </div>
       </div>

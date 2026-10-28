@@ -1,0 +1,61 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 21:18:03.621265+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | interrupteur_on 
+------------------+-----------------
+ 20261028140000   | f
+(1 row)
+
+SELECT 1
+ALTER TABLE
+UPDATE 1
+DO
+SELECT 1
+SELECT 1
+DO
+SET
+SELECT 1
+ programmes_avant | programmes_apres | identiques | avec_libelle 
+------------------+------------------+------------+--------------
+             5897 |             5897 | t          |            0
+(1 row)
+
+CREATE FUNCTION
+SELECT 11
+ o  | interrupteur |        appelant         |                  geste                  |             attendu              |              obtenu              | ?  
+----+--------------+-------------------------+-----------------------------------------+----------------------------------+----------------------------------+----
+  1 | ON           | recruteur universitaire | maîtrise, doctorat et « autre » libellé | 4 ; libellés 1 ; seed gardé seed | 4 ; libellés 1 ; seed gardé seed | ok
+  2 | ON           | recruteur universitaire | ligne pré-remplie passée en maîtrise    | 1 ; devient manuel               | 1 ; devient manuel               | ok
+  3 | ON           | recruteur universitaire | « autre » sans libellé                  | refusé P0001                     | refusé P0001                     | ok
+  4 | ON           | recruteur universitaire | libellé sur un baccalauréat             | refusé P0001                     | refusé P0001                     | ok
+  5 | ON           | recruteur universitaire | libellé de 61 caractères                | refusé P0001                     | refusé P0001                     | ok
+  6 | ON           | recruteur universitaire | cycle inconnu                           | refusé P0001                     | refusé P0001                     | ok
+  7 | ON           | recruteur universitaire | écriture directe « autre » sans libellé | refusé 23514                     | refusé 23514                     | ok
+  8 | ON           | recruteur universitaire | écriture directe « autre » libellé      | écrit                            | écrit                            | ok
+  9 | OFF          | recruteur universitaire | maîtrise, doctorat et « autre » libellé | refusé 42501                     | refusé 42501                     | ok
+ 10 | OFF          | admin                   | écriture directe « autre » libellé      | écrit                            | écrit                            | ok
+ 11 | OFF          | admin                   | écriture directe « autre » sans libellé | refusé 23514                     | refusé 23514                     | ok
+(11 rows)
+
+psql:docs/cegep-lot-d/prod/e3-rejeu-blanc-20261028.sql:339: NOTICE:  NEXUS: VERDICT E3 — cycles baccalauréat, certificat, maîtrise, doctorat, autre (avec libellé) ; programmes existants intacts
+DO
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+psql:docs/cegep-lot-d/prod/e3-rejeu-blanc-20261028.sql:349: NOTICE:  NEXUS: rollback E3 vérifié (colonne retirée, contrainte et RPC d'origine par md5)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

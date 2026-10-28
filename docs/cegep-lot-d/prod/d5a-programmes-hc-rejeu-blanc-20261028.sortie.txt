@@ -1,0 +1,96 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user 
+-------------------------------+--------------
+ 2026-10-28 20:49:08.906551+00 | postgres
+(1 row)
+
+CREATE TABLE
+INSERT 0 4605
+CREATE TABLE
+INSERT 0 47
+DO
+SELECT 1
+INSERT 0 4605
+SELECT 47
+               universite                | bacc_attendus | bacc_obtenus | cert_attendus | cert_obtenus | sans_lien | sans_faculte 
+-----------------------------------------+---------------+--------------+---------------+--------------+-----------+--------------
+ Acadia University                       |            32 |           32 |             5 |            5 |         5 |            1
+ Algoma University                       |            21 |           21 |            13 |           13 |         0 |           34
+ Brandon University                      |            10 |           10 |             4 |            4 |         4 |            4
+ Brock University                        |             0 |            0 |             0 |            0 |         1 |            1
+ Cape Breton University                  |            37 |           37 |            16 |           16 |        15 |            2
+ Carleton University                     |           129 |          129 |             7 |            7 |         0 |          136
+ Dalhousie University                    |            80 |           80 |            70 |           70 |         2 |           70
+ Lakehead University                     |            50 |           50 |            17 |           17 |         0 |           67
+ MacEwan University                      |            45 |           45 |             9 |            9 |         0 |           54
+ McMaster University                     |            23 |           23 |            69 |           69 |        70 |           92
+ Memorial University of Newfoundland     |            38 |           38 |             8 |            8 |         0 |            0
+ Mount Allison University                |            40 |           40 |            16 |           16 |         0 |           56
+ Mount Royal University                  |            38 |           38 |             5 |            5 |         0 |            0
+ Nipissing University                    |            32 |           32 |             0 |            0 |         0 |           32
+ Ontario Tech University                 |           110 |          110 |             0 |            0 |         0 |            0
+ Queen's University                      |            85 |           85 |            15 |           15 |         0 |            0
+ Saint Mary's University                 |            50 |           50 |            16 |           16 |         0 |            4
+ St. Francis Xavier University           |             0 |            0 |             0 |            0 |         1 |            1
+ St. Thomas University                   |            35 |           35 |             4 |            4 |         0 |           39
+ Thompson Rivers University              |            61 |           61 |            36 |           36 |         0 |            0
+ Toronto Metropolitan University         |            68 |           68 |             8 |            8 |         0 |            0
+ Trent University                        |            66 |           66 |             0 |            0 |         4 |           66
+ Trinity Western University              |            29 |           29 |             7 |            7 |         0 |            0
+ Université d'Ottawa                     |           171 |          171 |            10 |           10 |         0 |          181
+ Université de Moncton                   |            67 |           67 |            12 |           12 |         0 |           65
+ Université Laurentienne                 |            68 |           68 |            14 |           14 |         0 |           82
+ University of Alberta                   |           293 |          293 |             2 |            2 |         0 |            0
+ University of British Columbia          |           131 |          131 |             0 |            0 |         0 |          131
+ University of British Columbia Okanagan |            55 |           55 |             0 |            0 |         0 |           55
+ University of Calgary                   |            86 |           86 |             0 |            0 |         0 |           86
+ University of Guelph                    |            89 |           89 |            11 |           11 |         0 |          100
+ University of Lethbridge                |            80 |           80 |             1 |            1 |         0 |           81
+ University of Manitoba                  |           215 |          215 |             1 |            1 |         0 |            0
+ University of New Brunswick             |           101 |          101 |            20 |           20 |        13 |            0
+ University of Northern British Columbia |            49 |           49 |            12 |           12 |         0 |           61
+ University of Prince Edward Island      |            43 |           43 |             5 |            5 |         0 |            0
+ University of Regina                    |            89 |           89 |            59 |           59 |         0 |            0
+ University of Saskatchewan              |            89 |           89 |            62 |           62 |         0 |            0
+ University of the Fraser Valley         |            52 |           52 |            38 |           38 |         0 |           88
+ University of Toronto                   |           270 |          270 |            17 |           17 |         0 |            0
+ University of Victoria                  |            84 |           84 |            13 |           13 |         0 |            0
+ University of Waterloo                  |            99 |           99 |             1 |            1 |         0 |          100
+ University of Windsor                   |           139 |          139 |            19 |           19 |       158 |            8
+ University of Winnipeg                  |            60 |           60 |            12 |           12 |         0 |            1
+ Western University                      |           270 |          270 |            32 |           32 |       302 |            0
+ Wilfrid Laurier University              |            63 |           63 |            15 |           15 |         0 |            0
+ York University                         |           123 |          123 |            59 |           59 |         0 |            0
+(47 rows)
+
+CREATE FUNCTION
+SELECT 7
+                  appelant                  | programmes_lus 
+--------------------------------------------+----------------
+ anon                                       | refusé
+ athlète                                    | 0
+ coach                                      | 0
+ recruteur collégial                        | 0
+ partenaire                                 | 0
+ admin                                      | 5897
+ recruteur universitaire (Western, sous ON) | 302
+(7 rows)
+
+psql:docs/cegep-lot-d/prod/d5a-programmes-hc-rejeu-blanc-20261028.sql:4791: NOTICE:  NEXUS: VERDICT données D5a — 4605 programmes hors Québec, attendu = obtenu, rien d'autre ne bouge, lus par l'admin seulement (et SA liste pour le recruteur universitaire sous ON)
+DO
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DELETE 4605
+psql:docs/cegep-lot-d/prod/d5a-programmes-hc-rejeu-blanc-20261028.sql:4800: NOTICE:  NEXUS: rollback des données D5a vérifié
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

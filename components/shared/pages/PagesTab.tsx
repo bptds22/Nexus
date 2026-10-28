@@ -124,7 +124,7 @@ export default function PagesTab({
   schoolId, schoolName, teams, universite = false,
 }: {
   schoolId: string; schoolName: string; teams: PagesTabTeam[];
-  /** Lot D5b : page d'une université — pas de pages d'équipes pour l'instant (Q5), pas de Parcours. */
+  /** Lot D5b : page d'une université (pas de Parcours) ; ses pages d'équipes reviennent au lot E4. */
   universite?: boolean;
 }) {
   const [cible, setCible] = React.useState<Cible>(null);
@@ -162,13 +162,9 @@ export default function PagesTab({
         onClick={() => setCible({ kind: "ecole" })}
       />
 
-      {universite ? (
+      {teams.length === 0 ? (
         <div className="px-4 py-6 text-[13px] text-[#6b7280]">
-          Les pages des équipes universitaires arrivent plus tard — seule la page de l&apos;université est modifiable.
-        </div>
-      ) : teams.length === 0 ? (
-        <div className="px-4 py-6 text-[13px] text-[#6b7280]">
-          Aucune équipe — seule la page du collège est modifiable.
+          Aucune équipe — seule la page {universite ? "de l'université" : "du collège"} est modifiable.
         </div>
       ) : (
         teams.map((t) => (

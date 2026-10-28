@@ -1,5 +1,6 @@
 "use client";
 
+import { useEstRecruteurUniversitaire } from "@/lib/queries/shared/useEstRecruteurUniversitaire";
 import Link from "next/link";
 import ActionBar from "./_components/ActionBar";
 import { EntonnoirProcessus, IndicateursMessagerie } from "./_components/KpiCards";
@@ -7,8 +8,6 @@ import TrendingAthletes from "./_components/TrendingAthletes";
 import RecruiterActivityFeed from "./_components/RecruiterActivityFeed";
 import TuilesTableauDeBord, { type Tuile, type ValeurTuile } from "./_components/TuilesTableauDeBord";
 import { useCiblesSurMonCegep } from "@/lib/queries/recruiter/useCiblesSurMonCegep";
-import { estRecruteurUniversitaire } from "@/lib/auth/recruteurUniversitaire";
-import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useAthleteSearch } from "@/lib/queries/recruiter/useAthleteSearch";
 import { CLES_FILTRES, FILTRES_DEFAUT } from "@/lib/recherche/filtres-url";
 import { estRelanceAFaire, estVisiteAVenir, FILTRE_PIPELINE_URL } from "@/lib/pipeline/filterPipelineCards";
@@ -139,7 +138,7 @@ function RecruteurTableauDeBordDesktop() {
      clé de cache) — le chiffre est le « N athlètes trouvés » de l'arrivée. */
   const tierEnCours = subscription.loading;
   const { data: cibles, aUnCegepRattache } = useCiblesSurMonCegep();
-  const { data: moiTableau } = useCurrentUser();
+  const universitaire = useEstRecruteurUniversitaire();
   const { data: nouveaux } = useAthleteSearch({
     search: "",
     sport: FILTRES_DEFAUT.sport,
@@ -179,10 +178,10 @@ function RecruteurTableauDeBordDesktop() {
     },
     {
       cle: "ciblent", libelle: "Athlètes qui te ciblent", accent: BLANC,
-      aide: "Ont ton cégep dans leurs cibles",
+      aide: universitaire ? "Ont ton université dans leurs cibles" : "Ont ton cégep dans leurs cibles",
       href: `/recruteur/recherche?${CLES_FILTRES.meCiblent}=true`,
       valeur: !aUnCegepRattache
-        ? { etat: "sans_objet", motif: "Aucun cégep rattaché au compte" }
+        ? { etat: "sans_objet", motif: universitaire ? "Aucune université rattachée au compte" : "Aucun cégep rattaché au compte" }
         /* C2 (1.4.5) : aucun compte de joueurs — « Voir » au lieu du nombre
            (idem « Nouveaux (10 j) » plus bas). */
         : cibles ? { etat: "voir", disponible: cibles.length > 0 } : { etat: "chargement" },
@@ -202,8 +201,8 @@ function RecruteurTableauDeBordDesktop() {
       valeur: nouveaux ? { etat: "voir", disponible: nouveaux.length > 0 } : { etat: "chargement" },
     },
   ];
-  // Recruteur universitaire (lot D3b) : la tuile « te ciblent » est propre au cégep — retirée.
-  const tuiles = estRecruteurUniversitaire(moiTableau?.profile) ? tuilesToutes.filter((x) => x.cle !== "ciblent") : tuilesToutes;
+  // Recruteur universitaire : la tuile « te ciblent » revient au lot E4 (A1) — les cégépiens ciblent les universités sous ON (E1).
+  const tuiles = tuilesToutes;
 
   const headerName = header?.headerName ?? "";
   const headerSchool = header?.headerSchool ?? "";
