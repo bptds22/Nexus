@@ -1,0 +1,54 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-28 17:29:52.399746+00 | postgres     | 17.6
+(1 row)
+
+DO
+SELECT 419
+DELETE 217
+INSERT 0 1
+ALTER TABLE
+UPDATE 203
+   role    | comptes_avec_ecole 
+-----------+--------------------
+ ADMIN     |                  1
+ ATHLETE   |                168
+ COACH     |                 16
+ RECRUTEUR |                 18
+(4 rows)
+
+CREATE FUNCTION
+CREATE FUNCTION
+SELECT 203
+SELECT 1
+DO
+SET
+SELECT 203
+SELECT 4
+   role    | comptes | creer_avant | creer_apres | modifier_avant | modifier_apres | supprimer_avant | supprimer_apres | comptes_changes 
+-----------+---------+-------------+-------------+----------------+----------------+-----------------+-----------------+-----------------
+ ADMIN     |       1 |           0 |           0 |              0 |              0 |               0 |               0 |               0
+ ATHLETE   |     168 |         168 |           0 |            168 |              0 |             168 |               0 |             168
+ COACH     |      16 |          16 |          16 |             16 |             16 |              16 |              16 |               0
+ RECRUTEUR |      18 |          18 |           0 |             18 |              0 |              18 |               0 |              18
+(4 rows)
+
+DO
+psql:docs/cegep-lot-d/prod/t-rejeu-blanc-20261028.sql:168: NOTICE:  NEXUS: VERDICT lot T — teams : seuls coachs et admins écrivent ; leurs droits réels sont identiques
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+psql:docs/cegep-lot-d/prod/t-rejeu-blanc-20261028.sql:178: NOTICE:  NEXUS: rollback lot T vérifié (policies retirées)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

@@ -1,0 +1,6 @@
+﻿Pager usage is off.
+    version     | op | school_page_change | team_page_change |                                                                             policies                                                                             | interrupteur | recruteurs_univ 
+----------------+----+--------------------+------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------+-----------------
+ 20261028070000 |  1 | t                  | t                | universites_ecriture_admin_delete:DELETE:RESTRICTIVE, universites_ecriture_admin_insert:INSERT:RESTRICTIVE, universites_ecriture_admin_update:UPDATE:RESTRICTIVE | false        |               0
+(1 row)
+
