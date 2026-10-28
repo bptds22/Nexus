@@ -6,7 +6,8 @@ import { lireTout } from "@/lib/supabase/lireTout";
 import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
 import ErreurChargement from "@/components/shared/ErreurChargement";
 import { AlertTriangle, AlertCircle, Building2, Mail, Phone, ShieldCheck, ShieldOff, UserCheck, Users, X } from "lucide-react";
-import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import { correspondTypeEtablissement, embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import FiltreTypeEtablissement from "../_components/FiltreTypeEtablissement";
 
 /* ═══════════════════════════════════════════════════════════════
    Admin — tableau de bord Entraîneurs.
@@ -83,6 +84,8 @@ export default function AdminEntraineursPage() {
   // Plus aucune erreur de chargement en silence (correctif 2026-10-16).
   const chargement = useErreurChargement();
   const [tab, setTab] = useState<FilterTab>("all");
+  // Lot D-admin cégep : filtre par type d'établissement, combiné à l'onglet.
+  const [typeFiltre, setTypeFiltre] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -183,10 +186,11 @@ export default function AdminEntraineursPage() {
   const flaggedCount = rows.filter((r) => r.flagNoSchool || r.flagNoRole || r.flagNoTeam).length;
 
   const visibleRows = useMemo(() => {
-    if (tab === "new") return rows.filter((r) => isWithinLastDays(r.created_at, 7));
-    if (tab === "flagged") return rows.filter((r) => r.flagNoSchool || r.flagNoRole || r.flagNoTeam);
-    return rows;
-  }, [rows, tab]);
+    const parType = rows.filter((r) => correspondTypeEtablissement(r.school_type, typeFiltre));
+    if (tab === "new") return parType.filter((r) => isWithinLastDays(r.created_at, 7));
+    if (tab === "flagged") return parType.filter((r) => r.flagNoSchool || r.flagNoRole || r.flagNoTeam);
+    return parType;
+  }, [rows, tab, typeFiltre]);
 
   return (
     <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
@@ -242,6 +246,9 @@ export default function AdminEntraineursPage() {
             {t.label}
           </button>
         ))}
+        <div className="ml-auto">
+          <FiltreTypeEtablissement value={typeFiltre} onChange={setTypeFiltre} />
+        </div>
       </div>
 
       {chargement.erreur && (

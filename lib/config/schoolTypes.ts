@@ -54,3 +54,31 @@ export function embeddedSchool(raw: unknown): EmbeddedSchool | null {
   const row = value as { name?: string | null; type?: string | null };
   return { name: row.name ?? null, type: row.type ?? null };
 }
+
+/* ── Filtre admin « Type d'établissement » (lot D-admin cégep, 2026-10-27) ──
+   Une seule liste pour toutes les listes admin qui filtrent par type
+   (/admin/athletes, entraîneurs, recruteurs, désactivations). « aucun » =
+   ligne sans établissement rattaché. UNIVERSITE s'ajoutera ici avec le lot
+   D0, le jour où la base acceptera ce type. */
+export const TYPE_SANS_ETABLISSEMENT = "aucun";
+
+export const OPTIONS_FILTRE_TYPE_ETABLISSEMENT: { value: string; label: string }[] = [
+  { value: "", label: "Tous les types" },
+  { value: "SECONDAIRE", label: "École secondaire" },
+  { value: "CEGEP", label: "Cégep" },
+  { value: "LIGUE_CIVILE", label: "Ligue / club" },
+  { value: TYPE_SANS_ETABLISSEMENT, label: "Sans établissement" },
+];
+
+/** Valeur d'URL reconnue, sinon "" (filtre inactif) : un ?type= inventé ne vide pas la liste. */
+export function lireFiltreTypeEtablissement(valeur: string | null | undefined): string {
+  if (!valeur) return "";
+  return OPTIONS_FILTRE_TYPE_ETABLISSEMENT.some((o) => o.value === valeur) ? valeur : "";
+}
+
+/** Vrai si une ligne de type `type` (schools.type, ou absent) passe le filtre. */
+export function correspondTypeEtablissement(type: string | null | undefined, filtre: string): boolean {
+  if (!filtre) return true;
+  if (filtre === TYPE_SANS_ETABLISSEMENT) return !type;
+  return type === filtre;
+}

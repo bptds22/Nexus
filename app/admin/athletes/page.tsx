@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AdminTable, { AdminColumn } from "../_components/AdminTable";
-import { embeddedSchool, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import { correspondTypeEtablissement, embeddedSchool, lireFiltreTypeEtablissement, schoolTypeLabel } from "@/lib/config/schoolTypes";
+import FiltreTypeEtablissement from "../_components/FiltreTypeEtablissement";
 import { EMBED_COMPTE, inscriptionDeFiche, repartitionComptesAthletes, lireComptesSansFiche, type InscriptionFiche } from "@/lib/admin/comptesAthletes";
 import { lireTout } from "@/lib/supabase/lireTout";
 import { useErreurChargement } from "@/lib/hooks/useErreurChargement";
@@ -157,6 +158,8 @@ function AdminAthletesPageInner() {
   const filterParam = searchParams?.get("filter") || null;
   const sportParam = searchParams?.get("sport") || null;
   const schoolParam = searchParams?.get("school") || null;
+  // Lot D-admin cégep : type d'établissement (?type=CEGEP…), valeur inconnue = inactif.
+  const typeParam = lireFiltreTypeEtablissement(searchParams?.get("type")) || null;
 
   const [rows, setRows] = useState<AthleteRow[]>([]);
   const [sports, setSports] = useState<Sport[]>([]);
@@ -173,7 +176,7 @@ function AdminAthletesPageInner() {
   const isUserView = !!filterParam && USER_LIST_FILTERS.has(filterParam);
   const isSansFicheView = !!filterParam && SANS_FICHE_FILTERS.has(filterParam);
 
-  function setParam(key: "filter" | "sport" | "school", value: string | null) {
+  function setParam(key: "filter" | "sport" | "school" | "type", value: string | null) {
     const params = new URLSearchParams(searchParams?.toString() || "");
     // Mutually-exclusive filter groups: clearing an unrelated group isn't needed —
     // each dropdown writes the same `filter` key, so new write replaces old.
@@ -190,7 +193,7 @@ function AdminAthletesPageInner() {
   const profilValue = filterParam && PROFIL_FILTERS.has(filterParam) ? filterParam : "";
   const recrutValue = filterParam && RECRUT_FILTERS.has(filterParam) ? filterParam : "";
   const inscriptionValue = filterParam && INSCRIPTION_FILTERS.has(filterParam) ? filterParam : "";
-  const anyActive = !!filterParam || !!sportParam || !!schoolParam || !!searchQuery.trim();
+  const anyActive = !!filterParam || !!sportParam || !!schoolParam || !!typeParam || !!searchQuery.trim();
 
   useEffect(() => {
     (async () => {
@@ -355,13 +358,14 @@ function AdminAthletesPageInner() {
     return list.filter((r) => {
       if (sportParam && r.sport_id !== sportParam) return false;
       if (schoolParam && r.school_id !== schoolParam) return false;
+      if (typeParam && !correspondTypeEtablissement(r.school_type, typeParam)) return false;
       if (q) {
         const full = `${r.first_name} ${r.last_name}`.toLowerCase();
         if (!full.includes(q)) return false;
       }
       return true;
     });
-  }, [rows, filterParam, stagnantAthleteIds, sportParam, schoolParam, searchQuery]);
+  }, [rows, filterParam, stagnantAthleteIds, sportParam, schoolParam, typeParam, searchQuery]);
 
   const sansFicheFiltres = useMemo(() => {
     let list = sansFiche;
@@ -381,7 +385,7 @@ function AdminAthletesPageInner() {
      annonçait le vrai total, l'écran en montrait une partie. Le chiffre et
      la liste ne racontaient pas la même chose.
 
-     LA FUSION N'A LIEU QUE SANS FILTRE DE CATÉGORIE, NI SPORT, NI ÉCOLE.
+     LA FUSION N'A LIEU QUE SANS FILTRE DE CATÉGORIE, NI SPORT, NI ÉCOLE, NI TYPE.
      Un compte sans fiche n'a ni sport ni école : le laisser apparaître sous
      ces filtres serait un faux positif. La RECHERCHE TEXTE, elle, s'applique
      aux deux — chercher un courriel doit trouver le compte qui ne porte
@@ -393,7 +397,7 @@ function AdminAthletesPageInner() {
      pas d'une inscription — mais c'est le seul axe commun aux deux, et c'est
      déjà celui sur lequel la liste était triée. */
   const lignesAffichees = useMemo(() => {
-    if (filterParam || sportParam || schoolParam) return filteredRows;
+    if (filterParam || sportParam || schoolParam || typeParam) return filteredRows;
 
     const q = searchQuery.trim().toLowerCase();
     const lignesSansFiche: AthleteRow[] = sansFiche
@@ -421,7 +425,7 @@ function AdminAthletesPageInner() {
 
     return [...filteredRows, ...lignesSansFiche].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [filteredRows, sansFiche, filterParam, sportParam, schoolParam, searchQuery]);
+  }, [filteredRows, sansFiche, filterParam, sportParam, schoolParam, typeParam, searchQuery]);
 
   /* Le VRAI total : un compte athlète, avec ou sans fiche. Les fiches sans
      compte (semées par un coach, ou supprimées) ne sont pas des inscriptions —
@@ -443,12 +447,14 @@ function AdminAthletesPageInner() {
   const schoolsWithAthletes = useMemo(() => {
     const byId = new Map<string, School>();
     for (const r of rows) {
+      // Sous un filtre de type, le menu École ne propose que les écoles de ce type.
+      if (typeParam && !correspondTypeEtablissement(r.school_type, typeParam)) continue;
       if (r.school_id && r.school_name && !byId.has(r.school_id)) {
         byId.set(r.school_id, { id: r.school_id, name: r.school_name });
       }
     }
     return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, "fr"));
-  }, [rows]);
+  }, [rows, typeParam]);
 
   const activeLabel = filterParam ? FILTER_LABELS[filterParam] || filterParam : null;
   const activeCount = isUserView ? userRows.length : isSansFicheView ? sansFicheFiltres.length : lignesAffichees.length;
@@ -672,6 +678,10 @@ function AdminAthletesPageInner() {
                 { value: "", label: "Tous les sports" },
                 ...sports.map((s) => ({ value: s.id, label: s.nom })),
               ]}
+            />
+            <FiltreTypeEtablissement
+              value={typeParam || ""}
+              onChange={(v) => setParam("type", v || null)}
             />
             <FilterSelect
               title="École"
