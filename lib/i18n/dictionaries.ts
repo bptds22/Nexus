@@ -477,6 +477,8 @@ export interface Dictionary {
         passwordMismatch: string;
         context: {
           scolaire: { title: string; sub: string };
+          /** Lot E7 : sous lancement_collegial ON, le cégépien s'inscrit aussi par « scolaire ». */
+          scolaireCollegial: { title: string; sub: string };
           civile: { title: string; sub: string };
         };
         consent: {
@@ -1387,6 +1389,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
           passwordMismatch: "Les mots de passe ne correspondent pas",
           context: {
             scolaire: { title: "École secondaire", sub: "RSEQ, équipe scolaire" },
+            scolaireCollegial: { title: "École secondaire ou cégep", sub: "RSEQ, équipe scolaire ou collégiale" },
             civile: { title: "Ligue civile ou club", sub: "Hors RSEQ, équipe communautaire" },
           },
           consent: {
@@ -2368,6 +2371,7 @@ export const dictionaries: Record<Lang, Dictionary> = {
           passwordMismatch: "Passwords don't match",
           context: {
             scolaire: { title: "High school", sub: "RSEQ, school team" },
+            scolaireCollegial: { title: "High school or CEGEP", sub: "RSEQ, school or college team" },
             civile: { title: "Civil league or club", sub: "Outside RSEQ, community team" },
           },
           consent: {
