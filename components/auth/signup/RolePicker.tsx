@@ -48,7 +48,7 @@ const CARDS: RoleCard[] = [
   },
   {
     role: "recruiter",
-    title: "Recruteur CÉGEP",
+    title: "Recruteur collégial",
     subtitle: "Tu recrutes pour un programme sportif collégial.",
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

@@ -1372,9 +1372,22 @@ function DirectorChoiceStep({ user, save, type, universite = false }: { user: Ne
   // any future cegep/league admin variants stay co-located here.
   const roleLabel = isLeague ? "coach principal" : "responsable de sports";
   const RoleLabel = isLeague ? "Coach principal" : "Responsable de sports";
-  const orgName = user.institution
-    ? (user.institution as Record<string, string>)?.name || "ton organisation"
-    : "ton organisation";
+  // Le prop `user` est figé au montage du wizard (save() ne fait pas setUser()) : à une première
+  // inscription, user.institution y vaut null et les deux vérifications du responsable ci-dessous ne
+  // partaient jamais (« n'a pas encore de responsable » même pour une école qui en a un, « Recruteur
+  // seulement » fermé). L'institution choisie à l'étape précédente se lit dans le localStorage FRAIS —
+  // même pattern que SchoolStep (Fix #17). Clés texte stables pour les dépendances des effets.
+  const institution = (() => {
+    if (typeof window === "undefined") return user.institution;
+    try {
+      return (JSON.parse(localStorage.getItem("nexus_user") || "{}") as NexusUser).institution || user.institution;
+    } catch {
+      return user.institution;
+    }
+  })() as Record<string, unknown> | null;
+  const instId = (institution?.id as string | undefined) || undefined;
+  const instName = (institution?.name as string | undefined) || undefined;
+  const orgName = instName || "ton organisation";
 
   // Sprint cards-restructure-web : ajout du value 'coach' pour school+league
   // (remplace les cartes invite + coach_only par une seule carte avec email
@@ -1403,29 +1416,27 @@ function DirectorChoiceStep({ user, save, type, universite = false }: { user: Ne
 
   // CÉGEP uniquement (school est sur hasResponsable, league skip).
   useEffect(() => {
-    if (!isCegep || !user.institution) {
-      setSchoolAdminState({ hasPermanent: false, hasInterim: false, loading: false });
-      return;
-    }
-    const inst = user.institution as Record<string, unknown>;
-    const instName = inst?.name as string | undefined;
-    if (!instName) {
+    if (!isCegep || (!instId && !instName)) {
       setSchoolAdminState({ hasPermanent: false, hasInterim: false, loading: false });
       return;
     }
     let cancelled = false;
     (async () => {
       const supabase = createClient();
-      const { data: school } = await supabase.from("schools").select("id").eq("name", instName).maybeSingle();
-      if (cancelled) return;
-      if (!school) {
+      let schoolId: string | null = instId || null;
+      if (!schoolId && instName) {
+        const { data: school } = await supabase.from("schools").select("id").eq("name", instName).maybeSingle();
+        if (cancelled) return;
+        schoolId = (school?.id as string) || null;
+      }
+      if (!schoolId) {
         setSchoolAdminState({ hasPermanent: false, hasInterim: false, loading: false });
         return;
       }
       const { data: admins } = await supabase
         .from("users")
         .select("profile_data")
-        .eq("school_id", school.id)
+        .eq("school_id", schoolId)
         .eq("is_school_admin", true);
       if (cancelled) return;
       const hasPermanent = !!admins?.some((a) => {
@@ -1439,7 +1450,7 @@ function DirectorChoiceStep({ user, save, type, universite = false }: { user: Ne
       setSchoolAdminState({ hasPermanent, hasInterim, loading: false });
     })();
     return () => { cancelled = true; };
-  }, [isCegep, user.institution]);
+  }, [isCegep, instId, instName]);
 
   // Sprint coach-responsable-3 / cards-restructure-web — gate cartes
   // école+league basé sur school_has_responsable (RPC 2a). Couvre PENDING
@@ -1450,15 +1461,7 @@ function DirectorChoiceStep({ user, save, type, universite = false }: { user: Ne
   const [hasResponsable, setHasResponsable] = useState<boolean | null>(null);
   const [responsableLoading, setResponsableLoading] = useState(false);
   useEffect(() => {
-    if (!isCardsContext || !user.institution) {
-      setHasResponsable(null);
-      setResponsableLoading(false);
-      return;
-    }
-    const inst = user.institution as Record<string, unknown>;
-    const instName = inst?.name as string | undefined;
-    const instId   = inst?.id as string | undefined;
-    if (!instName && !instId) {
+    if (!isCardsContext || (!instName && !instId)) {
       setHasResponsable(null);
       setResponsableLoading(false);
       return;
@@ -1491,7 +1494,7 @@ function DirectorChoiceStep({ user, save, type, universite = false }: { user: Ne
       setResponsableLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [isCardsContext, user.institution]);
+  }, [isCardsContext, instId, instName]);
 
   // mustBeResponsable : Coach autorisé UNIQUEMENT si hasResponsable===true
   // confirmé. Couvre loading (null), échec RPC (null), orphan (false), club
