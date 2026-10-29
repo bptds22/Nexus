@@ -1,0 +1,250 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-29 20:22:43.524862+00 | postgres     | 17.6
+(1 row)
+
+CREATE TABLE
+CREATE FUNCTION
+CREATE TRIGGER
+INSERT 0 1
+DO
+           key           | value 
+-------------------------+-------
+ lancement_civil         | false
+ lancement_collegial     | false
+ lancement_universitaire | false
+(3 rows)
+
+SELECT 1
+ALTER TABLE
+UPDATE 1
+UPDATE 1
+SELECT 143
+                                 set_config                                 
+----------------------------------------------------------------------------
+ {"sub" : "16809ad4-565c-40ca-8a35-106c073e1e01", "role" : "authenticated"}
+(1 row)
+
+UPDATE 1
+ set_config 
+------------
+ 
+(1 row)
+
+DO
+SELECT 7
+        role         |  compte  
+---------------------+----------
+ athlète             | 01b37ba6
+ parent              | 00080f6b
+ coach               | a0000000
+ recruteur collégial | 16809ad4
+ partenaire          | 011ef8c9
+ admin               | f51384b5
+ anonyme             | ·
+(7 rows)
+
+ universites | equipes_univ | cegepiens | recruteur_pro | equipe_coach | cible_secondaire | cible_football | cible_partenaire 
+-------------+--------------+-----------+---------------+--------------+------------------+----------------+------------------
+          59 |          429 |         1 | t             | e85481eb     | 015530c2         | 0090de59       | 0090de59
+(1 row)
+
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+ attendus 
+----------
+ 
+(1 row)
+
+INSERT 0 1
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 20
+SELECT 7
+SELECT 106
+INSERT 0 20
+        role         |                 objet                  | attendu |    obtenu    |      ?      |                           explication                           
+---------------------+----------------------------------------+---------+--------------+-------------+-----------------------------------------------------------------
+ athlète             | athlete_notifications                  | 0       | 0            | ok          | règles d'avant (inchangées)
+ athlète             | athletes                               | 1       | 1            | ok          | règles d'avant
+ athlète             | athletes cégépiens                     | 0       | 0            | ok          | règles d'avant
+ athlète             | conversations                          | 0       | 0            | ok          | règles d'avant (inchangées)
+ athlète             | messages                               | 0       | 0            | ok          | règles d'avant (inchangées)
+ athlète             | parent_athletes                        | 0       | 0            | ok          | règles d'avant (inchangées)
+ athlète             | parent_notifications                   | 0       | 0            | ok          | règles d'avant (inchangées)
+ athlète             | recruiter_favorites                    | 0       | 0            | ok          | règles d'avant (inchangées)
+ athlète             | recruiter_pipeline                     | 0       | 0            | ok          | règles d'avant (inchangées)
+ athlète             | rpc mes_criteres_parcours              | 1|·     | 1|·          | ok          | fonction
+ athlète             | rpc schools_par_ids(universités)       | 0|·     | 0|·          | ok          | fonction
+ athlète             | rpc teams_par_ids(équipes univ.)       | 0|·     | 0|·          | ok          | fonction
+ athlète             | schools                                | 1408    | 1408         | ok          | toutes sauf les universités
+ athlète             | schools universités                    | 0       | 0            | ok          | 0
+ athlète             | team_athletes                          | 1       | 1            | ok          | règles d'avant
+ athlète             | teams                                  | 10349   | 10349        | ok          | règles d'avant, sans les équipes universitaires
+ athlète             | teams universitaires                   | 0       | 0            | ok          | 0
+ athlète             | university_programs                    | 0       | 0            | ok          | 0 (table du chantier)
+ parent              | athlete_notifications                  | 0       | 0            | ok          | règles d'avant (inchangées)
+ parent              | athletes                               | 0       | 0            | ok          | règles d'avant
+ parent              | athletes cégépiens                     | 0       | 0            | ok          | règles d'avant
+ parent              | conversations                          | 0       | 0            | ok          | règles d'avant (inchangées)
+ parent              | messages                               | 0       | 0            | ok          | règles d'avant (inchangées)
+ parent              | parent_athletes                        | 1       | 1            | ok          | règles d'avant (inchangées)
+ parent              | parent_notifications                   | 0       | 0            | ok          | règles d'avant (inchangées)
+ parent              | recruiter_favorites                    | 0       | 0            | ok          | règles d'avant (inchangées)
+ parent              | recruiter_pipeline                     | 0       | 0            | ok          | règles d'avant (inchangées)
+ parent              | rpc get_my_children                    | 1|0     | 1|0          | ok          | fonction
+ parent              | rpc schools_par_ids(universités)       | 0|·     | 0|·          | ok          | fonction
+ parent              | schools                                | 1408    | 1408         | ok          | toutes sauf les universités
+ parent              | schools universités                    | 0       | 0            | ok          | 0
+ parent              | team_athletes                          | 0       | 0            | ok          | règles d'avant
+ parent              | teams                                  | 10349   | 10349        | ok          | règles d'avant, sans les équipes universitaires
+ parent              | teams universitaires                   | 0       | 0            | ok          | 0
+ parent              | university_programs                    | 0       | 0            | ok          | 0 (table du chantier)
+ coach               | athlete_notifications                  | 0       | 0            | ok          | règles d'avant (inchangées)
+ coach               | athletes                               | 4       | 4            | ok          | règles d'avant
+ coach               | athletes cégépiens                     | 0       | 0            | ok          | règles d'avant
+ coach               | conversations                          | 9       | 9            | ok          | règles d'avant (inchangées)
+ coach               | messages                               | 28      | 28           | ok          | règles d'avant (inchangées)
+ coach               | parent_athletes                        | 0       | 0            | ok          | règles d'avant (inchangées)
+ coach               | parent_notifications                   | 0       | 0            | ok          | règles d'avant (inchangées)
+ coach               | recruiter_favorites                    | 2       | 2            | ok          | règles d'avant (inchangées)
+ coach               | recruiter_pipeline                     | 0       | 0            | ok          | règles d'avant (inchangées)
+ coach               | rpc get_coach_athletes                 | *|0     | 4|0          | ok          | total libre, 0 cégépien
+ coach               | rpc schools_par_ids(universités)       | 0|·     | 0|·          | ok          | fonction
+ coach               | schools                                | 1408    | 1408         | ok          | toutes sauf les universités
+ coach               | schools universités                    | 0       | 0            | ok          | 0
+ coach               | team_athletes                          | 3       | 3            | ok          | règles d'avant
+ coach               | teams                                  | 10349   | 10349        | ok          | règles d'avant, sans les équipes universitaires
+ coach               | teams universitaires                   | 0       | 0            | ok          | 0
+ coach               | university_programs                    | 0       | 0            | ok          | 0 (table du chantier)
+ recruteur collégial | athlete_notifications                  | 0       | 0            | ok          | règles d'avant (inchangées)
+ recruteur collégial | athletes                               | 203     | 203          | ok          | règles d'avant, moins les cégépiens
+ recruteur collégial | athletes (règle métier)                | 203     | 203          | ok          | fiches ACTIF moins les cégépiens (sans passer par les policies)
+ recruteur collégial | athletes cégépiens                     | 0       | 0            | ok          | recruteur collégial : 0
+ recruteur collégial | conversations                          | 1       | 1            | ok          | règles d'avant (inchangées)
+ recruteur collégial | messages                               | 0       | 0            | ok          | règles d'avant (inchangées)
+ recruteur collégial | parent_athletes                        | 0       | 0            | ok          | règles d'avant (inchangées)
+ recruteur collégial | parent_notifications                   | 0       | 0            | ok          | règles d'avant (inchangées)
+ recruteur collégial | recruiter_favorites                    | 11      | 11           | ok          | règles d'avant (inchangées)
+ recruteur collégial | recruiter_pipeline                     | 26      | 26           | ok          | règles d'avant (inchangées)
+ recruteur collégial | rpc athletes_par_ids(cégépiens)        | 0|·     | 0|·          | ok          | fonction
+ recruteur collégial | rpc recruiter_athlete_cards(cégépiens) | 0|·     | 0|·          | ok          | fonction
+ recruteur collégial | rpc recruiter_search_athletes          | *|0     | 195|0        | ok          | total libre, 0 cégépien
+ recruteur collégial | rpc schools_par_ids(universités)       | 0|·     | 0|·          | ok          | fonction
+ recruteur collégial | rpc teams_par_ids(équipes univ.)       | 0|·     | 0|·          | ok          | fonction
+ recruteur collégial | schools                                | 1408    | 1408         | ok          | toutes sauf les universités
+ recruteur collégial | schools universités                    | 0       | 0            | ok          | 0
+ recruteur collégial | team_athletes                          | 28      | 28           | ok          | règles d'avant, moins les cégépiens
+ recruteur collégial | teams                                  | 10349   | 10349        | ok          | règles d'avant, sans les équipes universitaires
+ recruteur collégial | teams universitaires                   | 0       | 0            | ok          | 0
+ recruteur collégial | university_programs                    | 0       | 0            | ok          | 0 (table du chantier)
+ partenaire          | athlete_notifications                  | 0       | 0            | ok          | règles d'avant (inchangées)
+ partenaire          | athletes                               | 0       | 0            | ok          | règles d'avant
+ partenaire          | athletes cégépiens                     | 0       | 0            | ok          | règles d'avant
+ partenaire          | conversations                          | 0       | 0            | ok          | règles d'avant (inchangées)
+ partenaire          | messages                               | 0       | 0            | ok          | règles d'avant (inchangées)
+ partenaire          | parent_athletes                        | 0       | 0            | ok          | règles d'avant (inchangées)
+ partenaire          | parent_notifications                   | 0       | 0            | ok          | règles d'avant (inchangées)
+ partenaire          | recruiter_favorites                    | 0       | 0            | ok          | règles d'avant (inchangées)
+ partenaire          | recruiter_pipeline                     | 0       | 0            | ok          | règles d'avant (inchangées)
+ partenaire          | rpc partner_athlete_profile(cégépien)  | *       | 1|·          | rapporté    | rapporté (le partenaire peut voir les cégépiens, lot A)
+ partenaire          | rpc partner_newsroom_events            | *|0     | 3|0          | ok          | total libre, 0 cégépien
+ partenaire          | rpc schools_par_ids(universités)       | 0|·     | 0|·          | ok          | fonction
+ partenaire          | schools                                | 1408    | 1408         | ok          | toutes sauf les universités
+ partenaire          | schools universités                    | 0       | 0            | ok          | 0
+ partenaire          | team_athletes                          | 0       | 0            | ok          | règles d'avant
+ partenaire          | teams                                  | 10349   | 10349        | ok          | règles d'avant, sans les équipes universitaires
+ partenaire          | teams universitaires                   | 0       | 0            | ok          | 0
+ partenaire          | university_programs                    | 0       | 0            | ok          | 0 (table du chantier)
+ admin               | athlete_notifications                  | 0       | 0            | ok          | règles d'avant (inchangées)
+ admin               | athletes                               | 221     | 221          | ok          | règles d'avant
+ admin               | athletes cégépiens                     | 1       | 1            | ok          | règles d'avant
+ admin               | conversations                          | 108     | 108          | ok          | règles d'avant (inchangées)
+ admin               | messages                               | 207     | 207          | ok          | règles d'avant (inchangées)
+ admin               | parent_athletes                        | 60      | 60           | ok          | règles d'avant (inchangées)
+ admin               | parent_notifications                   | 0       | 0            | ok          | règles d'avant (inchangées)
+ admin               | recruiter_favorites                    | 22      | 22           | ok          | règles d'avant (inchangées)
+ admin               | recruiter_pipeline                     | 38      | 38           | ok          | règles d'avant (inchangées)
+ admin               | rpc athletes_par_ids(cégépiens)        | 1|·     | 1|·          | ok          | fonction
+ admin               | rpc schools_par_ids(universités)       | 59|·    | 59|·         | ok          | fonction
+ admin               | schools                                | 1467    | 1467         | ok          | toutes
+ admin               | schools universités                    | 59      | 59           | ok          | admin : toutes
+ admin               | team_athletes                          | 132     | 132          | ok          | règles d'avant
+ admin               | teams                                  | 10778   | 10778        | ok          | toutes
+ admin               | teams universitaires                   | 429     | 429          | ok          | admin : toutes
+ admin               | university_programs                    | 5961    | 5961         | ok          | admin : tous
+ anonyme             | athlete_notifications                  | 0       | 0            | ok          | règles d'avant (inchangées)
+ anonyme             | athletes                               | 0       | 0            | ok          | règles d'avant
+ anonyme             | athletes cégépiens                     | 0       | 0            | ok          | règles d'avant
+ anonyme             | conversations                          | 0       | refusé 42501 | ok (refusé) | règles d'avant (inchangées)
+ anonyme             | messages                               | 0       | refusé 42501 | ok (refusé) | règles d'avant (inchangées)
+ anonyme             | parent_athletes                        | 0       | 0            | ok          | règles d'avant (inchangées)
+ anonyme             | parent_notifications                   | 0       | 0            | ok          | règles d'avant (inchangées)
+ anonyme             | recruiter_favorites                    | 0       | 0            | ok          | règles d'avant (inchangées)
+ anonyme             | recruiter_pipeline                     | 0       | 0            | ok          | règles d'avant (inchangées)
+ anonyme             | rpc athletes_par_ids(cégépiens)        | 0|·     | ERREUR 42501 | ok (refusé) | fonction
+ anonyme             | rpc schools_par_ids(universités)       | 0|·     | ERREUR 42501 | ok (refusé) | fonction
+ anonyme             | rpc teams_par_ids(équipes univ.)       | 0|·     | ERREUR 42501 | ok (refusé) | fonction
+ anonyme             | schools                                | 1408    | 1408         | ok          | toutes sauf les universités
+ anonyme             | schools universités                    | 0       | 0            | ok          | 0
+ anonyme             | team_athletes                          | 0       | refusé 42501 | ok (refusé) | règles d'avant
+ anonyme             | teams                                  | 0       | refusé 42501 | ok (refusé) | règles d'avant, sans les équipes universitaires
+ anonyme             | teams universitaires                   | 0       | refusé 42501 | ok (refusé) | 0
+ anonyme             | university_programs                    | 0       | refusé 42501 | ok (refusé) | 0 (table du chantier)
+(126 rows)
+
+CREATE FUNCTION
+SELECT 1
+CREATE TABLE
+INSERT 0 9
+ o |        role         |                   geste                    |                      attendu                      |                      obtenu                       | ?  
+---+---------------------+--------------------------------------------+---------------------------------------------------+---------------------------------------------------+----
+ 1 | athlète             | athlète modifie son profil                 | lignes 1                                          | lignes 1                                          | ok
+ 2 | coach               | coach modifie son équipe                   | lignes 1                                          | lignes 1                                          | ok
+ 3 | coach               | coach retire puis remet un athlète         | retiré 1, remis 1                                 | retiré 1, remis 1                                 | ok
+ 4 | recruteur collégial | favori + message, secondaire hors football | favori ok, conversation acceptée, message accepté | favori ok, conversation acceptée, message accepté | ok
+ 5 | recruteur collégial | favori + message, secondaire football      | favori ok, conversation refusée 23514             | favori ok, conversation refusée 23514             | ok
+ 6 | recruteur collégial | favori sur un cégépien                     | refusé 42501                                      | refusé 42501                                      | ok
+ 7 | recruteur collégial | conversation avec un cégépien              | refusé 42501                                      | refusé 42501                                      | ok
+ 8 | parent              | parent lit son enfant                      | activité true                                     | activité true                                     | ok
+ 9 | partenaire          | partenaire lit une fiche du secondaire     | lignes 1                                          | lignes 1                                          | ok
+(9 rows)
+
+SELECT 13
+ coachs_testes | ecrivent_leur_equipe 
+---------------+----------------------
+            13 |                   13
+(1 row)
+
+ requetes_http_en_file_annulees | push_en_file_annules 
+--------------------------------+----------------------
+                              0 |                    0
+(1 row)
+
+SELECT 221
+ cegepien | fiches | sous_black_out_ancienne_regle | ecarts_1_argument | ecarts_recruteur_collegial 
+----------+--------+-------------------------------+-------------------+----------------------------
+ f        |    220 |                           193 |                 0 |                          0
+ t        |      1 |                             1 |                 1 |                          1
+(2 rows)
+
+psql.exe : psql:nonreg-prod-20261029.sql:469: NOTICE:  NEXUS: lectures hors attendu : 0
+At line:1 char:823
++ ... ING="UTF8"; & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" -w - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:nonreg-pro...ors attendu : 0:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+psql:nonreg-prod-20261029.sql:469: NOTICE:  NEXUS: écritures hors attendu : 0
+psql:nonreg-prod-20261029.sql:469: NOTICE:  NEXUS: black-out, fiches non cégépiennes en écart : 0
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est écrit en prod.
