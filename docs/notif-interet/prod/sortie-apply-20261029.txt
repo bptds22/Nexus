@@ -1,0 +1,37 @@
+SORTIE DE L'APPLY PROD — notif intérêt recruteur 20261029170000 (connecteur Supabase, nexus-prod)
+
+19 h 20 UTC — 1re tentative : « Invalid or expired requestState » ; relecture : rien appliqué (version 0, fonction 0, trace 0).
+BP : /mcp → Supabase reconnecté.
+19 h 28 UTC — relecture : etat-objets bba20215160886b637ed628bbe4fa293|51 ; dernière version 20261029160000 ; 0 trace.
+Lot envoyé : docs/notif-interet/prod/lot-prod.sql, md5 1984613de780ed8b6880970793840196 (2e et dernière tentative).
+
+Résultat du lot :
+{"avant":{"donnees":"526|50|8|0|254|21|4|37|316|1","etat_objets":"bba20215160886b637ed628bbe4fa293|51","operations":117,"version_deja":0,"derniere_version":"20261029160000","pg":"17.6"},
+ "apres":{"donnees":"526|50|8|0|254|21|4|37|316|1","etat_objets":"619e5f2e9620c07c15d7fb66b9388f80|59","version":"20261029170000","md5_enregistre":"728c0778d678cfbea89870c707ba098f","admin_operation":"096d7003-5db4-424a-b815-4f6f250e0ece","heure_calme_22h":true,"meme_transaction":true}}
+
+Vérification en lecture seule :
+- Fonctions (ACL complète, anon / authenticated) :
+  push_heure_calme, push_textes, push_mettre_en_file, push_sur_interet, push_sur_interet_favori,
+  push_sur_interet_liste, push_sur_interet_processus, push_sur_vue_profil → postgres,service_role ; anon false ; authenticated false.
+- Déclencheurs : recruiter_favorites.trg_push_interet, recruiter_list_members.trg_push_interet,
+  recruiter_pipeline.trg_push_interet, recruiter_athlete_views.trg_push_vue_profil (tous O) ; trg_notify_favorited absent.
+- CHECK : push_file_genre_check (+ VUE_PROFIL, AJOUT_LISTE), push_file_categorie_check et
+  push_preferences_categorie_check (+ INTERET_RECRUTEURS) — validés.
+- push_heure_calme 21 h 59 / 22 h 00 / 7 h 59 / 8 h 00 = false/true/true/false.
+- push_textes : « Nexus / Ton profil a été ajouté à une liste » ; « Nexus / Ton profil a été consulté 3 fois ».
+- Empreinte 619e5f2e9620c07c15d7fb66b9388f80|59 ; schema_migrations 20261029170000 md5 728c0778d678cfbea89870c707ba098f.
+
+Rollback prêt, NON lancé : docs/notif-interet/prod/lot-rollback.sql, md5 c54af29a03502768e6385cdc7adefd43.
+
+Code : merge/notif-interet-main poussée vers origin main (143cea53..d650c909, sans --force) ; Vercel
+6hPBAp8xVJ2ek6fvuhrzqQALzCrY = success (Promote à faire par BP si la prod est épinglée).
+
+Test prod (comptes de test seulement), 29 oct. 15 h 38 heure de Montréal :
+- 19 h 38 UTC : favori nexus.recruteur@nexussports.ca → nexus.onboarding@nexussports.ca (fiche c252a1de).
+  Le même geste crée aussi la ligne de processus (IDENTIFIE) : UNE seule ligne en file (id 51, AJOUT_LISTE,
+  INTERET_RECRUTEURS) ; cloche tout de suite : ADDED_TO_FAVORITES « Ton profil a été ajouté à une liste »,
+  route /athlete/notifications, nx_type AJOUT_LISTE.
+- 19 h 50 UTC (cron) : file 51 ENVOYE ; push_envois id 9 : titre « Nexus », texte « Ton profil a été ajouté
+  à une liste », nb_elements 1 ; send-push HTTP 200 {"sent":1,"failed":0,"removed":0}.
+- Nettoyage : favori retiré (1) et la ligne de processus du test (IDENTIFIE) ; la notification et l'envoi restent (preuve).
+- Vue → cloche : non testée en prod (le GO demandait le favori) ; prouvée en local (B1–B9, H5, H10).

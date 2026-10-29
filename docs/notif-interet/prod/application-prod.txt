@@ -1,0 +1,36 @@
+APPLICATION EN PROD — notif intérêt recruteur (20261029170000), SUR GO DE BP SEULEMENT
+
+Projet nexus-prod (nrloizyemulbhujrqhgx), connecteur Supabase execute_sql.
+
+0. Relevé prod (lecture seule, 2026-10-29 17 h 03 UTC) : etat-objets.sql = bba20215160886b637ed628bbe4fa293|51 ;
+   dernière version 20261029150000 ; 20261029170000 absente ; aucune trace du lot dans admin_operations ;
+   md5 des corps gardés = ceux de la migration (unite_ecrire_dossier, fav_insert_to_pipeline,
+   message_insert_to_pipeline) ; cron push-file-envoi */10 actif.
+   Version renumérotée 20261029120000 → 20261029170000 (doit passer après 20261029150000, badge auto_cegep).
+
+1. Juste avant : relire etat-objets.sql en prod (lecture seule) → bba20215…|51 attendu, sinon STOP.
+
+2. docs/notif-interet/prod/lot-prod.sql (généré par construire-lot.mjs depuis git, LF), EN UN SEUL APPEL :
+   une transaction — relevé avant, gardes (même transaction, version absente et après la dernière, aucune
+   trace, état de départ |51), la migration octet pour octet (md5 728c0778d678cfbea89870c707ba098f),
+   schema_migrations (statements = le fichier), admin_operations MIGRATION_NOTIF_INTERET_RECRUTEUR,
+   gardes finales (md5 enregistré, état 619e5f2e9620c07c15d7fb66b9388f80|59, données inchangées,
+   une opération de plus). md5 du lot : voir la sortie de construire-lot.mjs.
+   Prouvé sur la pile NexusNotif : garde fausse → tout annulé (|51, 0 version, 0 opération) ;
+   lot → |59, version et md5 enregistrés ; 2e envoi refusé.
+   Si « Invalid or expired requestState » : BP fait /mcp → reconnecter Supabase, UNE seule nouvelle tentative.
+
+3. Lecture seule après : etat-objets.sql = 619e5f2e…|59 ; 4 déclencheurs (trg_push_interet × 3,
+   trg_push_vue_profil), trg_notify_favorited absent ; CHECK push_file (genre, categorie) et
+   push_preferences (categorie) ; ACL des fonctions = {postgres, service_role}.
+
+4. Puis push de main (merge/notif-interet-main → origin main, jamais --force) : Vercel déploie l'icône.
+
+5. Rollback PRÊT, NON LANCÉ : supabase/rollback/20261029170000_rollback_notif_interet_recruteur.sql
+   (md5 ddf0543770d89fa5bfbce21e691f1f4e). Par le connecteur : sans la ligne « \set ON_ERROR_STOP 1 »
+   (méta-commande psql), + suppression de la version 20261029170000 de schema_migrations
+   + admin_operations ROLLBACK_NOTIF_INTERET_RECRUTEUR — lot de rollback à générer au point 4.
+
+6. Test prod, comptes de test seulement : athlète nexus.onboarding@nexussports.ca, recruteur de test
+   (ACTIF). Ajout → 1 push « Nexus » / « Ton profil a été ajouté à une liste » (hors 22 h 00 – 7 h 59,
+   départ au prochain passage du cron après 10 min) ; vue → cloche PROFILE_VIEWED « Ton profil a été consulté ».
