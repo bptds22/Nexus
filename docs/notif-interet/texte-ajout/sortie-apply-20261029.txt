@@ -1,0 +1,18 @@
+SORTIE DE L'APPLY PROD — texte AJOUT_LISTE 20261029210000 (connecteur Supabase, nexus-prod)
+
+20 h 14 UTC — relecture : dernière version 20261029200000 ; push_textes md5 1438de505102325941cc079324fec348 ;
+empreinte 619e5f2e9620c07c15d7fb66b9388f80|59.
+Lot envoyé (1er essai, un seul appel) : docs/notif-interet/texte-ajout/lot-prod.sql, md5 996e22a3c97bd83c74af574fa60f86d0.
+
+Résultat du lot :
+{"avant":{"donnees":"527|51|9|0|21|4|37|316","etat_objets":"619e5f2e9620c07c15d7fb66b9388f80|59","operations":121,"version_deja":0,"derniere_version":"20261029200000"},
+ "apres":{"donnees":"527|51|9|0|21|4|37|316","etat_objets":"431ce1164bba28694c21be5ec04d3435|59","version":"20261029210000","md5_enregistre":"784801cd0e738bde44064f2c759f4af1","texte":"Nexus / Ton profil a été ajouté à une liste de suivi","meme_transaction":true}}
+
+Vérification en lecture seule :
+- push_textes('AJOUT_LISTE') = « Nexus / Ton profil a été ajouté à une liste de suivi » ; VUE_PROFIL inchangé (« … consulté 2 fois »).
+- push_textes : md5 1c33650b63f6b7f108b11b8df6e01228 ; ACL postgres,service_role ; anon false ; authenticated false.
+- schema_migrations 20261029210000 texte_ajout_liste md5 784801cd0e738bde44064f2c759f4af1 (dernière version).
+- admin_operations MIGRATION_TEXTE_AJOUT_LISTE 7d2ecb4c-9f1a-4bec-bafd-a45ae0cbc07d (20 h 15 UTC).
+- Empreinte 431ce1164bba28694c21be5ec04d3435|59.
+
+Rollback prêt, NON lancé : docs/notif-interet/texte-ajout/lot-rollback.sql, md5 8c97d82deb524fc0322b2d71d9b6f239.
