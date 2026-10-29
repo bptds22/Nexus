@@ -1,0 +1,103 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-29 19:49:11.391376+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | interrupteur_on 
+------------------+-----------------
+ 20261029190000   | f
+(1 row)
+
+SELECT 1
+ALTER TABLE
+DO
+SELECT 1
+SELECT 1
+DO
+SET
+SELECT 1
+ programmes_avant | autres_programmes_apres | identiques | doctorats_1er_cycle 
+------------------+-------------------------+------------+---------------------
+             5897 |                    5897 | t          |                  64
+(1 row)
+
+SELECT 28
+              universite               | attendus | obtenus | ?  
+---------------------------------------+----------+---------+----
+ Dalhousie University                  |        4 |       4 | ok
+ Lakehead University                   |        1 |       1 | ok
+ McMaster University                   |        1 |       1 | ok
+ Memorial University of Newfoundland   |        2 |       2 | ok
+ Queen's University                    |        2 |       2 | ok
+ Thompson Rivers University            |        1 |       1 | ok
+ Toronto Metropolitan University       |        2 |       2 | ok
+ Université d'Ottawa                   |        2 |       2 | ok
+ Université de Moncton                 |        1 |       1 | ok
+ Université de Montréal                |        5 |       5 | ok
+ Université de Sherbrooke              |        1 |       1 | ok
+ Université du Québec à Trois-Rivières |        2 |       2 | ok
+ Université Laval                      |        3 |       3 | ok
+ Université McGill                     |        2 |       2 | ok
+ University of Alberta                 |        4 |       4 | ok
+ University of British Columbia        |        4 |       4 | ok
+ University of Calgary                 |        3 |       3 | ok
+ University of Guelph                  |        1 |       1 | ok
+ University of Manitoba                |        4 |       4 | ok
+ University of New Brunswick           |        1 |       1 | ok
+ University of Prince Edward Island    |        1 |       1 | ok
+ University of Saskatchewan            |        5 |       5 | ok
+ University of Toronto                 |        4 |       4 | ok
+ University of Victoria                |        1 |       1 | ok
+ University of Waterloo                |        2 |       2 | ok
+ University of Windsor                 |        1 |       1 | ok
+ Western University                    |        3 |       3 | ok
+ York University                       |        1 |       1 | ok
+(28 rows)
+
+UPDATE 1
+CREATE FUNCTION
+SELECT 7
+ o | interrupteur |        appelant         |                      geste                       |       attendu       |       obtenu        | ?  
+---+--------------+-------------------------+--------------------------------------------------+---------------------+---------------------+----
+ 1 | ON           | recruteur universitaire | garde un doctorat pré-rempli, en ajoute un       | 2 ; seed gardé seed | 2 ; seed gardé seed | ok
+ 2 | ON           | recruteur universitaire | doctorat pré-rempli renommé                      | 1 ; devient manuel  | 1 ; devient manuel  | ok
+ 3 | ON           | recruteur universitaire | cycle inconnu                                    | refusé P0001        | refusé P0001        | ok
+ 4 | ON           | recruteur universitaire | écriture directe doctorat 1er cycle              | écrit               | écrit               | ok
+ 5 | OFF          | recruteur universitaire | garde un doctorat pré-rempli, en ajoute un       | refusé 42501        | refusé 42501        | ok
+ 6 | OFF          | admin                   | écriture directe doctorat 1er cycle avec libellé | refusé 23514        | refusé 23514        | ok
+ 7 | OFF          | admin                   | écriture directe doctorat 1er cycle              | écrit               | écrit               | ok
+(7 rows)
+
+DO
+psql.exe : psql:doc1-apply-20261029.sql:508: NOTICE:  NEXUS: VERDICT doctorats — cycle « doctorat de 1er cycle » 
+ajouté, 64 programmes pré-remplis, attendu = obtenu, programmes existants intacts
+At line:1 char:879
++ ...  existe" }; & $psql -w -X -v ON_ERROR_STOP=1 -h aws-1-ca-central-1.po ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:doc1-apply...istants intacts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261029200000   | 2026-10-29 19:49:11.898457+00
+(1 row)
+
+COMMIT
+== COMMIT fait : doctorats de premier cycle au catalogue en prod (interrupteur OFF).
