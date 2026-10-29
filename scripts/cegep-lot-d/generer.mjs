@@ -29,6 +29,7 @@ const LOTS = {
   badge: ["20261029150000", "badge_auto_cegep_validation"],
   puv: ["20261029160000", "programme_universitaire_vise"],
   criteres: ["20261029180000", "criteres_parcours_auto"],
+  blackout: ["20261029190000", "blackout_portee"],
 };
 if (!LOTS[lot]) throw new Error("lot inconnu : " + lot);
 const [VERSION, NOM] = LOTS[lot];
