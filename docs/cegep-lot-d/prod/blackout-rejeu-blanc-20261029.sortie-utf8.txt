@@ -1,0 +1,90 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-29 19:23:21.355961+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | universitaire_on 
+------------------+------------------
+ 20261029160000   | f
+(1 row)
+
+SELECT 1
+ALTER TABLE
+UPDATE 1
+DO
+ recruteur_universitaire_reel | periodes_avant 
+------------------------------+----------------
+ f                            |              3
+(1 row)
+
+SELECT 221
+SELECT 1
+DO
+SET
+        libelle         |   portee   | actif | date_debut |  date_fin  
+------------------------+------------+-------+------------+------------
+ Silence RSEQ- Football | secondaire | t     | 2026-08-01 | 2026-11-10
+ Test                   | tous       | t     | 2026-08-18 | 2026-08-26
+ La pause des fêtes     | tous       | t     | 2026-12-21 | 2027-01-03
+(3 rows)
+
+ athletes_secondaire | secondaire_changes | cegepiens | cegepiens_changes 
+---------------------+--------------------+-----------+-------------------
+                 220 |                  0 |         1 |                 1
+(1 row)
+
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 19
+UPDATE 19
+ o  |   portee   |                geste                 |    attendu    |    obtenu     | ?  
+----+------------+--------------------------------------+---------------+---------------+----
+  1 | secondaire | secondaire + recruteur collégial     | visé true     | visé true     | ok
+  2 | secondaire | secondaire + recruteur universitaire | visé true     | visé true     | ok
+  3 | secondaire | cégépien + recruteur universitaire   | visé false    | visé false    | ok
+  4 | secondaire | secondaire + coach                   | visé false    | visé false    | ok
+  5 | secondaire | secondaire, 1 argument (1.4.5)       | visé true     | visé true     | ok
+  6 | secondaire | cégépien, 1 argument (1.4.5)         | visé false    | visé false    | ok
+  7 | secondaire | sans athlète (bannière)              | visé true     | visé true     | ok
+  8 | cegep      | cégépien + recruteur universitaire   | visé true     | visé true     | ok
+  9 | cegep      | secondaire + recruteur collégial     | visé false    | visé false    | ok
+ 10 | cegep      | secondaire + recruteur universitaire | visé false    | visé false    | ok
+ 11 | tous       | secondaire + recruteur collégial     | visé true     | visé true     | ok
+ 12 | tous       | cégépien + recruteur universitaire   | visé true     | visé true     | ok
+ 13 | tous       | secondaire + coach                   | visé false    | visé false    | ok
+ 14 | cegep      | carte cégep                          | visé true     | visé true     | ok
+ 15 | cegep      | carte secondaire                     | visé false    | visé false    | ok
+ 16 | secondaire | conversation recruteur ↔ secondaire  | refusée 23514 | refusée 23514 | ok
+ 17 | secondaire | conversation recruteur ↔ cégépien    | acceptée      | acceptée      | ok
+ 18 | tous       | conversation recruteur ↔ cégépien    | refusée 23514 | refusée 23514 | ok
+ 19 | tous       | conversation recruteur ↔ coach       | acceptée      | acceptée      | ok
+(19 rows)
+
+DO
+psql.exe : psql:blackout-rejeu-blanc-20261029.sql:477: NOTICE:  NEXUS: VERDICT black-out par portée — paires 
+conformes, secondaire inchangé, coach jamais visé
+At line:1 char:535
++ ... ING="UTF8"; & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" -w - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:blackout-r...ach jamais visé:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+psql:blackout-rejeu-blanc-20261029.sql:493: NOTICE:  NEXUS: rollback vérifié (corps d'avant par md5, colonne et 
+variantes retirées)
+DO
+ROLLBACK
+== ROLLBACK fait : rien n'est appliqué.

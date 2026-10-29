@@ -1,6 +1,7 @@
 "use client";
 
-import { useParcoursUniversitaire, CRITERES_UNIVERSITE_COGNE } from "@/lib/athlete/parcoursUniversitaire";
+import { useParcoursUniversitaire, CRITERES_UNIVERSITE_COGNE, type AutoUniversite } from "@/lib/athlete/parcoursUniversitaire";
+import { FAITS_VIDES, lireFaits, instagramPresent, chiffresRemplis, videoRecente, profilVerifie, programmeUniversitaireChoisi, type FaitsParcours } from "@/lib/athlete/criteresParcours";
 import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -108,14 +109,14 @@ function useSectionsBadges(
 }
 
 type Cegep = { id: string; name: string; city: string | null; region: string | null };
-type TargetRow = { id: string; schoolId: string; name: string; city: string | null; region: string | null };
+type TargetRow = { id: string; schoolId: string; name: string; city: string | null; region: string | null; type: string | null };
 type ManualKey =
   | "instagram_ready"
   | "knows_how_to_respond"
   | "coach_knows_goals"
   | "knows_numbers"
   | "contacted_program"
-  /** Lot E6 : les 8 critères « Quand l'université cogne » (cégépien sous ON), clés univ_<critère>. */
+  /** Lot E6 + point 5 : les critères manuels « Quand l'université cogne » (cégépien sous ON), clés univ_<critère>. */
   | `univ_${string}`;
 type Readiness = {
   [cle: `univ_${string}`]: boolean | undefined;
@@ -197,6 +198,13 @@ function MonParcoursPageDesktop() {
   const [coteGlobale, setCoteGlobale] = useState<number | null>(null);
   const [moyenne, setMoyenne] = useState<number | null>(null);
   const [parentalConsent, setParentalConsent] = useState(false);
+  // Point 5 (BP 2026-10-29) : sources des critères qui se cochent seuls.
+  const [instagramUrl, setInstagramUrl] = useState<string | null>(null);
+  const [videoMajLe, setVideoMajLe] = useState<string | null>(null);
+  const [testsPhysiques, setTestsPhysiques] = useState<unknown[]>([]);
+  const [verifie, setVerifie] = useState(false);
+  const [programmeVise, setProgrammeVise] = useState(false);
+  const [faits, setFaits] = useState<FaitsParcours>(FAITS_VIDES);
   const [readiness, setReadiness] = useState<Readiness>({});
   const [togglingKey, setTogglingKey] = useState<ManualKey | null>(null);
   const [phaseSaving, setPhaseSaving] = useState(false);
@@ -220,19 +228,20 @@ function MonParcoursPageDesktop() {
     const supabase = createClient();
     const { data } = await supabase
       .from("athlete_targets")
-      .select("id, school_id, schools!school_id(name, city, region)")
+      .select("id, school_id, schools!school_id(name, city, region, type)")
       .eq("athlete_id", id)
       .order("created_at", { ascending: true });
     const rows = (data as Record<string, unknown>[] | null) ?? [];
     setTargets(
       rows.map((r) => {
-        const school = pickOne(r.schools as { name?: string; city?: string | null; region?: string | null } | null);
+        const school = pickOne(r.schools as { name?: string; city?: string | null; region?: string | null; type?: string | null } | null);
         return {
           id: r.id as string,
           schoolId: r.school_id as string,
           name: school?.name ?? "Établissement",
           city: school?.city ?? null,
           region: school?.region ?? null,
+          type: school?.type ?? null,
         };
       }),
     );
@@ -246,7 +255,7 @@ function MonParcoursPageDesktop() {
       const { data } = await supabase
         .from("athletes")
         .select(
-          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, annee_diplomation, sports!sport_id(nom), schools!school_id(type)",
+          "id, sport_id, first_name, profile_completion, video_faits_saillants_url, video_faits_saillants_maj_le, video_match_complet_url, cote_globale_entraineur, moyenne_generale, consentement_parental, parcours_readiness, annee_diplomation, instagram_url, test_40_verges, saut_vertical, saut_longueur, developpe_couche, navette_agilite, sprint_100m, verified, last_profile_validation, programme_universitaire_vise_id, programme_universitaire_vise, sports!sport_id(nom), schools!school_id(type)",
         )
         .eq("user_id", user.id)
         .maybeSingle();
@@ -266,6 +275,14 @@ function MonParcoursPageDesktop() {
       setMoyenne((data.moyenne_generale as number | null) ?? null);
       setParentalConsent(data.consentement_parental === true);
       setReadiness((data.parcours_readiness as Readiness) ?? {});
+      setInstagramUrl((data.instagram_url as string | null) ?? null);
+      setVideoMajLe((data.video_faits_saillants_maj_le as string | null) ?? null);
+      setTestsPhysiques([data.test_40_verges, data.saut_vertical, data.saut_longueur, data.developpe_couche, data.navette_agilite, data.sprint_100m]);
+      setVerifie(profilVerifie(data.verified as boolean | null, data.last_profile_validation as string | null));
+      setProgrammeVise(programmeUniversitaireChoisi(data.programme_universitaire_vise_id as string | null, data.programme_universitaire_vise as string | null));
+      // Faits que l'athlète ne lit pas lui-même (migration 20261029180000). Erreur = tout faux.
+      const { data: brut } = await supabase.rpc("mes_criteres_parcours");
+      setFaits(lireFaits(brut));
 
       const id = data.id as string;
       setAthleteId(id);
@@ -507,13 +524,24 @@ function MonParcoursPageDesktop() {
     .filter((c) => !targetedIds.has(c.id))
     .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
 
-  // ── Module 3 — the 12 readiness items (7 auto + 5 manual) ──
-  // Parcours universitaire (lot E6, C4) : les 8 critères validés par BP, cochés à la main.
-  const checklistUniversite: ChecklistItem[] = CRITERES_UNIVERSITE_COGNE.map((c) => ({
-    key: `univ_${c.cle}`, type: "manual" as const, manualKey: `univ_${c.cle}` as ManualKey,
-    label: c.titre, done: readiness[`univ_${c.cle}`] === true, why: c.detail,
-    how: "Coche quand c'est fait. Tes recruteurs universitaires ne voient pas cette liste : elle est pour toi.",
-  }));
+  // ── Module 3 — the 13 readiness items (12 auto + 1 manual, point 5 du 2026-10-29) ──
+  // Parcours universitaire (lot E6, C4 ; point 5 du 2026-10-29) : 6 critères se cochent seuls, les autres à la main.
+  const autoUniversite: Record<AutoUniversite, boolean> = {
+    programme: programmeVise,
+    video: videoRecente(highlightUrl, videoMajLe),
+    chiffres: chiffresRemplis(testsPhysiques),
+    cibles: targets.some((t) => t.type === "UNIVERSITE"),
+    echange: faits.echange_recruteur_universitaire,
+    verifie,
+  };
+  const checklistUniversite: ChecklistItem[] = CRITERES_UNIVERSITE_COGNE.map((c) =>
+    c.auto
+      ? { key: `univ_${c.cle}`, type: "auto" as const, label: c.titre, done: autoUniversite[c.auto], why: c.detail, tag: c.tag, href: c.href,
+          how: "Ce critère se coche tout seul dès que c'est fait. Tes recruteurs universitaires ne voient pas cette liste : elle est pour toi." }
+      : { key: `univ_${c.cle}`, type: "manual" as const, manualKey: `univ_${c.cle}` as ManualKey,
+          label: c.titre, done: readiness[`univ_${c.cle}`] === true, why: c.detail,
+          how: "Coche quand c'est fait. Tes recruteurs universitaires ne voient pas cette liste : elle est pour toi." },
+  );
   const checklistCegep: ChecklistItem[] = [
     {
       key: "highlight", type: "auto", label: "Highlight reel", tag: "Vitrine",
@@ -556,16 +584,17 @@ function MonParcoursPageDesktop() {
       how: "Garde-la à jour. Certains programmes ne regarderont même pas ton dossier sous un certain seuil.",
     },
     {
-      key: "instagram", type: "manual", manualKey: "instagram_ready",
-      label: "Instagram recruteur-ready", done: readiness.instagram_ready === true,
-      why: "Un recruteur te cherche en ligne avant de t'appeler. Qu'est-ce qu'il trouve?",
-      how: "Enlève les photos de party. Mets du contenu d'entraînement, de matchs. Public, mais propre. Présente-toi comme un athlète.",
+      key: "instagram", type: "auto", label: "Instagram sur ta fiche", tag: "Vitrine",
+      done: instagramPresent(instagramUrl),
+      href: "/athlete/profil",
+      why: "Un recruteur collégial te cherche en ligne avant de t'appeler. Qu'est-ce qu'il trouve?",
+      how: "Ajoute ton lien Instagram à ta fiche. Enlève les photos de party, mets du contenu d'entraînement et de matchs. Public, mais propre.",
     },
     {
-      key: "respond", type: "manual", manualKey: "knows_how_to_respond",
-      label: "Tu sais répondre à un recruteur", done: readiness.knows_how_to_respond === true,
+      key: "respond", type: "auto", label: "Tu as répondu à un recruteur collégial ou universitaire", tag: "Contact",
+      done: faits.repondu_recruteur,
       why: "Ton premier message donne le ton. Le manquer, ça peut coûter l'intérêt.",
-      how: "Garde ça simple : remercie, confirme ton intérêt, pose une bonne question, et mets ton coach ou tes parents dans la boucle. Réponds vite — dans les 24h.",
+      how: "Quand un recruteur collégial ou universitaire t'écrit dans Nexus : remercie, confirme ton intérêt, pose une bonne question, et mets ton coach ou tes parents dans la boucle. Réponds vite — dans les 24h.",
     },
     {
       key: "consent", type: "auto", label: "Consentement parental", tag: "Famille",
@@ -580,16 +609,24 @@ function MonParcoursPageDesktop() {
       how: "Assieds-toi avec lui. Dis-lui où tu veux jouer. Un coach au courant te défend; un coach surpris ne peut pas t'aider.",
     },
     {
-      key: "numbers", type: "manual", manualKey: "knows_numbers",
-      label: "Connais tes chiffres", done: readiness.knows_numbers === true,
-      why: "Un recruteur va te demander ton 40 verges, ton développé, tes stats — sur le coup. Pas savoir, ça fait amateur.",
-      how: "Apprends tes stats par cœur. Sois prêt à répondre sans hésiter.",
+      key: "numbers", type: "auto", label: "Tes chiffres sont sur ta fiche", tag: "Profil",
+      done: chiffresRemplis(testsPhysiques),
+      href: "/athlete/profil",
+      why: "Un recruteur collégial va te demander ton 40 verges, ton développé, tes stats — sur le coup. Pas savoir, ça fait amateur.",
+      how: "Remplis au moins deux tests physiques sur ta fiche. Et apprends tes chiffres par cœur.",
     },
     {
-      key: "contacted", type: "manual", manualKey: "contacted_program",
-      label: "Tu as contacté ou visité un programme", done: readiness.contacted_program === true,
-      why: "Prendre les devants — écrire à un coach, aller à une journée portes ouvertes — ça montre que t'es sérieux et ça te met sur le radar tôt.",
-      how: "Choisis un CÉGEP dans tes cibles, trouve le coach, envoie un courriel court et poli. Ou va voir un match, une pratique, un camp.",
+      key: "contacted", type: "auto", label: "Une visite est enregistrée", tag: "Plan",
+      done: faits.visite,
+      why: "Une visite — en personne, en Zoom ou au téléphone — c'est le signe qu'un programme te prend au sérieux.",
+      how: "Quand un recruteur collégial planifie une visite avec toi dans Nexus, ce critère se coche tout seul. Prends les devants : écris au coach d'un CÉGEP de tes cibles.",
+    },
+    {
+      key: "verified", type: "auto", label: "Profil vérifié", tag: "Crédibilité",
+      done: verifie,
+      href: "/athlete/profil",
+      why: "Le crochet bleu dit au recruteur collégial que ta fiche est vraie et à jour.",
+      how: "Ton entraîneur vérifie ta fiche. Ensuite, confirme-la chaque mois avant le 15 pour garder ton crochet.",
     },
   ];
   const checklist = univ ? checklistUniversite : checklistCegep;

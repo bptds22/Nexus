@@ -238,7 +238,7 @@ function RecruiterThreadPage() {
             moyenne_generale, programme_cegep_vise, programmes_vises, pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
             sports!sport_id(nom),
             positions!position_id(nom, abreviation),
-            schools!school_id(name, region),
+            schools!school_id(name, region, type),
             committed_school:schools!committed_school_id(name),
             evaluations(distinctions, updated_at),
               athlete_badges(contexte, retire_le, badges(code, libelle))
@@ -257,7 +257,9 @@ function RecruiterThreadPage() {
         const posRaw = athlete?.positions;
         const pos = (Array.isArray(posRaw) ? posRaw[0] : posRaw) as { abreviation?: string } | null;
         const athSchoolRaw = athlete?.schools;
-        const athSchool = (Array.isArray(athSchoolRaw) ? athSchoolRaw[0] : athSchoolRaw) as { name?: string; region?: string } | null;
+        const athSchool = (Array.isArray(athSchoolRaw) ? athSchoolRaw[0] : athSchoolRaw) as { name?: string; region?: string; type?: string } | null;
+        // Préférences de choix d'un CÉGEP : sans objet pour un cégépien (BP 2026-10-29).
+        const prefsCegep = athSchool?.type !== "CEGEP";
         const sportRaw = athlete?.sports;
         const sport = (Array.isArray(sportRaw) ? sportRaw[0] : sportRaw) as { nom?: string } | null;
         const committedSchoolRaw = athlete?.committed_school;
@@ -328,9 +330,9 @@ function RecruiterThreadPage() {
           athleteOpenToOffers: (athlete?.open_to_offers as boolean | null) ?? null,
           athleteGpa: (athlete?.moyenne_generale as number) || 0,
           athleteProgrammes: programmes,
-          athleteOpenRelocate: !!(athlete?.pret_changer_region),
-          athleteOpenPrivate: !!(athlete?.ouvert_cegep_prive),
-          athleteOpenAnglophone: !!(athlete?.ouvert_cegep_anglophone),
+          athleteOpenRelocate: prefsCegep && !!(athlete?.pret_changer_region),
+          athleteOpenPrivate: prefsCegep && !!(athlete?.ouvert_cegep_prive),
+          athleteOpenAnglophone: prefsCegep && !!(athlete?.ouvert_cegep_anglophone),
           athleteDistinctions: distinctions,
           status: (conv.status as string) || "ACTIVE",
         };

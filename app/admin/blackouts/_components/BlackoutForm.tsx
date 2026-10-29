@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { PORTEES, porteeDe, type PorteeBlackout } from "./describeBlackout";
 
 /* ═══════════════════════════════════════════════════════════════
    BlackoutForm — création ET édition d'une période de silence RSEQ.
@@ -24,6 +25,8 @@ export interface BlackoutRow {
   date_debut: string;
   date_fin: string;
   actif: boolean;
+  /** Absent avant 20261029190000 : vaut « tous ». */
+  portee?: PorteeBlackout | null;
 }
 
 export interface SportOption {
@@ -65,6 +68,7 @@ export default function BlackoutForm({
   const [dateDebut, setDateDebut] = useState(initial?.date_debut ?? "");
   const [dateFin, setDateFin] = useState(initial?.date_fin ?? "");
   const [actif, setActif] = useState(initial?.actif ?? true);
+  const [portee, setPortee] = useState<PorteeBlackout>(initial ? porteeDe(initial) : "tous");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,6 +93,7 @@ export default function BlackoutForm({
       date_debut: dateDebut,
       date_fin: dateFin,
       actif,
+      portee,
     };
 
     /* Les mêmes règles existent en CHECK côté base : ces validations
@@ -123,6 +128,17 @@ export default function BlackoutForm({
             <option value="">Toutes les disciplines</option>
             {sports.map((s) => <option key={s.id} value={s.id}>{s.nom}</option>)}
           </select>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className={labelCls} htmlFor="bl-portee">Qui est visé</label>
+          <select id="bl-portee" className={inputBase} value={portee}
+            onChange={(e) => setPortee(e.target.value as PorteeBlackout)}>
+            {PORTEES.map((p) => <option key={p.valeur} value={p.valeur}>{p.libelle}</option>)}
+          </select>
+          <p className="text-[11px] text-[#6b7280] mt-1.5">
+            La période suit le niveau de l&apos;athlète. Les échanges avec un entraîneur ne sont jamais bloqués.
+          </p>
         </div>
 
         <div className="flex items-end pb-1">
