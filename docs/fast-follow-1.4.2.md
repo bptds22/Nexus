@@ -3021,3 +3021,21 @@ DELETE touche 0 ligne sans erreur, et la page affiche quand même « Équipe sup
 - **Correctif proposé** : une RPC admin SECURITY DEFINER (garde `is_admin()`, refus si l'équipe a des
   dépendances ou renvoi de leur nombre), ou une route serveur à clé service. Le client doit vérifier le
   nombre de lignes touchées avant d'annoncer la suppression.
+
+## 109. Pushs directs dans la file / heures calmes (2026-10-29, chantier à part)
+
+Relevé au chantier « notifications d'intérêt recruteur » (migration `20261029170000`), **hors de ce lot**
+(décision BP). La fenêtre calme 22 h 00 – 7 h 59 (Montréal) ne couvre que ce qui passe par
+`push_heure_calme()` : la file `push_file` (badges, évaluations, cartes, vues, ajouts à une liste),
+le consentement partenaire et le push parent de contact. Les pushs envoyés directement par
+`push_to_user` partent encore la nuit :
+
+- `notify_on_message` : messages, dont la voie principale des pushs coach ;
+- `notify_first_recruiter_contact` : premier contact d'un recruteur ;
+- `claim_school_athletes` : prise en charge par un coach (voir §100) ;
+- `reject_school_athlete` : refus d'école.
+
+- **Correctif proposé** : faire passer ces quatre envois par `push_mettre_en_file` (genres et clés de
+  groupe à définir, en particulier pour les messages : un push par fil ou par expéditeur), rebaser
+  chaque fonction sur le corps prod (garde md5), migration à part avec rejeu des bancs A5 et
+  notif intérêt. Couvre aussi le coach et le parent destinataires de messages.
