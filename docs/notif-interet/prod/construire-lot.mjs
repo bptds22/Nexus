@@ -24,7 +24,8 @@ if (/^\s*(begin|commit|rollback)\s*;/im.test(texte)) throw new Error("begin/comm
 const md5 = (s) => crypto.createHash("md5").update(Buffer.from(s, "utf8")).digest("hex");
 const md5Fichier = md5(texte);
 const etatApres = faux ? "0".repeat(32) : ETAT_APRES;
-const requeteEtat = fs.readFileSync(path.resolve("docs/notif-interet/etat-objets.sql"), "utf8")
+// Lu tel que git le stocke (LF) : un worktree extrait en CRLF changerait le md5 du lot.
+const requeteEtat = execFileSync("git", ["show", "HEAD:docs/notif-interet/etat-objets.sql"], { encoding: "utf8" })
   .split("\n").filter((l) => !l.startsWith("--")).join("\n").trim().replace(/;$/, "");
 
 // Données qui ne doivent PAS changer : la migration ne touche aucune ligne.

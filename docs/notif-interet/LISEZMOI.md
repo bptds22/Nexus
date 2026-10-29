@@ -63,3 +63,10 @@ Migration md5 `728c0778d678cfbea89870c707ba098f`, rollback md5 `ddf0543770d89fa5
 - État des objets : avant = prod `bba20215160886b637ed628bbe4fa293|51` ; après `619e5f2e9620c07c15d7fb66b9388f80|59` ;
   après rollback `bba20215…|51` ; 2e envoi refusé (« déjà appliquée »), état inchangé.
 - Aucun résidu après les bancs (file, envois, notifications, vues, favoris, processus, avis parent, Vault : 0).
+
+## Texte d'ajout « … liste de suivi » (20261029210000, décision BP du 2026-10-29)
+
+Migration `supabase/migrations/20261029210000_texte_ajout_liste.sql` : ne change que `push_textes`
+(AJOUT_LISTE → « Ton profil a été ajouté à une liste de suivi ») ; titre du push « Nexus », la cloche prend
+la phrase. Rollback `supabase/rollback/20261029210000_rollback_texte_ajout_liste.sql` (sans commande psql).
+Lots du connecteur et preuves : `docs/notif-interet/texte-ajout/`.

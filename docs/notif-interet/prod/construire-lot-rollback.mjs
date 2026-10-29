@@ -32,7 +32,8 @@ if (/^\\/m.test(texte)) throw new Error("commande psql restante");
 if (/^\s*(begin|commit|rollback)\s*;/im.test(texte)) throw new Error("begin/commit restant");
 for (const tag of ["$grb$", "$frb$"]) if (texte.includes(tag)) throw new Error("repère déjà présent : " + tag);
 
-const requeteEtat = fs.readFileSync(path.resolve("docs/notif-interet/etat-objets.sql"), "utf8")
+// Lu tel que git le stocke (LF) : un worktree extrait en CRLF changerait le md5 du lot.
+const requeteEtat = execFileSync("git", ["show", "HEAD:docs/notif-interet/etat-objets.sql"], { encoding: "utf8" })
   .split("\n").filter((l) => !l.startsWith("--")).join("\n").trim().replace(/;$/, "");
 const CON = "pg_get_constraintdef(oid) || ' ' || convalidated";
 if (requeteEtat.split(CON).length !== 2) throw new Error("expression des contraintes introuvable dans etat-objets.sql");

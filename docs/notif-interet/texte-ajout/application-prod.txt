@@ -1,0 +1,20 @@
+APPLICATION EN PROD — texte AJOUT_LISTE (20261029210000), SUR GO DE BP SEULEMENT
+
+Projet nexus-prod (nrloizyemulbhujrqhgx), connecteur Supabase execute_sql. md5 = ceux que git stocke (LF).
+
+0. Relevé prod (lecture seule, 2026-10-29 20 h 07 UTC) : empreinte 619e5f2e9620c07c15d7fb66b9388f80|59 ;
+   dernière version 20261029200000 ; push_textes md5 1438de505102325941cc079324fec348.
+1. Juste avant : relire max(version) (< 20261029210000) et l'empreinte (|59, 619e5f2e…), sinon STOP.
+2. docs/notif-interet/texte-ajout/lot-prod.sql EN UN SEUL APPEL — une transaction : relevé, gardes
+   (même transaction, version absente et après la dernière, lot non appliqué, état 619e5f2e…|59), migration
+   (md5 784801cd0e738bde44064f2c759f4af1), schema_migrations, admin_operations MIGRATION_TEXTE_AJOUT_LISTE,
+   gardes finales (md5 enregistré, état 431ce1164bba28694c21be5ec04d3435|59, données inchangées, +1 opération).
+3. Lecture seule après : empreinte 431ce116…|59 ; push_textes('AJOUT_LISTE') = « Nexus » / « Ton profil a été
+   ajouté à une liste de suivi » ; ACL push_textes = {postgres, service_role}.
+4. Rollback PRÊT, NON LANCÉ : docs/notif-interet/texte-ajout/lot-rollback.sql (rollback md5
+   f6c37b2d516db215f8cb444071e4a8a1) — retour à 619e5f2e…|59, version retirée, ROLLBACK_TEXTE_AJOUT_LISTE.
+
+Preuve NexusNotif : lot-rollback refusé sur état non migré ; lot-prod → 431ce116…|59 ; 2e lot-prod refusé ;
+lot-rollback → 619e5f2e…|59, 0 version ; 2e lot-rollback refusé ; lot-prod → 431ce116…|59.
+Bancs : intérêt 48/48 (A3 adapté au nouveau texte), A5 adapté 89/89 après et après rollback ;
+contre-épreuve sans 20261029210000 : 47/48, seul A3 échoue.

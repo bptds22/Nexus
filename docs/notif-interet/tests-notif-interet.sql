@@ -1,4 +1,4 @@
--- Banc « intérêt recruteur » (20261029170000), pile dédiée NexusNotif (:56322), base où la
+-- Banc « intérêt recruteur » (20261029170000 + texte d'ajout 20261029210000), pile dédiée NexusNotif (:56322), base où la
 -- migration EST appliquée. Une transaction ANNULÉE à la fin : rien ne survit.
 -- Ce qui partirait est lu dans la file de pg_net (faux secrets posés dans le Vault DANS la
 -- transaction, jamais validée → rien ne part). Gestes des recruteurs sous le VRAI rôle avec un
@@ -120,7 +120,7 @@ select pg_temp.verif('A3 cloche : une notification ADDED_TO_FAVORITES au texte n
   (select count(*) || '|' || max(title) || '|' || max(message) from athlete_notifications
     where athlete_id = current_setting('t.zoe')::uuid and type = 'ADDED_TO_FAVORITES')
   || '|' || (select max(categorie) from push_file where user_id = current_setting('t.zoe_u')::uuid and genre = 'AJOUT_LISTE'),
-  '1|Ton profil a été ajouté à une liste|Ton profil a été ajouté à une liste|INTERET_RECRUTEURS');
+  '1|Ton profil a été ajouté à une liste de suivi|Ton profil a été ajouté à une liste de suivi|INTERET_RECRUTEURS');
 set local role authenticated;
 select pg_temp.essai('A4 r1 retire le favori', current_setting('t.r1'),
   format('delete from public.recruiter_favorites where recruiter_id = %L and athlete_id = %L returning ''ok''',
