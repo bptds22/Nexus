@@ -30,6 +30,7 @@ const LOTS = {
   puv: ["20261029160000", "programme_universitaire_vise"],
   criteres: ["20261029180000", "criteres_parcours_auto"],
   blackout: ["20261029190000", "blackout_portee"],
+  doc1: ["20261029200000", "doctorats_premier_cycle"],
 };
 if (!LOTS[lot]) throw new Error("lot inconnu : " + lot);
 const [VERSION, NOM] = LOTS[lot];

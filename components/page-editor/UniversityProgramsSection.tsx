@@ -7,6 +7,7 @@
 // université sous ON — D5a étape 1). Gestes IMMÉDIATS, optimistes, défaits en cas d'erreur, comme la section DEC.
 // Une ligne pré-remplie modifiée devient 'manuel' (c'est désormais le texte de l'université).
 // Cycles (lot E4, base E3) : baccalauréat, certificat, maîtrise, doctorat, ou « autre » avec un libellé libre.
+// « Doctorat de 1er cycle » (médecine, pharmacie, JD…) : base 20261029200000.
 
 import * as React from "react";
 import RealAcademicPlanche from "@/components/program-page/AcademicPlanche";
@@ -16,11 +17,12 @@ import { useEditor, friendlyDbError } from "./editorContext";
 import { VisibilityToggle, SectionHidden } from "./SectionVisibility";
 import { useToast } from "./toast";
 
-type Cycle = "baccalaureat" | "certificat" | "maitrise" | "doctorat" | "autre";
+type Cycle = "baccalaureat" | "certificat" | "maitrise" | "doctorat" | "doctorat_1er_cycle" | "autre";
 interface Prog { id: string; name: string; cycle: Cycle; cycleLibelle: string | null; faculte: string | null; lien: string | null; on: boolean; manual: boolean; position: number }
 const CYCLES: { v: Cycle; l: string }[] = [
   { v: "baccalaureat", l: "Baccalauréat" }, { v: "certificat", l: "Certificat" }, { v: "maitrise", l: "Maîtrise" },
-  { v: "doctorat", l: "Doctorat" }, { v: "autre", l: "Autre (préciser)" },
+  { v: "doctorat_1er_cycle", l: "Doctorat de 1er cycle" }, { v: "doctorat", l: "Doctorat" },
+  { v: "autre", l: "Autre (préciser)" },
 ];
 const cycleLabel = (c: Cycle, libelle: string | null) =>
   c === "autre" ? (libelle || "Autre") : (CYCLES.find((x) => x.v === c)?.l ?? c);
