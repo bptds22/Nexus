@@ -62,9 +62,11 @@ export function useCiblesSurMonCegep(actif = true) {
   const query = useQuery<CibleSurMonCegep[]>({
     queryKey: ["recruteur", "cibles-mon-cegep", userId],
     enabled: actif && !!userId && aUnCegepRattache,
-    // 1 min, comme useActivityFeed : un ciblage n'est pas une urgence à la
-    // seconde, et la page se remonte souvent.
-    staleTime: 60_000,
+    // Toujours relue au montage et au retour sur l'onglet (retour BP 2026-10-29) : avec 1 min de
+    // fraîcheur (et le cache gardé en sessionStorage), un athlète qui venait de cibler l'école restait
+    // invisible — tuile grise « Voir » — quand le recruteur revenait sur son tableau de bord dans la minute.
+    // L'appel est léger (ids et dates seulement).
+    staleTime: 0,
     queryFn: async (): Promise<CibleSurMonCegep[]> => {
       const supabase = createClient();
       const { data, error } = await supabase.rpc("athletes_targeting_my_cegep");

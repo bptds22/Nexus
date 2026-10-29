@@ -28,8 +28,11 @@ export interface MapPoint {
 
 export interface MapFocus {
   token: number;
-  type: "fly" | "bounds";
+  /** « boite » : cadrer un rectangle connu (province, Canada), sans dépendre des points affichés. */
+  type: "fly" | "bounds" | "boite";
   ids: string[];
+  /** Pour « boite » : [[sud, ouest], [nord, est]]. */
+  boite?: [[number, number], [number, number]];
 }
 
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
@@ -289,6 +292,11 @@ export default function MapPane({
     (async () => {
       const L = await import("leaflet");
       if (annule) return;
+      if (focus.type === "boite" && focus.boite) {
+        // flyToBounds : la carte dézoome puis zoome sur le rectangle (province choisie, ou le Canada).
+        map.flyToBounds(L.latLngBounds(focus.boite), { padding: [30, 30], duration: 1.2 });
+        return;
+      }
       const cibles = pointsRef.current.filter((p) => focus.ids.includes(p.id));
       if (!cibles.length) return;
       if (focus.type === "fly" && cibles.length === 1) {
