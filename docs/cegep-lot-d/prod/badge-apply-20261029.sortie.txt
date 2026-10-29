@@ -1,0 +1,70 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-29 14:40:07.107033+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | collegial_on 
+------------------+--------------
+ 20261028150000   | f
+(1 row)
+
+SELECT 1
+ALTER TABLE
+UPDATE 1
+DO
+ fiches_a_rattraper | apres_le_15 | collegial_initial 
+--------------------+-------------+-------------------
+                  1 | t           | f
+(1 row)
+
+SELECT 1
+CREATE FUNCTION
+SELECT 1
+SELECT 1
+DO
+SET
+INSERT 0 2
+ o | moment |              geste              |                                       attendu                                       |                                       obtenu                                        | ?  
+---+--------+---------------------------------+-------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------+----
+ 1 | AVANT  | avis badge pour la fiche témoin | avis créé true                                                                      | avis créé true                                                                      | ok
+ 2 | APRÈS  | avis badge pour la fiche témoin | avis créé false                                                                     | avis créé false                                                                     | ok
+ 3 | APRÈS  | nouveau cégépien                | vérifié true auto_cegep ; date = vérification true ; ce mois true ; avis créé false | vérifié true auto_cegep ; date = vérification true ; ce mois true ; avis créé false | ok
+(3 rows)
+
+ fiches_rattrapees | temoin_reste_identique | avis_ecrits 
+-------------------+------------------------+-------------
+                 1 | t                      |           0
+(1 row)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/badge-apply-20261029.sql:289: NOTICE:  NEXUS: VERDICT badge auto_cegep — fiches 
+datées, nouveau cégépien daté, aucun avis « badge désactivé »
+At line:1 char:577
++ ... G = "UTF8"; & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" -w - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...dge désactivé »:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261029150000   | 2026-10-29 14:40:07.281049+00
+(1 row)
+
+COMMIT
+== COMMIT fait : badge auto_cegep daté en prod.
