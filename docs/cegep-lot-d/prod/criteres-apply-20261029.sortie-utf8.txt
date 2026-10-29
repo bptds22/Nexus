@@ -1,0 +1,78 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-29 19:48:49.915356+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | universitaire_on 
+------------------+------------------
+ 20261029170000   | f
+(1 row)
+
+SELECT 1
+DO
+SELECT 221
+ fiches | avec_video 
+--------+------------
+    221 |         25
+(1 row)
+
+SELECT 1
+DO
+SET
+SELECT 1
+ videos_datees | attendu | dates_sans_video | fiches_changees | activites_ecrites 
+---------------+---------+------------------+-----------------+-------------------
+            25 |      25 |                0 |               0 |                 0
+(1 row)
+
+CREATE FUNCTION
+SELECT 5
+INSERT 0 2
+ o  |           geste           |    attendu    |    obtenu     | ?  
+----+---------------------------+---------------+---------------+----
+  1 | date forcée par l'athlète | date gardée   | date gardée   | ok
+  2 | lien changé               | date du jour  | date du jour  | ok
+  3 | lien retiré               | vide          | vide          | ok
+  4 | compte sans fiche athlète | null          | null          | ok
+  5 | anon                      | exécute false | exécute false | ok
+ 11 | critères = calcul direct  | identique     | identique     | ok
+ 12 | critères = calcul direct  | identique     | identique     | ok
+(7 rows)
+
+ athletes_compares | ecarts 
+-------------------+--------
+                 2 |      0
+(1 row)
+
+psql.exe : psql:criteres-apply-20261029.sql:264: NOTICE:  NEXUS: VERDICT critères — vidéos datées sans autre 
+changement, date tenue par la base, fonction = calcul direct
+At line:1 char:459
++ ... ING="UTF8"; & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" -w - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:criteres-a...= calcul direct:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+DO
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261029180000   | 2026-10-29 19:48:50.180519+00
+(1 row)
+
+COMMIT
+== COMMIT fait : critères automatiques de Mon parcours en prod.

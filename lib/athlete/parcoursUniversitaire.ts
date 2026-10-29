@@ -44,12 +44,21 @@ export function useParcoursUniversitaire(): boolean | null {
 
 /* ── Les textes du parcours universitaire ─────────────────────────────────── */
 
-/** « Quand l'université cogne » — les 8 critères validés par BP (Q7, 2026-10-28). */
-export const CRITERES_UNIVERSITE_COGNE: readonly { cle: string; titre: string; detail: string }[] = [
-  { cle: "programme", titre: "Mon programme d'études est offert", detail: "Et je connais ses conditions d'admission." },
+/** Ce qui coche seul un critère du cégépien (point 5, BP 2026-10-29) ; absent = coché à la main. */
+export type AutoUniversite = "programme" | "video" | "chiffres" | "cibles" | "echange" | "verifie";
+
+/** « Quand l'université cogne » — les 8 critères de Q7 (2026-10-28), revus au point 5 (2026-10-29) : 6 se cochent
+    seuls, 7 restent à cocher (cote R, DEC, conditions d'admission, bourses, ligue, rôle proposé, budget). */
+export const CRITERES_UNIVERSITE_COGNE: readonly { cle: string; titre: string; detail: string; auto?: AutoUniversite; tag?: string; href?: string }[] = [
+  { cle: "programme_vise", auto: "programme", tag: "Plan", href: "/athlete/profil", titre: "Mon programme universitaire visé est choisi", detail: "Il est sur ta fiche : les recruteurs universitaires le voient." },
+  { cle: "conditions", titre: "Je connais les conditions d'admission", detail: "Celles de mon programme, dans chaque université que je vise." },
   { cle: "cote_r", titre: "Ma cote R est à jour", detail: "Je connais la cote d'admission visée par le programme." },
   { cle: "dec", titre: "Mon DEC est sur la bonne voie", detail: "J'ai les cours préalables du programme." },
-  { cle: "video", titre: "Vidéo récente et stats collégiales", detail: "Une vidéo de match de moins de 12 mois et mes statistiques." },
+  { cle: "video_recente", auto: "video", tag: "Vitrine", href: "/athlete/profil", titre: "Vidéo de faits saillants de moins de 12 mois", detail: "Un recruteur universitaire veut te voir au niveau collégial, pas au secondaire." },
+  { cle: "chiffres", auto: "chiffres", tag: "Profil", href: "/athlete/profil", titre: "Tes chiffres sont sur ta fiche", detail: "Au moins deux tests physiques remplis." },
+  { cle: "cibles", auto: "cibles", tag: "Plan", titre: "Universités ciblées", detail: "Au moins une université dans tes cibles." },
+  { cle: "echange", auto: "echange", tag: "Contact", titre: "J'ai échangé avec un recruteur universitaire", detail: "Tu as répondu à un recruteur universitaire dans tes messages." },
+  { cle: "verifie", auto: "verifie", tag: "Crédibilité", titre: "Profil vérifié", detail: "Ton crochet bleu est actif : fiche validée ce mois-ci." },
   { cle: "bourses", titre: "Je connais les bourses", detail: "Athlétiques (U SPORTS) et d'études, et leurs dates limites." },
   { cle: "ligue", titre: "Je sais dans quelle ligue je joue ensuite", detail: "RSEQ au Québec ou U SPORTS ailleurs, et l'admissibilité U SPORTS." },
   { cle: "entraineur", titre: "J'ai parlé avec l'entraîneur", detail: "Je sais quel rôle on me propose : temps de jeu, encadrement." },

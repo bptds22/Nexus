@@ -796,6 +796,8 @@ export interface AthleteProfileRecruiterView {
   targetCegepProgram: string[];
   /** D5 Q6 — cégépien : programme universitaire visé (libellé), lu par le recruteur universitaire. */
   programmeUniversitaireVise?: string | null;
+  /** Fiche rattachée à un cégep : les préférences « Ouvert au privé / anglophone / à déménager » (choix d'un CÉGEP) ne s'affichent pas. */
+  estCegepien?: boolean;
   openToRelocate: boolean;
   openToPrivate: boolean;
   openToAnglophone: boolean;

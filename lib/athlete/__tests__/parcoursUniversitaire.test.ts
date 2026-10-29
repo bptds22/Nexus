@@ -14,10 +14,16 @@ test("règle : fiche cégep ET interrupteur universitaire ON", () => {
   assert.equal(parcoursUniversitaireActif(null, true), false);
 });
 
-test("« Quand l'université cogne » : les 8 critères validés (Q7), clés uniques", () => {
-  assert.equal(CRITERES_UNIVERSITE_COGNE.length, 8);
-  assert.equal(new Set(CRITERES_UNIVERSITE_COGNE.map((c) => c.cle)).size, 8);
-  assert.ok(CRITERES_UNIVERSITE_COGNE.some((c) => /cote R/.test(c.titre)));
+test("« Quand l'université cogne » : 13 critères (Q7 + point 5), clés uniques, 6 automatiques, cote R manuelle", () => {
+  assert.equal(CRITERES_UNIVERSITE_COGNE.length, 13);
+  assert.equal(new Set(CRITERES_UNIVERSITE_COGNE.map((c) => c.cle)).size, 13);
+  const autos = CRITERES_UNIVERSITE_COGNE.filter((c) => c.auto).map((c) => c.auto).sort();
+  assert.deepEqual(autos, ["chiffres", "cibles", "echange", "programme", "verifie", "video"]);
+  const coteR = CRITERES_UNIVERSITE_COGNE.find((c) => /cote R/.test(c.titre));
+  assert.ok(coteR && !coteR.auto);
+  // Les anciennes clés manuelles devenues automatiques ne sont plus relues (une coche d'avant ne compte pas).
+  assert.ok(!CRITERES_UNIVERSITE_COGNE.some((c) => c.cle === "programme" || c.cle === "video"));
+  for (const c of CRITERES_UNIVERSITE_COGNE) assert.doesNotMatch(c.titre + " " + c.detail, /recruteurs?(?! (collégia|universitaire))/, c.cle);
 });
 
 test("pages branchées sur la règle unique", () => {
