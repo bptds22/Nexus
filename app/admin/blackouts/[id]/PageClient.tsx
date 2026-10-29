@@ -39,7 +39,7 @@ export default function PageClient() {
     const [bRes, sRes] = await Promise.all([
       supabase
         .from("blackout_periods")
-        .select("id, libelle, sport_id, promo_min, promo_max, date_debut, date_fin, actif")
+        .select("*")
         .eq("id", id)
         .maybeSingle(),
       supabase.from("sports").select("id, nom").order("nom"),

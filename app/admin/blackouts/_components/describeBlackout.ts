@@ -19,6 +19,24 @@ export interface BlackoutLike {
   date_debut: string;
   date_fin: string;
   actif: boolean;
+  /** Qui est visé, selon le niveau de l'athlète (20261029190000). Absent = « tous ». */
+  portee?: PorteeBlackout | null;
+}
+
+/** La période suit le NIVEAU DE L'ATHLÈTE (décision BP 2026-10-29) :
+ *  secondaire = recruteurs collégiaux et universitaires ↔ athlète du secondaire ;
+ *  cegep = recruteur universitaire ↔ cégépien ; tous = tout athlète.
+ *  Les conversations avec un entraîneur ne sont jamais visées. */
+export type PorteeBlackout = "secondaire" | "cegep" | "tous";
+
+export const PORTEES: { valeur: PorteeBlackout; libelle: string; court: string }[] = [
+  { valeur: "secondaire", libelle: "Recruteurs collégiaux et universitaires ↔ athlètes du secondaire", court: "Secondaire" },
+  { valeur: "cegep", libelle: "Recruteurs universitaires ↔ cégépiens", court: "Cégep" },
+  { valeur: "tous", libelle: "Tous les athlètes (secondaire et cégep)", court: "Tous" },
+];
+
+export function porteeDe(b: Pick<BlackoutLike, "portee">): PorteeBlackout {
+  return b.portee ?? "tous";
 }
 
 const MOIS = [
@@ -63,25 +81,29 @@ export function formatPromosFr(min: number | null, max: number | null): string {
 /**
  * La phrase complète.
  *
- * « Du 1er au 15 mars 2026, les recruteurs ne peuvent pas écrire aux
- *   athlètes de promotion 2027 à 2028 en football. »
+ * « Du 1er au 15 mars 2026, les recruteurs collégiaux et universitaires ne
+ *   peuvent pas écrire aux athlètes du secondaire de promotion 2027 à 2028
+ *   en football. »
  *
- * Sans sport ni promotion : « … à tous les athlètes, toutes disciplines. »
+ * Portée « tous » sans sport ni promotion : « … à tous les athlètes, toutes disciplines. »
  */
 export function describeBlackout(b: BlackoutLike, sportNom: string | null): string {
   const periode = formatPeriodeFr(b.date_debut, b.date_fin);
   const promos = formatPromosFr(b.promo_min, b.promo_max);
+  const portee = porteeDe(b);
+  const qui = portee === "cegep" ? "les recruteurs universitaires" : "les recruteurs collégiaux et universitaires";
+  const athletes = portee === "secondaire" ? "athlètes du secondaire" : portee === "cegep" ? "cégépiens" : "athlètes";
 
   const cible = promos && sportNom
-    ? `aux athlètes ${promos} en ${sportNom.toLowerCase()}`
+    ? `aux ${athletes} ${promos} en ${sportNom.toLowerCase()}`
     : promos
-    ? `aux athlètes ${promos}, toutes disciplines`
+    ? `aux ${athletes} ${promos}, toutes disciplines`
     : sportNom
-    ? `aux athlètes en ${sportNom.toLowerCase()}, toutes promotions`
-    : "à tous les athlètes, toutes disciplines";
+    ? `aux ${athletes} en ${sportNom.toLowerCase()}, toutes promotions`
+    : `à tous les ${athletes}, toutes disciplines`;
 
   const tete = periode.charAt(0).toUpperCase() + periode.slice(1);
-  return `${tete}, les recruteurs ne peuvent pas écrire ${cible}.`;
+  return `${tete}, ${qui} ne peuvent pas écrire ${cible}.`;
 }
 
 /** Aujourd'hui à Montréal, en ISO. Le fuseau est explicite pour la même

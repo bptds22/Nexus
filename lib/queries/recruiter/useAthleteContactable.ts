@@ -101,10 +101,19 @@ export function useAthleteContactable(athleteId: string | null | undefined) {
     queryFn: async () => {
       const supabase = createClient();
       /* get_active_blackout rend AU PLUS une ligne. `maybeSingle()` traduit
-         « aucune ligne » en `null` sans lever — et null vaut contactable. */
-      const { data, error } = await supabase
-        .rpc("get_active_blackout", { p_athlete: athleteId as string })
-        .maybeSingle();
+         « aucune ligne » en `null` sans lever — et null vaut contactable.
+         La PAIRE (athlète, compte connecté) : la portée de la période suit le
+         niveau de l'athlète, et un compte qui n'est pas recruteur n'est jamais
+         visé (20261029190000). Variante à 1 argument en repli : même règle de
+         niveau, utile tant que la paire n'existe pas encore en base. */
+      const { data: sess } = await supabase.auth.getSession();
+      const moi = sess.session?.user.id;
+      let { data, error } = moi
+        ? await supabase.rpc("get_active_blackout", { p_athlete: athleteId as string, p_recruteur: moi }).maybeSingle()
+        : await supabase.rpc("get_active_blackout", { p_athlete: athleteId as string }).maybeSingle();
+      if (error && moi) {
+        ({ data, error } = await supabase.rpc("get_active_blackout", { p_athlete: athleteId as string }).maybeSingle());
+      }
       if (error) {
         // Bruyant en console, permissif à l'écran — voir le repli ci-dessus.
         console.warn("[get_active_blackout] échec, on laisse le contact ouvert", error);

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import BlackoutForm, { type BlackoutRow, type SportOption } from "./_components/BlackoutForm";
-import { describeBlackout, estEnCours, estAVenir, todayMontrealIso } from "./_components/describeBlackout";
+import { describeBlackout, estEnCours, estAVenir, PORTEES, porteeDe, todayMontrealIso } from "./_components/describeBlackout";
 
 /* ═══════════════════════════════════════════════════════════════
    Admin — Périodes de silence RSEQ.
@@ -42,7 +42,8 @@ export default function AdminBlackoutsPage() {
     const [bRes, sRes] = await Promise.all([
       supabase
         .from("blackout_periods")
-        .select("id, libelle, sport_id, promo_min, promo_max, date_debut, date_fin, actif")
+        /* « * » : portee n'existe qu'après 20261029190000 ; la liste reste lisible avant. */
+        .select("*")
         /* Tri demandé : armées d'abord, puis par date de début. Descendant
            sur la date — sur un calendrier réglementaire, ce qui vient de
            commencer ou va commencer prime sur ce qui est clos. */
@@ -84,8 +85,8 @@ export default function AdminBlackoutsPage() {
             Périodes de silence
           </h1>
           <p className="text-[14px] text-[#9CA3AF] mt-1">
-            Pendant une période armée, un recruteur ne peut pas écrire aux athlètes visés.
-            Il garde le droit de parler à leur entraîneur.
+            Pendant une période armée, les recruteurs collégiaux et universitaires ne peuvent pas écrire
+            aux athlètes visés. Ils gardent le droit de parler à leur entraîneur.
           </p>
         </div>
         {!creating && (
@@ -118,7 +119,7 @@ export default function AdminBlackoutsPage() {
           </>
         ) : (
           <p className="text-[13px] text-[#9CA3AF]">
-            Aucune période en vigueur aujourd&apos;hui. Les recruteurs peuvent écrire normalement.
+            Aucune période en vigueur aujourd&apos;hui. Les recruteurs collégiaux et universitaires peuvent écrire normalement.
           </p>
         )}
       </div>
@@ -167,6 +168,10 @@ export default function AdminBlackoutsPage() {
                           À venir
                         </span>
                       )}
+                      <span title={PORTEES.find((p) => p.valeur === porteeDe(r))?.libelle}
+                        className="px-2 py-0.5 rounded-full bg-[#A855F7]/15 text-[#C084FC] text-[10px] font-black uppercase tracking-wider">
+                        {PORTEES.find((p) => p.valeur === porteeDe(r))?.court}
+                      </span>
                       {!r.actif && (
                         <span className="px-2 py-0.5 rounded-full bg-white/5 text-[#6b7280] text-[10px] font-black uppercase tracking-wider">
                           Désarmée
