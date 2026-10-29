@@ -1,0 +1,34 @@
+﻿Pager usage is off.
+BEGIN
+SET
+SET
+SET
+CREATE TABLE
+INSERT 0 59
+DO
+DO
+SELECT 1
+UPDATE 59
+ universites_geocodees | universites | lat_min | lat_max | lng_min | lng_max 
+-----------------------+-------------+---------+---------+---------+---------
+                    59 |          59 |   42.31 |   53.89 | -123.31 |  -52.73
+(1 row)
+
+DO
+psql.exe : psql:docs/cegep-lot-d/prod/e6-geo-apply-20261028.sql:107: NOTICE:  NEXUS: VERDICT E6 géo — 59 universités 
+géocodées (Nominatim), rien d'autre ne bouge
+At line:1 char:518
++ ... /postgres'; & $psql $db -v ON_ERROR_STOP=1 -f docs/cegep-lot-d/prod/e ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:docs/cegep...'autre ne bouge:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+INSERT 0 1
+COMMIT
+== COMMIT fait : coordonnées des universités en prod.

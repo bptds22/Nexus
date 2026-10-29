@@ -21,6 +21,7 @@ import { ParentalBlock } from "@/components/auth/signup/ParentalBlock";
 import PartnerVisibilityConsentCard from "@/components/shared/PartnerVisibilityConsentCard";
 import { SocialButtonsAuth } from "@/components/auth/SocialButtonsAuth";
 import { deconnexion } from "@/lib/auth/deconnexion";
+import { lireLancementCollegial } from "@/lib/config/lancementCollegial";
 import { SuggestionCourriel, useSuggestionCourriel } from "@/components/auth/SuggestionCourriel";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
@@ -102,6 +103,15 @@ function AuthContent() {
   // + validation + buildSignupArgs() vit dans le hook. users.context athlète
   // (école/civil) est capté à l'écran 2 (D1) → athlète civil non régressé.
   const sf = usePartialSignup({ lockedEmail: searchParams.get("email") ?? "" });
+  /* Lot E7 : « Tu joues pour… » dit « École secondaire ou cégep » quand les cégépiens peuvent s'inscrire
+     (lancement_collegial ON ; app_settings est lisible sans session). OFF en cas de doute. */
+  const [lancementCollegial, setLancementCollegial] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void lireLancementCollegial(createClient()).then((on) => { if (alive) setLancementCollegial(on); });
+    return () => { alive = false; };
+  }, []);
+  const contexteScolaire = lancementCollegial ? T.signup.form.context.scolaireCollegial : T.signup.form.context.scolaire;
 
   /* Courriel mal écrit (gmail.con…) : suggérer AVANT de continuer (D1, 2026-10-15).
      Le courriel n'étant pas confirmé, une faute ouvre un compte qu'on ne peut plus
@@ -461,8 +471,8 @@ function AuthContent() {
                           <div className="grid grid-cols-2 gap-2">
                             <button type="button" onClick={() => sf.setAthleteContext("school")}
                               className={`py-3 px-3 rounded-lg text-[12px] font-bold transition-all text-left ${sf.athleteContext === "school" ? "bg-[#E63946] text-white" : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"}`}>
-                              {T.signup.form.context.scolaire.title}
-                              <span className="block text-[10px] font-normal opacity-70 mt-0.5">{T.signup.form.context.scolaire.sub}</span>
+                              {contexteScolaire.title}
+                              <span className="block text-[10px] font-normal opacity-70 mt-0.5">{contexteScolaire.sub}</span>
                             </button>
                             <button type="button" onClick={() => sf.setAthleteContext("civil")}
                               className={`py-3 px-3 rounded-lg text-[12px] font-bold transition-all text-left ${sf.athleteContext === "civil" ? "bg-[#E63946] text-white" : "bg-[#111317] border border-white/10 text-[#9CA3AF] hover:border-white/20 hover:text-white"}`}>
