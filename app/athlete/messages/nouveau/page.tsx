@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import SchoolStaffPicker, { type StaffOption } from "@/components/messaging/SchoolStaffPicker";
 import { findOrCreateAthleteCoachConversation } from "@/lib/queries/messaging/createAthleteCoachConversation";
 import { AthleteMessageNouveauMobile } from "@/components/shared/AthleteMessageNouveauMobile";
+import { useParcoursUniversitaire } from "@/lib/athlete/parcoursUniversitaire";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -27,6 +28,9 @@ export default function AthleteNouveauMessagePage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [aud, setAud] = useState<"all" | "coach" | "directeur">("all");
+  // Cégépien sous lancement_universitaire ON : « ton cégep » au lieu de « ton école » (BP 2026-10-29).
+  const univ = useParcoursUniversitaire() === true;
+  const ecole = univ ? "ton cégep" : "ton école";
 
   useEffect(() => {
     (async () => {
@@ -56,7 +60,7 @@ export default function AthleteNouveauMessagePage() {
     if (err || !conversationId) {
       const code = (err as { code?: string } | undefined)?.code;
       const isRls = code === "42501" || /permission denied|row-level security|policy/i.test((err as { message?: string } | undefined)?.message ?? "");
-      setError(isRls ? "Tu ne peux écrire qu'aux membres du personnel de ton école." : ((err as { message?: string } | undefined)?.message || "Impossible d'ouvrir la conversation."));
+      setError(isRls ? `Tu ne peux écrire qu'aux membres du personnel de ${ecole}.` : ((err as { message?: string } | undefined)?.message || "Impossible d'ouvrir la conversation."));
       setBusyId(null);
       return;
     }
@@ -72,7 +76,7 @@ export default function AthleteNouveauMessagePage() {
           Retour aux messages
         </Link>
         <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Nouveau message</h1>
-        <p className="text-[14px] text-[#9CA3AF] mt-1">Choisis un entraîneur ou le directeur sportif de ton école.</p>
+        <p className="text-[14px] text-[#9CA3AF] mt-1">Choisis un entraîneur ou le directeur sportif de {ecole}.</p>
       </div>
 
       {error && (

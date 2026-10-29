@@ -199,11 +199,14 @@ export function SectionProfilAcademique({ a, verrouille, estPartenaire, compact 
                 <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Graduation</p>
               </div>
             </div>
-            <div className="border-t border-[#2D3748]/50 px-5 py-3.5 flex flex-wrap gap-2">
-              <PreferencePill active={a.openToRelocate} label="Ouvert à déménager" />
-              <PreferencePill active={a.openToPrivate} label="Ouvert au privé" />
-              <PreferencePill active={a.openToAnglophone} label="Ouvert anglophone" />
-            </div>
+            {/* Préférences de choix d'un CÉGEP : sans objet pour un cégépien (BP 2026-10-29). */}
+            {!a.estCegepien && (
+              <div className="border-t border-[#2D3748]/50 px-5 py-3.5 flex flex-wrap gap-2">
+                <PreferencePill active={a.openToRelocate} label="Ouvert à déménager" />
+                <PreferencePill active={a.openToPrivate} label="Ouvert au privé" />
+                <PreferencePill active={a.openToAnglophone} label="Ouvert anglophone" />
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -351,11 +354,12 @@ export function SectionDetailsAcademiques({ a, estPartenaire }: { a: AthleteProf
           </div>
         </section>
       )}
-      {!estPartenaire && (a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || a.preferredRegions?.length > 0 || (Array.isArray(a.targetCegepProgram) && a.targetCegepProgram.length > 0)) && (
+      {!estPartenaire && (a.strongSubjects?.length > 0 || a.academicHonors?.length > 0 || (!a.estCegepien && (a.preferredRegions?.length > 0 || (Array.isArray(a.targetCegepProgram) && a.targetCegepProgram.length > 0)))) && (
         <section className="nx-slide-section">
           <h2 className={sectionLabel}>Détails académiques</h2>
           <div className={`${cardBase} p-5 space-y-4`}>
-            {(() => {
+            {/* Programme CÉGEP visé et régions CÉGEP : sans objet pour un cégépien (BP 2026-10-29). */}
+            {!a.estCegepien && (() => {
               let prog = a.targetCegepProgram;
               if (typeof prog === "string") { try { prog = JSON.parse(prog as unknown as string); } catch { prog = []; } }
               if (Array.isArray(prog) && prog.length > 0) {
@@ -392,7 +396,7 @@ export function SectionDetailsAcademiques({ a, estPartenaire }: { a: AthleteProf
                 </div>
               </div>
             )}
-            {a.preferredRegions?.length > 0 && (
+            {!a.estCegepien && a.preferredRegions?.length > 0 && (
               <div>
                 <p className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#6b7280] mb-2">Régions CÉGEP préférées</p>
                 <div className="flex flex-wrap gap-2">

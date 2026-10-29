@@ -20,6 +20,9 @@ import { resolveProgrammesVisesAsync, fetchProgrammeLabelMap, resolveProgrammesV
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
+/** École d'ancrage de type CEGEP (embed schools!school_id, objet ou null). */
+const estCegepien = (school: unknown): boolean => (school as { type?: string } | null)?.type === "CEGEP";
+
 /* ═══════════════════════════════════════════════════════════════
    Nouveau Message — Compose Page (Recruiter)
    Wired to Supabase: recruiter_pipeline + athletes + conversations
@@ -256,7 +259,7 @@ function NouveauMessageContent() {
             pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
             sports!sport_id(nom),
             positions!position_id(abreviation),
-            schools!school_id(name, region),
+            schools!school_id(name, region, type),
             committed_school:schools!committed_school_id(name),
             evaluations(distinctions, updated_at),
               athlete_badges(contexte, retire_le, badges(code, libelle)),
@@ -345,9 +348,10 @@ function NouveauMessageContent() {
             region: (school?.region as string) || "",
             gpa: (a.moyenne_generale as number) || 0,
             programmes,
-            openRelocate: !!(a.pret_changer_region),
-            openPrivate: !!(a.ouvert_cegep_prive),
-            openAnglophone: !!(a.ouvert_cegep_anglophone),
+            // Préférences de choix d'un CÉGEP : sans objet pour un cégépien (BP 2026-10-29).
+            openRelocate: !estCegepien(school) && !!(a.pret_changer_region),
+            openPrivate: !estCegepien(school) && !!(a.ouvert_cegep_prive),
+            openAnglophone: !estCegepien(school) && !!(a.ouvert_cegep_anglophone),
             distinctions,
           };
         }).filter(Boolean) as SelectableAthlete[];
@@ -369,7 +373,7 @@ function NouveauMessageContent() {
                 pret_changer_region, ouvert_cegep_prive, ouvert_cegep_anglophone,
                 sports!sport_id(nom),
                 positions!position_id(abreviation),
-                schools!school_id(name, region),
+                schools!school_id(name, region, type),
                 committed_school:schools!committed_school_id(name),
                 evaluations(distinctions, updated_at),
               athlete_badges(contexte, retire_le, badges(code, libelle)),
@@ -432,9 +436,9 @@ function NouveauMessageContent() {
                 region: ((school as Record<string, unknown>)?.region as string) || "",
                 gpa: ((directAthlete as Record<string, unknown>)?.moyenne_generale as number) || 0,
                 programmes: directProgrammes,
-                openRelocate: !!((directAthlete as Record<string, unknown>)?.pret_changer_region),
-                openPrivate: !!((directAthlete as Record<string, unknown>)?.ouvert_cegep_prive),
-                openAnglophone: !!((directAthlete as Record<string, unknown>)?.ouvert_cegep_anglophone),
+                openRelocate: !estCegepien(school) && !!((directAthlete as Record<string, unknown>)?.pret_changer_region),
+                openPrivate: !estCegepien(school) && !!((directAthlete as Record<string, unknown>)?.ouvert_cegep_prive),
+                openAnglophone: !estCegepien(school) && !!((directAthlete as Record<string, unknown>)?.ouvert_cegep_anglophone),
                 distinctions: directDistinctions,
               };
               setAthletes(prev => [found!, ...prev]);

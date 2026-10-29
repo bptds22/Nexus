@@ -14,6 +14,7 @@ import {
   type StatusPreset,
 } from "@/lib/messaging/threadStatus";
 import { deriveTypeSegments, matchesTypeSegment } from "@/lib/messaging/typeSegments";
+import { useParcoursUniversitaire } from "@/lib/athlete/parcoursUniversitaire";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -131,6 +132,8 @@ function AthleteMessagesContent() {
   const { data: threads = [], isLoading } = useAthleteConversations();
   const { data: currentUser } = useCurrentUser();
   const userId = currentUser?.authUser.id;
+  // Cégépien sous lancement_universitaire ON : il échange surtout avec des recruteurs universitaires (BP 2026-10-29).
+  const univ = useParcoursUniversitaire() === true;
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 200);
@@ -182,7 +185,7 @@ function AthleteMessagesContent() {
         <div className="flex items-center gap-4">
           <div>
             <h1 className="font-head text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Messages</h1>
-            <p className="text-[14px] text-[#9CA3AF] mt-1">Tes échanges avec les entraîneurs et directeurs de ton école</p>
+            <p className="text-[14px] text-[#9CA3AF] mt-1">{univ ? "Tes échanges avec les recruteurs universitaires et le personnel de ton cégep" : "Tes échanges avec les entraîneurs et directeurs de ton école"}</p>
           </div>
           {unreadCount > 0 && (
             <span className="inline-flex items-center gap-1.5 bg-[#22C55E] text-[#0b0d10] text-[13px] font-bold px-3.5 py-1.5 rounded-full self-start">
@@ -228,7 +231,9 @@ function AthleteMessagesContent() {
           </h3>
           <p className="text-[14px] text-[#9CA3AF] max-w-md mb-6 leading-relaxed">
             {threads.length === 0
-              ? "Écris à un entraîneur ou au directeur sportif de ton école pour poser tes questions."
+              ? (univ
+                ? "Quand un recruteur universitaire t'écrira, la conversation apparaîtra ici. Tu peux aussi écrire au personnel de ton cégep."
+                : "Écris à un entraîneur ou au directeur sportif de ton école pour poser tes questions.")
               : "Essaie d'autres termes de recherche ou un autre filtre."}
           </p>
           {threads.length === 0 && (

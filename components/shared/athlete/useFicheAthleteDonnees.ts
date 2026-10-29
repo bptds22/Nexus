@@ -871,6 +871,7 @@ export function useFicheAthleteDonnees({ id, viewerMode, tierLoading, isFreeRecr
           program: progArr.length > 0 ? progArr.join(", ") : "",
           targetCegepProgram: progArr,
           programmeUniversitaireVise: (d.programme_universitaire_vise as string) || null,
+          estCegepien: school?.type === "CEGEP",
           wantsDEC: progArr.some(p => p.toLowerCase().includes("dec") || p.toLowerCase().includes("général")),
           openToPrivate: (d.ouvert_cegep_prive as boolean) || false,
           openToAnglophone: (d.ouvert_cegep_anglophone as boolean) || false,
