@@ -47,6 +47,11 @@ export interface AthleteLike {
   programme_cegep_vise?: unknown;
   /** T1 — uuid[] vers cegep_program_labels. Remplace programme_cegep_vise. */
   programmes_vises?: unknown;
+  /** D5 Q6 — cégépien sous lancement_universitaire ON : son programme UNIVERSITAIRE visé (libellé). */
+  programme_universitaire_vise?: string | null;
+  /** Vrai pour le cégépien sous ON (parcoursUniversitaireActif) : le programme universitaire visé
+   *  remplace le programme CÉGEP visé, comme dans calculate_profile_completion() (20261029160000). */
+  parcours_universitaire?: boolean;
   matieres_fortes?: unknown;
   regions_cegep_preferees?: unknown;
   cote_globale_entraineur?: number | string | null;
@@ -166,6 +171,12 @@ export const COMPLETION_CHECKS: CompletionCheck[] = [
 
 // Sanity: 16 + 14 + 17 + 13 + 18 + 22 = 100.
 
+/** Remplace « Programme CÉGEP visé » pour le cégépien sous ON (même poids, même section). */
+const PROGRAMME_UNIVERSITAIRE: (typeof COMPLETION_CHECKS)[number] = {
+  key: "programme_universitaire", label: "Programme universitaire visé", weight: 3, section: "academic", role: "athlete",
+  check: (a) => nonEmptyStr(a.programme_universitaire_vise),
+};
+
 export interface CompletionResult {
   percentage: number;
   missing: { key: string; label: string; weight: number; section: CompletionSection; role: CompletionRole }[];
@@ -184,7 +195,8 @@ export function calculateCompletion(
   const t = team ?? null;
 
   let earned = 0;
-  const checks = COMPLETION_CHECKS.map((c) => {
+  const checks = COMPLETION_CHECKS.map((c0) => {
+    const c = athlete.parcours_universitaire === true && c0.key === "programme_cegep" ? PROGRAMME_UNIVERSITAIRE : c0;
     const filled = !!c.check(athlete, e, t);
     if (filled) earned += c.weight;
     return { key: c.key, label: c.label, weight: c.weight, section: c.section, role: c.role, filled };

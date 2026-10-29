@@ -794,6 +794,8 @@ export interface AthleteProfileRecruiterView {
   strongSubjects: string[];
   academicHonors: string[];
   targetCegepProgram: string[];
+  /** D5 Q6 — cégépien : programme universitaire visé (libellé), lu par le recruteur universitaire. */
+  programmeUniversitaireVise?: string | null;
   openToRelocate: boolean;
   openToPrivate: boolean;
   openToAnglophone: boolean;

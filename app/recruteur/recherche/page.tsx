@@ -25,6 +25,7 @@ import { useFavoriteCounts } from "@/lib/queries/shared/useFavoriteCounts";
 import { useRegions } from "@/lib/queries/shared/useRegions";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
 import { useEstRecruteurUniversitaire } from "@/lib/queries/shared/useEstRecruteurUniversitaire";
+import { useAthletesParProgrammeUniversitaire } from "@/lib/queries/recruiter/useAthletesParProgrammeUniversitaire";
 import { HeartButton } from "@/components/mobile/HeartButton";
 import { LOCKED_NAME_LABEL } from "@/lib/queries/shared/recruiterAthleteCards";
 import { DemoRibbonIf } from "@/components/shared/DemoRibbon";
@@ -516,6 +517,10 @@ function RechercheContent() {
   const { data: currentUser } = useCurrentUser();
   // Recruteur universitaire (lot D3b) : tous les athlètes, plus les cégépiens ; pas de filtres propres au cégep.
   const universitaire = useEstRecruteurUniversitaire();
+  /* D5 Q6 : « Programme universitaire visé » des cégépiens — recruteur universitaire seulement. */
+  const [progUnivFiltre, setProgUnivFiltre] = useState("");
+  const progUnivDebounce = useDebouncedValue(progUnivFiltre, 300);
+  const { data: idsProgUniv } = useAthletesParProgrammeUniversitaire(progUnivDebounce, universitaire);
   /* Favoris de l'UNITÉ pour un Pro (lot B2, étape 2) : le cœur d'un collègue
      s'affiche ici aussi ; les siens seulement pour un gratuit. Le cap du
      forfait gratuit lit la même liste — pour lui, ce sont ses lignes. */
@@ -602,6 +607,8 @@ function RechercheContent() {
     if (hideFavorites) list = list.filter((a) => !favorites.has(a.id));
     // Filtre CLIENT sur le jeu complet (p_limit null) — registre §35.
     if (filtreMeCiblentActif) list = list.filter((a) => idsQuiMeCiblent.has(a.id));
+    // D5 Q6 — même croisement client sur le jeu complet.
+    if (universitaire && idsProgUniv) list = list.filter((a) => idsProgUniv.has(a.id));
 
     // favorites_desc sort is a client-side refinement of the returned page
     // (the DB query already applied rating_desc as a fallback ordering).
@@ -623,7 +630,7 @@ function RechercheContent() {
         ? `Favori de ${joindreNoms((favorisUnite.parAthlete[a.id] ?? []).map(favorisUnite.nom))}`
         : undefined,
     }));
-  }, [athletes, orgType, leagueFilter, divisionFilter, categorieFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, sortBy, favorites, favCounts, favorisUnite, currentUser?.authUser.id]);
+  }, [athletes, orgType, leagueFilter, divisionFilter, categorieFilter, position, region, genderFilter, withSportBadge, withAcademicBadge, hideFavorites, filtreMeCiblentActif, idsQuiMeCiblent, universitaire, idsProgUniv, sortBy, favorites, favCounts, favorisUnite, currentUser?.authUser.id]);
 
   /* ── OPTIONS ET ETATS DES TROIS MENUS ─────────────────────────────────────
      Construites sur `athletes` — LE JEU RENVOYE PAR LA RPC, donc apres les
@@ -1032,6 +1039,16 @@ function RechercheContent() {
               </div>
               <span className={`text-[13px] font-semibold transition-colors ${filterOuvertDemenager ? "text-white" : "text-[#9CA3AF] group-hover:text-[#c0c0c0]"}`}>Ouvert à déménager</span>
             </label>
+
+            {/* D5 Q6 — le programme UNIVERSITAIRE visé par les cégépiens (recruteur universitaire). */}
+            {universitaire && (
+              <label className="flex items-center gap-2">
+                <span className="text-[13px] font-semibold text-[#9CA3AF] whitespace-nowrap">Programme universitaire visé</span>
+                <input type="search" value={progUnivFiltre} onChange={(e) => setProgUnivFiltre(e.target.value)}
+                  placeholder="Ex. : médecine" aria-label="Programme universitaire visé"
+                  className="h-8 w-44 px-2.5 bg-[#111317] border border-[#2D3748] rounded-lg text-[12px] text-white placeholder:text-[#4a4d56] focus:border-[#E63946] outline-none" />
+              </label>
+            )}
 
             {/* T2 — le filtre par programme : le gain reel du chantier.
                 Avant, le programme vise n'apparaissait qu'une fois la fiche
