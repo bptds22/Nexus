@@ -1,0 +1,71 @@
+﻿Pager usage is off.
+Null display is "·".
+BEGIN
+SET
+SET
+SET
+SET
+             debut             | current_user | version 
+-------------------------------+--------------+---------
+ 2026-10-29 19:06:25.522815+00 | postgres     | 17.6
+(1 row)
+
+DO
+ derniere_version | universitaire_on | collegial_on 
+------------------+------------------+--------------
+ 20261029150000   | f                | f
+(1 row)
+
+SELECT 1
+ALTER TABLE
+UPDATE 1
+DO
+SELECT 1
+SELECT 1
+DO
+SET
+SELECT 1
+ fiches_avant | fiches_apres | completions_identiques | avec_programme 
+--------------+--------------+------------------------+----------------
+          221 |          221 | t                      |              0
+(1 row)
+
+CREATE FUNCTION
+SELECT 8
+ o | interrupteur |                   geste                    |                  attendu                  |                  obtenu                   | ?  
+---+--------------+--------------------------------------------+-------------------------------------------+-------------------------------------------+----
+ 1 | ON           | cégépien choisit un programme du catalogue | libellé du catalogue true ; complétion +3 | libellé du catalogue true ; complétion +3 | ok
+ 2 | ON           | cégépien écrit un texte libre              | Médecine vétérinaire                      | Médecine vétérinaire                      | ok
+ 3 | ON           | programme inconnu                          | refusé 23503                              | refusé 23503                              | ok
+ 4 | ON           | athlète du secondaire                      | refusé 42501                              | refusé 42501                              | ok
+ 5 | OFF          | cégépien sous OFF                          | refusé 42501                              | refusé 42501                              | ok
+ 6 | OFF          | retrait sous OFF                           | vidé                                      | vidé                                      | ok
+ 7 | ON           | cégépien qui quitte son cégep              | vidé                                      | vidé                                      | ok
+ 8 | ON           | complétion du secondaire inchangée         | le programme CÉGEP visé compte true       | le programme CÉGEP visé compte true       | ok
+(8 rows)
+
+DO
+psql.exe : psql:puv-apply-20261029.sql:479: NOTICE:  NEXUS: VERDICT programme universitaire visé — catalogue ou texte 
+libre, ON + cégep seulement, complétion du cégépien, secondaire inchangé
+At line:1 char:453
++ ... ING="UTF8"; & "$HOME\scoop\apps\postgresql\current\bin\psql.exe" -w - ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (psql:puv-apply-...ndaire inchangé:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ verdict | resultat 
+---------+----------
+ VERDICT | conforme
+(1 row)
+
+DO
+INSERT 0 1
+INSERT 0 1
+DO
+ version_inscrite |         avant_commit          
+------------------+-------------------------------
+ 20261029160000   | 2026-10-29 19:06:26.193219+00
+(1 row)
+
+COMMIT
+== COMMIT fait : programme universitaire visé en prod (interrupteur OFF).
