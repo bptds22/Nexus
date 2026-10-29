@@ -41,6 +41,10 @@ Règle : tout reste sous les interrupteurs (`lancement_collegial`, `lancement_un
   l'édition, comme le cégep).
 - E5 : `CreerProspectMobile` à 3 types, type de ligue dans le pipeline mobile.
 - E3 : affichage du cycle libre (page universitaire mobile, Q4 de D5).
+- E6 (profil) : masquer « Programme CÉGEP visé » et « Préférences CÉGEP » du cégépien sous ON dans le profil mobile
+  (`AthleteEditWizardMobile`) et l'onboarding (`AthleteOnboardingMobile`, et l'onboarding web à l'étape Académique).
+- Texte prospect : « ni ton université » pour le recruteur universitaire dans `CreerProspectMobile`.
+- E7 : « École secondaire ou cégep » à l'inscription mobile sous `lancement_collegial` ON.
 
 ## Proposition « Quand l'université cogne » (C4) — 8 critères, sur le modèle du module 3
 1. Mon programme d'études est offert (et ses conditions d'admission connues).
