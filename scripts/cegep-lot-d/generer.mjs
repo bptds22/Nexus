@@ -28,6 +28,7 @@ const LOTS = {
   e3: ["20261028150000", "cegep_lot_e3_cycle_libre"],
   badge: ["20261029150000", "badge_auto_cegep_validation"],
   puv: ["20261029160000", "programme_universitaire_vise"],
+  doc1: ["20261029200000", "doctorats_premier_cycle"],
 };
 if (!LOTS[lot]) throw new Error("lot inconnu : " + lot);
 const [VERSION, NOM] = LOTS[lot];
