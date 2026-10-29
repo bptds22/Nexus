@@ -16,3 +16,13 @@ Vérification en lecture seule :
 - Empreinte 431ce1164bba28694c21be5ec04d3435|59.
 
 Rollback prêt, NON lancé : docs/notif-interet/texte-ajout/lot-rollback.sql, md5 8c97d82deb524fc0322b2d71d9b6f239.
+
+Code : feat/notif-texte-ajout-liste poussée vers origin main (7dd4d73e..dd60cc8d, avance rapide, aucun commit
+d'autre session à fusionner, sans --force). Documentation et base seulement : aucun code applicatif.
+
+Test prod (comptes de test seulement), 29 oct. 16 h 16 heure de Montréal :
+- 20 h 16 UTC : favori nexus.recruteur@nexussports.ca → nexus.onboarding@nexussports.ca. Une seule ligne en file
+  (id 52, AJOUT_LISTE) ; cloche tout de suite : « Ton profil a été ajouté à une liste de suivi » (titre et message).
+- 20 h 30 UTC (cron) : file 52 ENVOYE ; push_envois id 10 : titre « Nexus », texte « Ton profil a été ajouté à une
+  liste de suivi », nb_elements 1 ; send-push HTTP 200 {"sent":1,"failed":0,"removed":0}.
+- Nettoyage : favori retiré (1) et la ligne de processus du test (IDENTIFIE) ; notification et envoi gardés (preuve).
