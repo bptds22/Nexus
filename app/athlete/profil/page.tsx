@@ -37,6 +37,7 @@ import PlateformeIcone from "@/components/shared/PlateformeIcone";
 import type { ClePlateforme } from "@/lib/config/plateformesLien";
 import { RESEAUX, normaliserLien, normaliserReseau, type CleReseau } from "@/lib/liensSociaux";
 import { messageEchecSauvegarde } from "@/lib/sauvegarde/messageEchec";
+import ProgrammeUniversitaireVise, { type ProgrammeUniversitaireValeur } from "@/components/athlete/ProgrammeUniversitaireVise";
 
 const IS_CAPACITOR = process.env.NEXT_PUBLIC_CAPACITOR_BUILD === "true";
 
@@ -1060,6 +1061,11 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving, uni
       : [],
   );
   const [progPickerOpen, setProgPickerOpen] = useState(false);
+  /* D5 Q6 : le cégépien sous ON vise un programme UNIVERSITAIRE (catalogue ou texte libre). */
+  const [progUniv, setProgUniv] = useState<ProgrammeUniversitaireValeur>({
+    id: (raw?.programme_universitaire_vise_id as string) || null,
+    libelle: (raw?.programme_universitaire_vise as string) || null,
+  });
   const progLabels = resolveProgrammesVises(progIds, raw?.programme_cegep_vise, catalogueProg);
   const [subjects, setSubjects] = useState((raw?.matieres_fortes as string[])?.join(", ") || "");
   const [honors, setHonors] = useState((raw?.mentions_academiques as string[])?.join(", ") || "");
@@ -1099,6 +1105,10 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving, uni
             onChange={setProgIds}
           />
         </div>}
+        {univ && <div>
+          <label className={lblCls}>Programme universitaire visé</label>
+          <ProgrammeUniversitaireVise value={progUniv} onChange={setProgUniv} inputCls={inputCls} />
+        </div>}
       </div>
       <div><label className={lblCls}>Matières fortes (séparées par virgule)</label><input type="text" value={subjects} onChange={(e) => setSubjects(e.target.value)} placeholder="Mathématiques, Éducation physique" className={inputCls} /></div>
       <div><label className={lblCls}>Mentions académiques</label><input type="text" value={honors} onChange={(e) => setHonors(e.target.value)} placeholder="Tableau d'honneur" className={inputCls} /></div>
@@ -1128,6 +1138,8 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving, uni
           // n'est plus jamais écrite depuis T2. Elle est lue en repli
           // jusqu'au vidage T3, puis supprimée.
           programmes_vises: progIds,
+          // D5 Q6 : envoyé seulement au cégépien sous ON (la base refuse une nouvelle valeur ailleurs).
+          ...(univ ? { programme_universitaire_vise_id: progUniv.id, programme_universitaire_vise: progUniv.libelle } : {}),
           matieres_fortes: subjects ? subjects.split(",").map(s => s.trim()).filter(Boolean) : [],
           mentions_academiques: honors ? honors.split(",").map(s => s.trim()).filter(Boolean) : [],
           ouvert_cegep_prive: prive, ouvert_cegep_anglophone: anglo, pret_changer_region: relocate,
@@ -1437,7 +1449,7 @@ function AthleteProfilPageDesktop() {
     // Recalculate and persist profile_completion
     const { data: freshRow } = await supabase.from("athletes").select("*").eq("id", athleteId).single();
     if (freshRow) {
-      const completion = calculateProfileCompletion(freshRow);
+      const completion = calculateProfileCompletion({ ...freshRow, parcours_universitaire: univ });
       await supabase.from("athletes").update({ profile_completion: completion }).eq("id", athleteId);
     }
     await reloadProfile();
@@ -1578,7 +1590,7 @@ function AthleteProfilPageDesktop() {
   const _rawEval = a._raw?.evaluations;
   const _evalRow = selectBestEvaluation(Array.isArray(_rawEval) ? _rawEval : _rawEval ? [_rawEval] : []);
   const completionResult = a._raw
-    ? calculateCompletionForRole(a._raw, _evalRow || null, null, "athlete")
+    ? calculateCompletionForRole({ ...a._raw, parcours_universitaire: univ }, _evalRow || null, null, "athlete")
     : { percentage: 0, missing: [], checks: [] };
   const pctValue = completionResult.percentage;
   const missingTop = completionResult.missing
@@ -1890,6 +1902,7 @@ function AthleteProfilPageDesktop() {
                     Régions) which already advertise green pencils inline. */}
                 <DirectDisplayField label="Moyenne générale" value={a.gpa ? `${a.gpa}%` : null} recruiterView={recruiterView} />
                 {!univ && <DirectDisplayField label="Programme visé" value={a.targetCegepProgram?.join(", ")} recruiterView={recruiterView} />}
+                {univ && <DirectDisplayField label="Programme universitaire visé" value={a._raw?.programme_universitaire_vise || null} recruiterView={recruiterView} />}
 
             {/* Strong subjects — EDITABLE (green) */}
             {a.strongSubjects.length > 0 && (

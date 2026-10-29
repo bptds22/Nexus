@@ -180,7 +180,10 @@ export function SectionProfilAcademique({ a, verrouille, estPartenaire, compact 
               <div className="p-5 text-center">
                 {(() => {
                   let display = "—";
-                  if (a.program && typeof a.program === "string" && a.program.length > 0) {
+                  // D5 Q6 : le cégépien vise un programme UNIVERSITAIRE ; il prime sur l'ancien programme CÉGEP.
+                  if (a.programmeUniversitaireVise) {
+                    display = a.programmeUniversitaireVise;
+                  } else if (a.program && typeof a.program === "string" && a.program.length > 0) {
                     display = a.program;
                   } else {
                     let arr = a.targetCegepProgram;
@@ -189,7 +192,7 @@ export function SectionProfilAcademique({ a, verrouille, estPartenaire, compact 
                   }
                   return <p className="text-[18px] font-bold text-white leading-none mt-1">{display}</p>;
                 })()}
-                <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">Programme visé</p>
+                <p className="text-[12px] font-bold tracking-[0.2em] uppercase text-[#9CA3AF] mt-2">{a.programmeUniversitaireVise ? "Programme universitaire visé" : "Programme visé"}</p>
               </div>
               <div className="p-5 text-center">
                 <p className="text-[18px] font-bold text-white leading-none mt-1">Juin {a.graduationYear}</p>
