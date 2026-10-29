@@ -26,6 +26,7 @@ import { texteRenvoi, phraseRenvoi } from "@/lib/cartes/renvoiInvitation";
 import { etatRappel, libelleRappelIndisponible, messageReponse, RAPPELS_MAX, type ReponseRappel } from "@/lib/cartes/rappelInvitation";
 import { useAuteursUnite, nomAuteur } from "@/lib/queries/recruiter/useProcessusUnite";
 import { useCurrentUser } from "@/lib/queries/shared/useCurrentUser";
+import { useEstRecruteurUniversitaire } from "@/lib/queries/shared/useEstRecruteurUniversitaire";
 import { useJournalCarte, type GesteCarte } from "@/lib/cartes/useCartes";
 import { joursAvantPurge, AVIS_JOURS, ecrireCarte, libelleEquipeComplet, type CarteKanban } from "@/lib/cartes/carteProspect";
 import { leagueOf } from "@/lib/config/team-taxonomy";
@@ -328,6 +329,7 @@ function LigneTexteCarte({ carteId, champ, libelle, initial, lire, courriel = fa
 function LigneCourriel({ card, valeur, onEnregistre }: {
   card: CarteKanban; valeur: string | null; onEnregistre: (courriel: string) => void;
 }) {
+  const universitaire = useEstRecruteurUniversitaire();
   const queryClient = useQueryClient();
   const { sportId } = useSportUnite();
   const [edition, setEdition] = useState(false);
@@ -411,7 +413,7 @@ function LigneCourriel({ card, valeur, onEnregistre }: {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmer(null)} />
             <div className="relative bg-[#1A1D24] border border-[#2D3748] rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl" data-testid="fenetre-envoyer-invitation">
               <h3 id="titre-envoyer-invitation" className="font-head text-[18px] font-black text-white tracking-tight">{TITRE_CONFIRMATION}</h3>
-              <p className="text-[13px] text-[#d1d5db] mt-2">{texteConfirmation(confirmer)}</p>
+              <p className="text-[13px] text-[#d1d5db] mt-2">{texteConfirmation(confirmer, universitaire)}</p>
               <div className="flex items-center justify-end gap-3 mt-6">
                 <button type="button" onClick={fermer} className="px-4 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-white">Annuler</button>
                 <button type="button" onClick={() => void ecrire(confirmer, "AJOUT")} disabled={enCours}

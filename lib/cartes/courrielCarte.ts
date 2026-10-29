@@ -33,8 +33,9 @@ export function gesteCourriel(ancien: string | null | undefined, nouveau: string
 
 export const TITRE_CONFIRMATION = "Envoyer l'invitation ?";
 
-export function texteConfirmation(adresse: string): string {
-  return `Nexus enverra automatiquement à ${adresse.trim()} un courriel l'invitant à s'inscrire. Il ne nomme ni toi ni ton cégep. Une seule fois.`;
+/** Lot E : le recruteur universitaire lit « ni ton université ». */
+export function texteConfirmation(adresse: string, universitaire = false): string {
+  return `Nexus enverra automatiquement à ${adresse.trim()} un courriel l'invitant à s'inscrire. Il ne nomme ni toi ni ${universitaire ? "ton université" : "ton cégep"}. Une seule fois.`;
 }
 
 export const AIDE_COURRIEL_CHANGE =

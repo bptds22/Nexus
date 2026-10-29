@@ -25,6 +25,7 @@ import { chargerBadgesAthlete, versSuggestion, badgesDepuisRaw } from "@/lib/que
 import DistinctionBadge from "@/components/shared/DistinctionBadge";
 import AthleteEditWizardMobile from "@/components/shared/AthleteEditWizardMobile";
 import { CEGEP_REGIONS } from "@/lib/config/academicOptions";
+import { useParcoursUniversitaire } from "@/lib/athlete/parcoursUniversitaire";
 import ProgrammeCegepPicker from "@/components/shared/ProgrammeCegepPicker";
 import EvaluationPartenaireSection, { EvaluationPartenaireLigne } from "@/components/shared/athlete/EvaluationPartenaireSection";
 import { useBadgesPartenaires, BadgePartenaireVignette } from "@/components/shared/athlete/BadgesPartenaire";
@@ -945,6 +946,8 @@ type AnyProfile = Record<string, any>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type EditFormProps = { raw: any; inputCls: string; lblCls: string; onSave: (u: Record<string, unknown>) => void; onCancel: () => void; saving: boolean };
+/** Lot E6 : cégépien sous lancement_universitaire ON — les champs propres au choix d'un cégep sont masqués. */
+type AcademicEditFormProps = EditFormProps & { univ?: boolean };
 
 function PersonalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: EditFormProps) {
   const [firstName, setFirstName] = useState((raw?.first_name as string) || "");
@@ -1043,7 +1046,7 @@ function PhysicalEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
   );
 }
 
-function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: EditFormProps) {
+function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving, univ = false }: AcademicEditFormProps) {
   const [gpa, setGpa] = useState(String(raw?.moyenne_generale || ""));
   /* T2 — le sélecteur partagé remplace le <input type="text"> brut qui
      était la source unique des valeurs polluées de cette colonne
@@ -1080,7 +1083,7 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div><label className={lblCls}>Moyenne (%)</label><input type="number" value={gpa} onChange={(e) => setGpa(e.target.value)} placeholder="82" min="0" max="100" className={inputCls} /></div>
-        <div>
+        {!univ && <div>
           <label className={lblCls}>Programme CÉGEP visé</label>
           <button
             type="button"
@@ -1095,16 +1098,16 @@ function AcademicEditForm({ raw, inputCls, lblCls, onSave, onCancel, saving }: E
             value={progIds}
             onChange={setProgIds}
           />
-        </div>
+        </div>}
       </div>
       <div><label className={lblCls}>Matières fortes (séparées par virgule)</label><input type="text" value={subjects} onChange={(e) => setSubjects(e.target.value)} placeholder="Mathématiques, Éducation physique" className={inputCls} /></div>
       <div><label className={lblCls}>Mentions académiques</label><input type="text" value={honors} onChange={(e) => setHonors(e.target.value)} placeholder="Tableau d'honneur" className={inputCls} /></div>
-      <div className="flex flex-wrap gap-2">
+      {!univ && <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => setPrive(!prive)} className={toggleCls(prive)}>Ouvert au privé</button>
         <button type="button" onClick={() => setAnglo(!anglo)} className={toggleCls(anglo)}>Ouvert anglophone</button>
         <button type="button" onClick={() => setRelocate(!relocate)} className={toggleCls(relocate)}>Ouvert à déménager</button>
-      </div>
-      {relocate && (
+      </div>}
+      {!univ && relocate && (
         <div>
           <label className={lblCls}>Régions préférées</label>
           <div className="flex flex-wrap gap-2 mt-1">
@@ -1150,6 +1153,8 @@ export default function AthleteProfilPage() {
 function AthleteProfilPageDesktop() {
   // T2 — catalogue des programmes, pour rejouer le libellé choisi.
   const { data: catalogueProfil } = useCegepPrograms();
+  // Lot E6 : cégépien sous ON → pas de « Programme CÉGEP visé » ni de « Préférences CÉGEP ».
+  const univ = useParcoursUniversitaire() === true;
   /* Les 14 critères de l'athlète, libellés résolus par SA grille : grille_id de
      l'éval affichée d'abord, sa position ensuite, GENERIQUE sinon. La même
      liste sert à l'affichage ET à la suggestion — le libellé ne peut donc pas
@@ -1576,7 +1581,9 @@ function AthleteProfilPageDesktop() {
     ? calculateCompletionForRole(a._raw, _evalRow || null, null, "athlete")
     : { percentage: 0, missing: [], checks: [] };
   const pctValue = completionResult.percentage;
-  const missingTop = completionResult.missing.slice(0, 6);
+  const missingTop = completionResult.missing
+    .filter((m) => !(univ && (m.key === "programme_cegep" || m.key === "regions_cegep")))
+    .slice(0, 6);
 
   const encouragement =
     pctValue === 100 ? "Profil complet — bravo !" :
@@ -1874,7 +1881,7 @@ function AthleteProfilPageDesktop() {
           <div id={SECTION_IDS.academic} className="bg-[#1A1D24] rounded-xl border border-white/5 p-5">
             <SectionHeader title="Profil académique" sectionKey="academic" mode="direct" />
             {editSection === "academic" ? (
-              <AcademicEditForm raw={a._raw} inputCls={inputCls} lblCls={lblCls} onSave={(u) => saveSection(u)} onCancel={() => setEditSection(null)} saving={editSaving} />
+              <AcademicEditForm raw={a._raw} inputCls={inputCls} lblCls={lblCls} onSave={(u) => saveSection(u)} onCancel={() => setEditSection(null)} saving={editSaving} univ={univ} />
             ) : (
               <>
                 {/* DIRECT (green pencil) — editable via the section
@@ -1882,7 +1889,7 @@ function AthleteProfilPageDesktop() {
                     Matches the rest of this section (Matières, Préférences,
                     Régions) which already advertise green pencils inline. */}
                 <DirectDisplayField label="Moyenne générale" value={a.gpa ? `${a.gpa}%` : null} recruiterView={recruiterView} />
-                <DirectDisplayField label="Programme visé" value={a.targetCegepProgram?.join(", ")} recruiterView={recruiterView} />
+                {!univ && <DirectDisplayField label="Programme visé" value={a.targetCegepProgram?.join(", ")} recruiterView={recruiterView} />}
 
             {/* Strong subjects — EDITABLE (green) */}
             {a.strongSubjects.length > 0 && (
@@ -1911,8 +1918,8 @@ function AthleteProfilPageDesktop() {
               </div>
             )}
 
-            {/* Preferences — EDITABLE (green) */}
-            <div className="mt-3 pt-3 border-t border-[#2D3748]/40">
+            {/* Preferences — EDITABLE (green) ; masquées pour le cégépien sous ON (lot E6) */}
+            {!univ && <div className="mt-3 pt-3 border-t border-[#2D3748]/40">
               <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6b7280] mb-3 flex items-center gap-1.5">
                 <PencilIcon color={GREEN} size={12} />
                 Préférences CÉGEP
@@ -1929,10 +1936,10 @@ function AthleteProfilPageDesktop() {
                   </span>
                 ))}
               </div>
-            </div>
+            </div>}
 
-            {/* Preferred regions */}
-            {a.preferredRegions.length > 0 && (
+            {/* Preferred regions (régions CÉGEP) */}
+            {!univ && a.preferredRegions.length > 0 && (
               <div className="mt-3 pt-3 border-t border-[#2D3748]/40">
                 <span className="text-[13px] text-[#9CA3AF] flex items-center gap-1.5">
                   <PencilIcon color={GREEN} size={12} />
