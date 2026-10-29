@@ -57,6 +57,16 @@ const PROVINCES_LIB: Record<string, string> = {
   NL: "Terre-Neuve-et-Labrador", MB: "Manitoba", SK: "Saskatchewan", AB: "Alberta", BC: "Colombie-Britannique",
 };
 const VUE_CANADA = { lat: 52, lng: -92 };
+/* Limites approximatives des provinces, [[sud, ouest], [nord, est]] : le cadrage de la carte quand on
+   filtre par province (université). Le Canada : sa partie habitée, là où sont les universités. */
+const BOITES_PROVINCES: Record<string, [[number, number], [number, number]]> = {
+  QC: [[44.99, -79.76], [62.59, -57.1]], ON: [[41.68, -95.16], [56.86, -74.32]],
+  NS: [[43.42, -66.33], [47.03, -59.68]], NB: [[44.6, -69.06], [48.07, -63.77]],
+  PE: [[45.95, -64.42], [47.07, -61.97]], NL: [[46.61, -67.8], [60.37, -52.62]],
+  MB: [[48.99, -102.03], [60, -88.94]], SK: [[48.99, -110], [60, -101.36]],
+  AB: [[48.99, -120], [60, -110]], BC: [[48.3, -139.06], [60, -114.03]],
+};
+const BOITE_CANADA: [[number, number], [number, number]] = [[42, -139], [62, -52.6]];
 
 const LANGUES = [{ v: "FR", label: "Français" }, { v: "EN", label: "Anglais" }, { v: "BILINGUE", label: "Bilingue" }];
 const RESEAUX = [{ v: "PUBLIC", label: "Public" }, { v: "PRIVE", label: "Privé" }];
@@ -198,6 +208,8 @@ export default function CegepSearch() {
   /** cegep_programs.id sélectionnés — la clé du filtre, jamais un libellé. */
   const [progs, setProgs] = React.useState<string[]>([]);
   const [progQ, setProgQ] = React.useState("");
+  /** Université : le programme d'études cliqué dans les suggestions (son nom exact). */
+  const [progChoisi, setProgChoisi] = React.useState<string | null>(null);
   const [regions, setRegions] = React.useState<string[]>([]);
   const [langues, setLangues] = React.useState<string[]>([]);
   const [reseaux, setReseaux] = React.useState<string[]>([]);
@@ -288,8 +300,10 @@ export default function CegepSearch() {
         if (sports.length && !sports.some((s) => c.sports.includes(s))) return false;
         if (regions.length && !regions.includes(c.region)) return false;
         if (provinces.length && (!c.province || !provinces.includes(c.province))) return false;
-        // Université : le programme d'études se cherche par son nom (pas de catalogue DEC).
-        if (univ && progQ.trim() && !c.programmes.some((p) => norm(p).includes(norm(progQ)))) return false;
+        // Université : le programme d'études se cherche par son nom (pas de catalogue DEC). Un programme
+        // cliqué dans les suggestions filtre sur son nom exact ; sinon, le texte tapé filtre par sous-chaîne.
+        if (univ && progChoisi && !c.programmes.includes(progChoisi)) return false;
+        if (univ && !progChoisi && progQ.trim() && !c.programmes.some((p) => norm(p).includes(norm(progQ)))) return false;
         if (langues.length && (!c.langue || !langues.includes(c.langue))) return false;
         if (reseaux.length) {
           const t = typeDe(c);
@@ -323,7 +337,24 @@ export default function CegepSearch() {
         }),
       }))
       .sort((a, b) => (b.fit.score - a.fit.score) || a.c.name.localeCompare(b.c.name, "fr"));
-  }, [data, q, sports, regions, provinces, langues, reseaux, progs, progQ, univ, pourMoi, origine]);
+  }, [data, q, sports, regions, provinces, langues, reseaux, progs, progQ, progChoisi, univ, pourMoi, origine]);
+
+  /* Suggestions du filtre « Programme d'études » (université) : les noms de programmes qui contiennent le
+     texte tapé, avec le nombre d'universités qui les offrent, les plus répandus d'abord. */
+  const suggestionsProgrammes = React.useMemo(() => {
+    if (!data || !univ) return [] as { nom: string; n: number }[];
+    const nq = norm(progQ.trim());
+    if (nq.length < 2) return [];
+    const compte = new Map<string, number>();
+    for (const c of data.cegeps) {
+      for (const p of new Set(c.programmes)) if (norm(p).includes(nq)) compte.set(p, (compte.get(p) ?? 0) + 1);
+    }
+    // Un mot qui COMMENCE par le texte tapé passe devant (« med » → médecine, avant « biomédical »).
+    const debutDeMot = (nom: string) => (norm(nom).split(/[^a-z0-9]+/).some((m) => m.startsWith(nq)) ? 0 : 1);
+    return [...compte.entries()].map(([nom, n]) => ({ nom, n, rang: debutDeMot(nom) }))
+      .sort((a, b) => (a.rang - b.rang) || (b.n - a.n) || a.nom.localeCompare(b.nom, "fr"))
+      .slice(0, 40);
+  }, [data, univ, progQ]);
 
   const estFit = (f: { score: number; raisons: string[] }) => f.score > 0 && f.raisons.length > 0;
 
@@ -340,6 +371,24 @@ export default function CegepSearch() {
     focusToken.current += 1;
     setFocus({ token: focusToken.current, type, ids });
   }, []);
+
+  /* Université : choisir une province cadre la carte sur ses limites (la carte dézoome puis zoome) ;
+     plusieurs provinces → le rectangle qui les englobe ; filtre effacé → le Canada entier. */
+  const clesProvinces = [...provinces].sort().join(",");
+  const provincesPrec = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!univ || !data) return;
+    if (provincesPrec.current === null) { provincesPrec.current = clesProvinces; return; }
+    if (provincesPrec.current === clesProvinces) return;
+    provincesPrec.current = clesProvinces;
+    const boites = clesProvinces ? clesProvinces.split(",").map((p) => BOITES_PROVINCES[p]).filter(Boolean) : [];
+    const boite: [[number, number], [number, number]] = boites.length
+      ? [[Math.min(...boites.map((b) => b[0][0])), Math.min(...boites.map((b) => b[0][1]))],
+         [Math.max(...boites.map((b) => b[1][0])), Math.max(...boites.map((b) => b[1][1]))]]
+      : BOITE_CANADA;
+    focusToken.current += 1;
+    setFocus({ token: focusToken.current, type: "boite", ids: [], boite });
+  }, [univ, data, clesProvinces]);
 
   React.useEffect(() => {
     if (!data) return;
@@ -398,7 +447,7 @@ export default function CegepSearch() {
   // (même règle que RechercheMobile) — sinon la pilule est désactivée.
   const pourMoiDispo = !!viewer && (viewer.programmesVises.length > 0 || !!viewer.positionId);
   const nbFiltres = sports.length + progs.length + regions.length + langues.length + reseaux.length
-    + provinces.length + (univ && progQ.trim() ? 1 : 0);
+    + provinces.length + (univ && (progChoisi || progQ.trim()) ? 1 : 0);
   const provincesPresentes = [...new Set(data.cegeps.map((c) => c.province).filter((x): x is string => !!x))]
     .sort((a, b) => (PROVINCES_LIB[a] ?? a).localeCompare(PROVINCES_LIB[b] ?? b, "fr"));
   const selection = resultats.find((r) => r.c.id === selectedId) ?? null;
@@ -439,14 +488,39 @@ export default function CegepSearch() {
         </FiltreBtn>
 
         {univ ? (
-          <FiltreBtn label="Programme d'études" compteur={progQ.trim() ? 1 : 0} onClear={() => setProgQ("")}>
+          <FiltreBtn label={progChoisi ? `Programme : ${progChoisi.length > 28 ? progChoisi.slice(0, 27) + "…" : progChoisi}` : "Programme d'études"}
+            compteur={progChoisi || progQ.trim() ? 1 : 0} onClear={() => { setProgQ(""); setProgChoisi(null); }}>
             {() => (
               <>
+                {progChoisi && (
+                  <span className="ddsel">
+                    <span className="ddseltag">Programme choisi</span>
+                    <span className="ddselwrap">
+                      <button className="ddpill" onClick={() => setProgChoisi(null)} title="Retirer ce programme">
+                        {progChoisi}<span className="x">✕</span>
+                      </button>
+                    </span>
+                  </span>
+                )}
                 <span className="dsearch">
                   <input className="ds" value={progQ} onChange={(e) => setProgQ(e.target.value)}
-                    placeholder="Ex. génie, kinésiologie, nursing…" />
+                    placeholder="Ex. médecine, génie, kinésiologie…" />
                   {progQ && <button className="clr" onClick={() => setProgQ("")} aria-label="Effacer">✕</button>}
                 </span>
+                {progQ.trim().length >= 2 && (
+                  suggestionsProgrammes.length ? (
+                    <span className="ddlist" role="listbox" aria-label="Programmes qui correspondent">
+                      {suggestionsProgrammes.map((s) => (
+                        <button key={s.nom} type="button" role="option" aria-selected={progChoisi === s.nom}
+                          className={"ddopt" + (progChoisi === s.nom ? " on" : "")}
+                          onClick={() => { setProgChoisi(s.nom); setProgQ(""); }}>
+                          <span className="ddoptnom">{s.nom}</span>
+                          <span className="ddoptn">{s.n} {s.n > 1 ? "universités" : "université"}</span>
+                        </button>
+                      ))}
+                    </span>
+                  ) : <span className="more">Aucun programme ne correspond à « {progQ.trim()} ».</span>
+                )}
                 <span className="more">Baccalauréats, certificats et autres programmes publiés par chaque université</span>
               </>
             )}
@@ -760,6 +834,11 @@ background:var(--bg);color:var(--txt);font-family:var(--f-body);height:var(--cs-
 .cs .dd label{display:flex;align-items:center;gap:10px;font-size:13.5px;font-weight:600;color:var(--soft);padding:8px 6px;border-radius:7px;cursor:pointer}
 .cs .dd label:hover{background:#2A303B;color:var(--txt)}
 .cs .dd label.coche{color:#fff}
+/* suggestions du filtre « Programme d'études » (université) */
+.cs .dd .ddopt{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;text-align:left;background:none;border:0;font-size:13px;font-weight:600;color:var(--soft);padding:8px 6px;border-radius:7px;cursor:pointer}
+.cs .dd .ddopt:hover,.cs .dd .ddopt.on{background:#2A303B;color:#fff}
+.cs .dd .ddoptnom{flex:1;min-width:0}
+.cs .dd .ddoptn{flex:0 0 auto;font-size:11px;color:var(--mut);font-weight:500}
 .cs .dd input[type=checkbox]{accent-color:var(--nexus);width:15px;height:15px;flex:0 0 auto}
 .cs .dd .more{display:block;font-size:12.5px;color:var(--mut);padding:9px 4px 2px}
 .cs .clear{background:none;border:1.5px dashed var(--line2);color:var(--soft);font-weight:700;font-size:12.5px;padding:10px 13px;border-radius:11px;cursor:pointer}
