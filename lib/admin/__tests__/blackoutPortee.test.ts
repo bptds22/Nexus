@@ -5,7 +5,7 @@ import { describeBlackout, porteeDe, PORTEES } from "@/app/admin/blackouts/_comp
 const base = { sport_id: null, promo_min: null, promo_max: null, date_debut: "2026-08-01", date_fin: "2026-11-10", actif: true };
 
 test("black-out : sans portée (avant la migration), la période vise tous les athlètes", () => {
-  assert.equal(porteeDe(base), "tous");
+  assert.equal(porteeDe({ ...base, portee: undefined }), "tous");
   assert.equal(describeBlackout(base, null),
     "Du 1er août au 10 novembre 2026, les recruteurs collégiaux et universitaires ne peuvent pas écrire à tous les athlètes, toutes disciplines.");
 });
