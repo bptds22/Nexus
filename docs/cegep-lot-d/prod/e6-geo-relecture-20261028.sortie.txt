@@ -1,0 +1,15 @@
+﻿ geocodees | universites 
+-----------+-------------
+        59 |          59
+(1 row)
+
+          operation           
+------------------------------
+ CEGEP_LOT_E6_GEO_UNIVERSITES
+(1 row)
+
+ interrupteur 
+--------------
+ f
+(1 row)
+
