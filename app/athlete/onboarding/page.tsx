@@ -9,6 +9,8 @@ import { filtrerClubs } from "@/lib/clubs/clubCorrespond";
 import { needsConsent } from "@/lib/auth/needsConsent";
 import { optionsAnneeSec5, LIBELLE_ANNEE_SEC5, optionsAnneeCegep, LIBELLE_ANNEE_CEGEP } from "@/lib/config/gradYears";
 import { lireLancementCollegial } from "@/lib/config/lancementCollegial";
+import { lireLancementUniversitaire } from "@/lib/config/lancementUniversitaire";
+import { parcoursUniversitaireActif } from "@/lib/athlete/parcoursUniversitaire";
 import { loadSchools } from "@/lib/queries/schools/allSchools";
 import SportPositionSelect from "@/app/coach/components/SportPositionSelect";
 import DatePicker from "@/app/coach/components/DatePicker";
@@ -907,6 +909,16 @@ function AthleteOnboardingDesktop() {
      fenêtre suivent ; une année choisie pour le Sec 5 et absente de la fenêtre du cégep est effacée
      (et inversement) — jamais une valeur offerte par l'autre question. */
   const ecoleCegep = userContext === "scolaire" && selectedSchoolType === "CEGEP";
+  /* Lot E6 (suite, décision BP 2026-10-29) : le cégépien sous lancement_universitaire ON ne choisit plus de cégep —
+     pas de « Programme CÉGEP visé » ni de « Préférences CÉGEP » à l'étape Académique, même règle que le profil
+     (parcoursUniversitaireActif). La fiche n'existe pas encore : on lit le type de l'école choisie. OFF tant que non lu. */
+  const [lancementUniversitaire, setLancementUniversitaire] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void lireLancementUniversitaire(createClient()).then((on) => { if (alive) setLancementUniversitaire(on); });
+    return () => { alive = false; };
+  }, []);
+  const parcoursUniv = parcoursUniversitaireActif(ecoleCegep ? "CEGEP" : null, lancementUniversitaire);
   const libelleAnnee = ecoleCegep ? LIBELLE_ANNEE_CEGEP : LIBELLE_ANNEE_SEC5;
   /* Retour de test BP (2026-10-27) : sous ON, en scolaire, le champ école vient AVANT l'année, et
      l'année reste désactivée tant que l'école n'est pas choisie — puis son libellé est d'emblée le
@@ -2474,15 +2486,17 @@ function AthleteOnboardingDesktop() {
         {step === 2 && (
           <div className={cardCls}>
             <h2 className="font-head text-xl font-black text-white uppercase tracking-tight mb-1">Académique</h2>
-            <p className="text-[14px] text-[#6b7280] mb-6">Ton parcours scolaire et tes préférences CÉGEP</p>
+            <p className="text-[14px] text-[#6b7280] mb-6">{parcoursUniv ? "Ton parcours scolaire" : "Ton parcours scolaire et tes préférences CÉGEP"}</p>
 
             <div className="grid grid-cols-2 gap-4 mb-5">
               <div><label className={labelCls}>Moyenne générale (%)</label><input type="number" value={gpa} onChange={(e) => setGpa(e.target.value)} placeholder="78" min="0" max="100" className={inputCls} /></div>
+              {!parcoursUniv && (
               <div><label className={labelCls}>Programme CÉGEP visé</label>
                 <button type="button" onClick={() => setProgPickerOpen(true)} className={`${inputCls} flex items-center text-left ${progLabels.length ? "text-white" : "text-[#4a4d56]"}`}>
                   {progLabels.length > 0 ? progLabels.join(", ") : "Choisir…"}
                 </button>
               </div>
+              )}
             </div>
             <ProgrammeCegepPicker open={progPickerOpen} onClose={() => setProgPickerOpen(false)} value={progIds} onChange={setProgIds} />
 
@@ -2498,6 +2512,7 @@ function AthleteOnboardingDesktop() {
               ))}
             </div>
 
+            {!parcoursUniv && (<>
             <div className={sectionTitle}><div className="w-0.5 h-4 bg-[#E63946] rounded-full" />Préférences CÉGEP</div>
             <div className="flex flex-wrap gap-3 mb-4">
               {[
@@ -2516,6 +2531,7 @@ function AthleteOnboardingDesktop() {
                 </div>
               </div>
             )}
+            </>)}
           </div>
         )}
 

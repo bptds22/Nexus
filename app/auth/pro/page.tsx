@@ -57,7 +57,7 @@ const ROLE_CARDS: { value: ProRole; title: string; subtitle: string; icon: React
   },
   {
     value: "collegial",
-    title: "Recruteur CÉGEP",
+    title: "Recruteur collégial",
     subtitle: "Trouve et recrute les meilleurs athlètes du secondaire pour ton programme sportif",
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>,
   },
@@ -71,7 +71,7 @@ const ROLE_CARDS: { value: ProRole; title: string; subtitle: string; icon: React
 
 const CTA_LABELS: Record<ProRole, string> = {
   scolaire: "Créer mon compte entraîneur",
-  collegial: "Créer mon compte recruteur",
+  collegial: "Créer mon compte recruteur collégial",
   ligue_civile: "Créer mon compte",
   universitaire: "Créer mon compte recruteur universitaire",
 };
@@ -253,7 +253,7 @@ function ProSignupContent() {
           <div className="bg-[#1A1D24] border border-white/5 rounded-xl p-6 sm:p-8">
             {/* Header */}
             <h1 className="font-head text-xl sm:text-2xl font-black text-white uppercase tracking-tight mb-1">Rejoins Nexus</h1>
-            <p className="text-[13px] text-[#9CA3AF] mb-6 leading-relaxed">Aide tes athlètes à être visibles par les recruteurs CÉGEP du Québec.</p>
+            <p className="text-[13px] text-[#9CA3AF] mb-6 leading-relaxed">Aide tes athlètes à être visibles par les recruteurs collégiaux du Québec.</p>
 
             {/* Step 1 — Role selection */}
             <div className="space-y-3 mb-6">
@@ -318,12 +318,12 @@ function ProSignupContent() {
                 </div>
               )}
               {/* Accroche (décision BP 2026-10-26) : en attendant, le coach de cégep peut s'inscrire comme
-                  recruteur collégial — le lien choisit la carte « Recruteur CÉGEP ». */}
+                  recruteur collégial — le lien choisit la carte « Recruteur collégial ». */}
               <p className="text-[12px] text-[#9CA3AF] leading-snug px-1">
                 Tu es coach dans un cégep ? En attendant, inscris-toi comme{" "}
                 <button type="button" onClick={() => setSelectedRole("collegial")}
                   className="text-[#60A5FA] hover:text-white underline underline-offset-2 transition-colors">
-                  recruteur CÉGEP
+                  recruteur collégial
                 </button>
                 {" "}pour repérer dès maintenant les athlètes du secondaire.
               </p>
