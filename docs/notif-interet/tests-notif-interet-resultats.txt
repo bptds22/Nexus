@@ -1,0 +1,151 @@
+b0000000-0000-4000-8000-000000000407
+b0000000-0000-4000-8000-000000000207
+b0000000-0000-4000-8000-000000000401
+b0000000-0000-4000-8000-000000000201
+b0000000-0000-4000-8000-000000000402
+b0000000-0000-4000-8000-000000000202
+b0000000-0000-4000-8000-000000000405
+b0000000-0000-4000-8000-000000000205
+b0000000-0000-4000-8000-000000000404
+b0000000-0000-4000-8000-000000000204
+b0000000-0000-4000-8000-000000000499
+b0000000-0000-4000-8000-000000000101
+b0000000-0000-4000-8000-000000000301
+b0000000-0000-4000-8000-000000000302
+b0000000-0000-4000-8000-000000000303
+b0000000-0000-4000-8000-000000000304
+b0000000-0000-4000-8000-000000000305
+4b859bf1-5832-4258-897c-e094062926af
+2026-10-30 14:00:00+00
+2026-10-30 14:05:00+00
+2026-10-30 14:20:00+00
+2026-10-30 15:00:00+00
+2026-10-30 15:30:00+00
+2026-10-31 03:00:00+00
+2026-10-31 03:30:00+00
+2026-10-31 04:30:00+00
+2026-10-31 11:59:00+00
+2026-10-31 12:00:00+00
+2026-10-31 14:00:00+00
+2026-10-31 14:30:00+00
+2026-10-31 01:45:00+00
+2026-10-31 01:48:00+00
+2026-10-31 01:59:00+00
+2026-10-31 02:00:00+00
+2026-10-31 02:30:00+00
+2026-10-31 02:45:00+00
+2026-10-31 03:15:00+00
+2026-10-31 06:00:00+00
+2026-10-31 13:00:00+00
+7c7a6d4f-bcb9-4463-a6a5-210184683c11
+cdd7659b-99e9-4039-a987-0aa2e8f1db20
+2c519941-9bed-4959-9f70-538fb0ba97d7
+0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{"pushs": 6, "annules": 0, "elements": 6, "en_attente": 0, "preference": 0, "sans_jeton": 1, "heures_calmes": false}
+
+
+{"pushs": 1, "annules": 0, "elements": 2, "en_attente": 0, "preference": 0, "sans_jeton": 0, "heures_calmes": false}
+
+{"pushs": 0, "annules": 0, "elements": 0, "en_attente": 0, "preference": 0, "sans_jeton": 0, "heures_calmes": false}
+
+
+{"pushs": 1, "annules": 0, "elements": 1, "en_attente": 0, "preference": 0, "sans_jeton": 0, "heures_calmes": false}
+
+
+
+
+
+{"pushs": 2, "annules": 0, "elements": 3, "en_attente": 0, "preference": 0, "sans_jeton": 0, "heures_calmes": false}
+
+{"en_attente": 1, "heures_calmes": true}
+
+
+
+
+{"en_attente": 6, "heures_calmes": true}
+
+{"pushs": 4, "annules": 0, "elements": 6, "en_attente": 0, "preference": 0, "sans_jeton": 0, "heures_calmes": false}
+
+
+{"pushs": 0, "annules": 0, "elements": 0, "en_attente": 0, "preference": 0, "sans_jeton": 0, "heures_calmes": false}
+
+1
+
+
+1
+
+
+
+
+
+
+
+1|OK|S1 déclencheurs branchés, ancienne cloche favori débranchée|recruiter_athlete_views.trg_push_vue_profil,recruiter_favorites.trg_push_interet,recruiter_list_members.trg_push_interet,recruiter_pipeline.trg_push_interet (attendu recruiter_athlete_views.trg_push_vue_profil,recruiter_favorites.trg_push_interet,recruiter_list_members.trg_push_interet,recruiter_pipeline.trg_push_interet)
+2|OK|S2 un utilisateur ne met pas d'intérêt en file|ERR:42501 (attendu ERR:42501)
+3|OK|S3 ni ne lit l'horloge des heures calmes|ERR:42501 (attendu ERR:42501)
+4|OK|A1 r1 met Zoé en favori (vrai rôle)|ok (attendu ok)
+5|OK|A2 favori + processus du même geste → 1 seul élément AJOUT_LISTE ; le processus existe|1|1 (attendu 1|1)
+6|OK|A3 cloche : une notification ADDED_TO_FAVORITES au texte neutre, catégorie INTERET_RECRUTEURS|1|Ton profil a été ajouté à une liste|Ton profil a été ajouté à une liste|INTERET_RECRUTEURS (attendu 1|Ton profil a été ajouté à une liste|Ton profil a été ajouté à une liste|INTERET_RECRUTEURS)
+7|OK|A4 r1 retire le favori|ok (attendu ok)
+8|OK|A5 r1 le remet|ok (attendu ok)
+9|OK|A6 retirer puis remettre → 1 nouvel élément (2 en tout), 2 notifications|2|2 (attendu 2|2)
+10|OK|A7 ajout à une liste (r2) → 1 élément de plus|3 (attendu 3)
+11|OK|A8 r4, collègue de r1, rejoint le dossier de l'unité (unite_ecrire_dossier)|b0000000-0000-4000-8000-000000000407 (attendu b0000000-0000-4000-8000-000000000407)
+12|OK|A9 rejoindre le dossier de l'unité n'est pas un geste → rien de plus ; la ligne de r4 existe|3|1 (attendu 3|1)
+13|OK|A10 r4 ouvre un dossier NEUF pour Félix|b0000000-0000-4000-8000-000000000401 (attendu b0000000-0000-4000-8000-000000000401)
+14|OK|A11 dossier neuf → 1 élément pour Félix|1 (attendu 1)
+15|OK|A12 message au coach → processus CONTACTE et 1 élément AJOUT_LISTE pour Mathis|CONTACTE|1 (attendu CONTACTE|1)
+16|OK|A13 message à l'athlète → processus CONTACTE, 0 élément AJOUT_LISTE, le push du message part|CONTACTE|0|1 (attendu CONTACTE|0|1)
+17|OK|A14 processus + liste dans une seule instruction (comme une fusion de carte) → 1 élément|1 (attendu 1)
+18|OK|A15 recruteur DÉSACTIVÉ → rien (Mathis reste à 1)|1 (attendu 1)
+19|OK|A16 fiche sans compte → ni file ni notification|0|0 (attendu 0|0)
+20|OK|A17 compte sans établissement (toutes les sources comptent) → 1 élément, même texte|2|1 (attendu 2|1)
+21|OK|B1 1re vue du jour (r1) → 1 élément VUE_PROFIL, notification « Ton profil a été consulté »|1|Ton profil a été consulté/Ton profil a été consulté (attendu 1|Ton profil a été consulté/Ton profil a été consulté)
+22|OK|B2 2e vue le même jour (r2), avant l'envoi → même groupe, notification « 2 fois »|2|1|1|Ton profil a été consulté 2 fois (attendu 2|1|1|Ton profil a été consulté 2 fois)
+23|OK|B3 l'envoi : UN push « Nexus » / « … consulté 2 fois », nb_elements 2|1|Nexus|Ton profil a été consulté 2 fois|2 (attendu 1|Nexus|Ton profil a été consulté 2 fois|2)
+24|OK|B4 3e vue APRÈS l'envoi → aucun 2e push ; la notification passe à 3 et redevient non lue|2|1|1|Ton profil a été consulté 3 fois|false (attendu 2|1|1|Ton profil a été consulté 3 fois|false)
+25|OK|B5 vue d'un recruteur DÉSACTIVÉ → rien, le compte du jour reste à 3|2|Ton profil a été consulté 3 fois (attendu 2|Ton profil a été consulté 3 fois)
+26|OK|B6 lendemain → nouveau groupe, nouveau push (2 en tout), 2e notification|2|2 (attendu 2|2)
+27|OK|B7 23 h 30 et 0 h 30 (Montréal) : la même nuit, donc le même jour d'envoi → 1 groupe|1 (attendu 1)
+28|OK|B8 fiche sans compte → rien|0|0 (attendu 0|0)
+29|OK|B9 au plus UN push « vue » par athlète et par jour (tout le banc)|1 (attendu 1)
+30|OK|H1 push_heure_calme : 21 h 59 non, 22 h 00 oui, 7 h 59 oui, 8 h 00 non|falsetruetruefalse (attendu falsetruetruefalse)
+31|OK|H2 21 h 59 : la file part (ajout de 21 h 45 envoyé)|false|1 (attendu false|1)
+32|OK|H3 22 h 00 : heures calmes, l'ajout de 21 h 48 attend|true|1 (attendu true|1)
+33|OK|H4 ajout la nuit : 3 notifications dans la cloche tout de suite, 2 pushs en attente|3|2 (attendu 3|2)
+34|OK|H5 3 vues la nuit (22 h 30, 23 h 15, 2 h) → UN groupe, celui du lendemain ; cloche à 3 tout de suite|3|1|true|Ton profil a été consulté 3 fois (attendu 3|1|true|Ton profil a été consulté 3 fois)
+35|OK|H6 Marc pose un badge à Félix|ok (attendu ok)
+36|OK|H7 7 h 59 : heures calmes, rien ne part (ajouts de Léa, vues de Mathis, badge de Félix)|true|0 (attendu true|0)
+37|OK|H8 8 h 00 : tout part — 2 ajouts de Léa, le badge de Félix|false|2|1 (attendu false|2|1)
+38|OK|H9 vues de la nuit : UN push à 8 h, « Nexus » / « … consulté 3 fois », 3 éléments|1|Nexus|Ton profil a été consulté 3 fois|3|true (attendu 1|Nexus|Ton profil a été consulté 3 fois|3|true)
+39|OK|H10 une vue à 9 h le même jour → pas de 2e push ; la cloche passe à 4|1|Ton profil a été consulté 4 fois (attendu 1|Ton profil a été consulté 4 fois)
+40|OK|H11 push PARENT à 21 h 59 : il part|1|ENVOYE (attendu 1|ENVOYE)
+41|OK|H12 push PARENT à 22 h 00 et à 7 h 59 : rien ne part|00 (attendu 00)
+42|OK|H13 push PARENT à 8 h 00 : il part|1|ENVOYE (attendu 1|ENVOYE)
+43|OK|H14 consentement partenaire : même horloge (push_heure_calme appelée)|consentement_partenaire_v2_pousser,consentement_partenaire_v2_relancer,parent_contact_envoyer_push,push_traiter_file (attendu consentement_partenaire_v2_pousser,consentement_partenaire_v2_relancer,parent_contact_envoyer_push,push_traiter_file)
+44|OK|T1 aucun texte (file, envois, cloche, pg_net) ne nomme un recruteur, un cégep ou une région|0 (attendu 0)
+45|OK|T2 ce qui part dans pg_net : announcement + nx_type + route des notifications|announcement/AJOUT_LISTE//athlete/notifications,announcement/VUE_PROFIL//athlete/notifications (attendu announcement/AJOUT_LISTE//athlete/notifications,announcement/VUE_PROFIL//athlete/notifications)
+46|OK|T3 notifications : la destination au clic est celle des notifications|/athlete/notifications (attendu /athlete/notifications)
+47|OK|T4 titre du push = « Nexus » ; la cloche garde la phrase|Nexus|0 (attendu Nexus|0)
+48|OK|D1 0 doublon : un envoi par groupe, une notification par groupe|0|0 (attendu 0|0)
+48|0
